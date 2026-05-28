@@ -124,7 +124,7 @@ export default function PdfMerger() {
   };
 
   return (
-    <div style={{ maxWidth: '850px', margin: '0 auto', padding: '0 1.5rem 2rem 1.5rem', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1.5rem 2rem 1.5rem', fontFamily: 'system-ui, sans-serif' }}>
       
       <input 
         type="file" 
@@ -144,9 +144,9 @@ export default function PdfMerger() {
       {/* Main Container Stack */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
         
-        {/* Upload Box Card */}
+        {/* Top Section: Stable Upload Area */}
         <div style={{ width: '100%' }}>
-          <div style={{ backgroundColor: '#ffffff', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+          <div style={{ backgroundColor: '#ffffff', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.01)' }}>
             <div 
               onClick={() => fileInputRef.current?.click()}
               style={{ 
@@ -155,32 +155,35 @@ export default function PdfMerger() {
                 borderRadius: '0.75rem', 
                 backgroundColor: '#f5f3ff', 
                 textAlign: 'center',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'border-color 0.2s'
               }}
+              onMouseOver={(e) => e.currentTarget.style.borderColor = '#4f46e5'}
+              onMouseOut={(e) => e.currentTarget.style.borderColor = '#6366f1'}
             >
               <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>📂</div>
-              <p style={{ color: '#4338ca', fontWeight: '700', fontSize: '0.95rem', margin: '0 0 0.25rem 0' }}>Drop files or click here</p>
-              <span style={{ fontSize: '0.75rem', color: '#6366f1', opacity: 0.8 }}>Add more PDF documents</span>
+              <p style={{ color: '#4338ca', fontWeight: '700', fontSize: '1rem', margin: '0 0 0.25rem 0' }}>Drop files or click here</p>
+              <span style={{ fontSize: '0.8rem', color: '#6366f1', opacity: 0.8 }}>Add more PDF documents</span>
             </div>
           </div>
         </div>
 
-        {/* Workspace Management List Area */}
+        {/* Bottom Section: Scrolling Workspace Area */}
         {files.length > 0 && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
                 Queue Workspace ({files.length} Files Loaded)
               </h3>
               <span style={{ fontSize: '0.75rem', color: '#4f46e5', backgroundColor: '#e0e7ff', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: '600' }}>
-                ↕️ Hold the number box and drag vertically to reorder sequence
+                ↕️ Hold the number box and drag vertically to reorder
               </span>
             </div>
 
-            {/* Drag & Drop Vertical Engine Context */}
+            {/* 🚀 FIXED: List Container with Internal Scrollbar (Virtual Viewport) */}
             <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="pdf-vertical-list" direction="vertical">
+              <Droppable droppableId="pdf-scrolling-list" direction="vertical">
                 {(provided) => (
                   <div 
                     {...provided.droppableProps} 
@@ -189,7 +192,11 @@ export default function PdfMerger() {
                       display: 'flex', 
                       flexDirection: 'column',
                       gap: '0.75rem',
-                      width: '100%'
+                      width: '100%',
+                      maxHeight: '450px', // Strict limit on list height
+                      overflowY: 'auto', // Internal scrollbar enabled
+                      padding: '0 0.5rem 0.5rem 0', // Account for scrollbar width
+                      position: 'relative' // Needed for DnD offset calculations
                     }}
                   >
                     {files.map((fileObj, index) => (
@@ -203,24 +210,23 @@ export default function PdfMerger() {
                               backgroundColor: '#ffffff',
                               border: snapshot.isDragging ? '2px solid #6366f1' : '1px solid #e2e8f0',
                               borderRadius: '0.75rem',
-                              boxShadow: snapshot.isDragging ? '0 8px 20px rgba(99, 102, 241, 0.12)' : '0 1px 3px rgba(0,0,0,0.01)',
+                              boxShadow: snapshot.isDragging ? '0 8px 20px rgba(99, 102, 241, 0.12)' : '0 1px 2px rgba(0,0,0,0.01)',
                               display: 'flex',
                               flexDirection: 'column',
                               overflow: 'hidden'
                             }}
                           >
-                            {/* Linear Full Width Card Content */}
-                            <div style={{ padding: '0.85rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                            {/* Card Content Row */}
+                            <div style={{ padding: '0.8rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                               
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: '1 1 300px', overflow: 'hidden' }}>
-                                {/* Safe isolated Numerical Drag Trigger */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, overflow: 'hidden' }}>
+                                {/* Drag Handle Number */}
                                 <div 
                                   {...provided.dragHandleProps}
                                   style={{ 
                                     color: '#ffffff', 
                                     fontSize: '0.85rem', 
                                     fontWeight: 'bold', 
-                                    userSelect: 'none', 
                                     backgroundColor: '#4f46e5', 
                                     minWidth: '28px',
                                     height: '28px',
@@ -229,49 +235,52 @@ export default function PdfMerger() {
                                     justifyContent: 'center',
                                     borderRadius: '6px',
                                     cursor: snapshot.isDragging ? 'grabbing' : 'grab',
-                                    boxShadow: '0 2px 4px rgba(79, 70, 229, 0.2)'
+                                    boxShadow: '0 1px 3px rgba(79, 70, 229, 0.2)'
                                   }}
-                                  title="Hold and drag up/down"
+                                  title="Hold and drag up/down to shuffle"
                                 >
                                   {index + 1}
                                 </div>
 
-                                <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                                  <div style={{ fontWeight: '600', fontSize: '0.9rem', color: '#1e293b', textOverflow: 'ellipsis', overflow: 'hidden' }} title={fileObj.name}>
+                                <div style={{ overflow: 'hidden' }}>
+                                  <div style={{ fontWeight: '600', fontSize: '0.9rem', color: '#1e293b', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }} title={fileObj.name}>
                                     {fileObj.name}
                                   </div>
-                                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '1px' }}>{fileObj.size}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{fileObj.size}</div>
                                 </div>
                               </div>
 
-                              {/* Action Triggers */}
+                              {/* Action Buttons with Propagation Fix */}
                               <div 
-                                style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem' }}
-                                onMouseDown={(e) => e.stopPropagation()}
+                                style={{ display: 'flex', gap: '1.25rem', fontSize: '0.85rem' }}
+                                onMouseDown={(e) => e.stopPropagation()} // Crucial for button clicks inside DnD
                               >
                                 <button 
                                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleInlinePreview(fileObj.id); }}
-                                  style={{ backgroundColor: 'transparent', border: 'none', color: '#2563eb', fontWeight: '600', cursor: 'pointer' }}
+                                  style={{ backgroundColor: 'transparent', border: 'none', color: '#2563eb', fontWeight: '600', cursor: 'pointer', outline: 'none' }}
                                 >
                                   {activePreviewId === fileObj.id ? '❌ Close Box' : '👁️ Preview'}
                                 </button>
                                 <button 
                                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeFile(fileObj.id); }}
-                                  style={{ backgroundColor: 'transparent', border: 'none', color: '#ef4444', fontWeight: '600', cursor: 'pointer' }}
+                                  style={{ backgroundColor: 'transparent', border: 'none', color: '#ef4444', fontWeight: '600', cursor: 'pointer', outline: 'none' }}
                                 >
                                   Remove
                                 </button>
                               </div>
                             </div>
 
-                            {/* Collapsible Accordion Preview Area */}
+                            {/* 🚀 FIXED: Collapsible Stable Preview Area inside Scrolling Container */}
                             {activePreviewId === fileObj.id && fileObj.previewUrl && (
                               <div style={{ borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.75rem' }}>
-                                <iframe 
-                                  src={`${fileObj.previewUrl}#toolbar=0&navpanes=0`} 
-                                  style={{ width: '100%', height: '400px', border: 'none', borderRadius: '0.5rem', backgroundColor: '#ffffff' }}
-                                  title="Workspace Linear Document View Preview"
-                                />
+                                <div style={{ height: '380px', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #cbd5e1', backgroundColor: '#ffffff' }}>
+                                  <embed 
+                                    src={`${fileObj.previewUrl}#toolbar=0&navpanes=0`} 
+                                    type="application/pdf"
+                                    style={{ width: '100%', height: '100%', border: 'none' }}
+                                    title="Stable Document View Preview"
+                                  />
+                                </div>
                               </div>
                             )}
 
@@ -285,7 +294,7 @@ export default function PdfMerger() {
               </Droppable>
             </DragDropContext>
 
-            {/* Compiled System Action Footer */}
+            {/* Merge Action Row Trigger */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
               <button 
                 onClick={mergePdfsNow}
@@ -300,7 +309,8 @@ export default function PdfMerger() {
                   fontSize: '0.9rem',
                   cursor: files.length < 2 ? 'not-allowed' : 'pointer',
                   boxShadow: files.length < 2 ? 'none' : '0 4px 14px rgba(79, 70, 229, 0.3)',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  outline: 'none'
                 }}
               >
                 {isMerging ? 'Merging Documents...' : `Merge ${files.length} PDFs Now`}
