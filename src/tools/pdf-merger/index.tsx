@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { PDFDocument, PDFPage } from 'pdf-lib';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 interface FileObject {
   id: string;
@@ -13,6 +14,7 @@ interface FileObject {
 export default function PdfMerger() {
   const [files, setFiles] = useState<FileObject[]>([]);
   const [isMerging, setIsMerging] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatSize = (bytes: number) => {
@@ -25,6 +27,7 @@ export default function PdfMerger() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
+      setSuccessMessage(null); // Clear previous messages
       const selectedFiles = Array.from(e.target.files).filter(file => file.type === 'application/pdf');
       const mappedFiles = selectedFiles.map(file => ({
         id: Math.random().toString(36).substring(2, 9),
@@ -34,12 +37,28 @@ export default function PdfMerger() {
       }));
       setFiles(prev => [...prev, ...mappedFiles]);
     }
-    // Reset selection input values to allow uploading same file names
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const removeFile = (id: string) => {
     setFiles(prev => prev.filter(f => f.id !== id));
+  };
+
+  // Open single file preview in a new tab
+  const previewFile = (file: File) => {
+    const fileURL = URL.createObjectURL(file);
+    window.open(fileURL, '_blank');
+  };
+
+  // Handle slide/drag sorting sequence
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    
+    const reorderedFiles = Array.from(files);
+    const [removed] = reorderedFiles.splice(result.source.index, 1);
+    reorderedFiles.splice(result.destination.index, 0, removed);
+    
+    setFiles(reorderedFiles);
   };
 
   const mergePdfsNow = async () => {
@@ -50,6 +69,7 @@ export default function PdfMerger() {
 
     try {
       setIsMerging(true);
+      setSuccessMessage(null);
       const mergedPdf = await PDFDocument.create();
 
       for (const fileObj of files) {
@@ -69,22 +89,27 @@ export default function PdfMerger() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `merged_${Date.now()}.pdf`;
+      link.download = `TaskSnap_Merged_${Date.now()}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
+      // ✨ Clean Queue and Show Success Feedback UI
+      setFiles([]); 
+      setSuccessMessage("🎉 Success! Your PDFs have been safely merged and downloaded.");
+
     } catch (error) {
       console.error("PDF Merging failed:", error);
-      alert("An error occurred while merging your PDFs. Check console logs.");
+      alert("An error occurred while merging your PDFs.");
     } finally {
       setIsMerging(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem' }}>
+    <div style={{ maxWidth: '650px', margin: '2rem auto', padding: '1.5rem', backgroundColor: '#ffffff', borderRadius: '1rem', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)' }}>
+      
       <input 
         type="file" 
         multiple 
@@ -94,55 +119,117 @@ export default function PdfMerger() {
         style={{ display: 'none' }} 
       />
 
-      {/* Interactive Drop Zone Area */}
-      <div 
-        onClick={() => fileInputRef.current?.click()}
-        style={{ 
-          padding: '2.5rem', 
-          border: '2px dashed #cbd5e1', 
-          borderRadius: '0.75rem', 
-          backgroundColor: '#f8fafc', 
-          textAlign: 'center',
-          cursor: 'pointer' // Ensures browser treats this as clickable button element
-        }}
-      >
-        <p style={{ color: '#475569', fontWeight: '600', pointerEvents: 'none' }}>📂 Click to select your PDF files here</p>
-        <span style={{ fontSize: '0.8rem', color: '#94a3b8', pointerEvents: 'none' }}>Supports multiple high-quality PDF documents</span>
-      </div>
-
-      {files.length > 0 && (
-        <div style={{ marginTop: '1.5rem', border: '1px solid #e2e8f0', borderRadius: '0.5rem', backgroundColor: '#ffffff' }}>
-          <div style={{ padding: '0.75rem 1rem', backgroundColor: '#f1f5f9', fontSize: '0.85rem', fontWeight: '600' }}>
-            Queue List ({files.length} Files Selected)
-          </div>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {files.map((fileObj, index) => (
-              <li key={fileObj.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: index !== files.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                <div>
-                  <div style={{ fontWeight: '500', fontSize: '0.9rem' }}>{fileObj.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{fileObj.size}</div>
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); removeFile(fileObj.id); }} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
+      {/* Success Alert Banner */}
+      {successMessage && (
+        <div style={{ padding: '1rem', marginBottom: '1.5rem', backgroundColor: '#ecfdf5', border: '1px solid #10b981', color: '#065f46', borderRadius: '0.5rem', fontWeight: '500', fontSize: '0.95rem', textAlign: 'center' }}>
+          {successMessage}
         </div>
       )}
 
-      <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+      {/* Upload Box Area */}
+      <div 
+        onClick={() => fileInputRef.current?.click()}
+        style={{ 
+          padding: '3rem 2rem', 
+          border: '2px dashed #6366f1', 
+          borderRadius: '0.75rem', 
+          backgroundColor: '#f5f3ff', 
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s'
+        }}
+      >
+        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📂</div>
+        <p style={{ color: '#4338ca', fontWeight: '700', fontSize: '1.1rem' }}>Click to upload or drag your PDFs here</p>
+        <span style={{ fontSize: '0.85rem', color: '#6366f1', opacity: 0.8 }}>Supports high-quality standard PDF documents</span>
+      </div>
+
+      {/* Drag & Drop Sorting Queue Panel */}
+      {files.length > 0 && (
+        <div style={{ marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', padding: '0 0.25rem' }}>
+            <span style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1e293b' }}>
+              Queue List ({files.length} Selected)
+            </span>
+            <span style={{ fontSize: '0.75rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
+              ↕️ Drag items up/down to change order
+            </span>
+          </div>
+
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="pdf-queue">
+              {(provided) => (
+                <div {...provided.droppableProps} ref={provided.innerRef} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {files.map((fileObj, index) => (
+                    <Draggable key={fileObj.id} draggableId={fileObj.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          style={{
+                            ...provided.draggableProps.style,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0.75rem 1rem',
+                            backgroundColor: snapshot.isDragging ? '#f8fafc' : '#ffffff',
+                            border: snapshot.isDragging ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                            borderRadius: '0.5rem',
+                            boxShadow: snapshot.isDragging ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)' : 'none',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
+                            <span style={{ color: '#94a3b8', cursor: 'grab' }}>⣿</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                              <span style={{ fontWeight: '600', fontSize: '0.9rem', color: '#334155', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                {index + 1}. {fileObj.name}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{fileObj.size}</span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); previewFile(fileObj.file); }}
+                              style={{ backgroundColor: 'transparent', border: 'none', color: '#2563eb', fontWeight: '600', cursor: 'pointer', fontSize: '0.85rem' }}
+                            >
+                              👁️ Preview
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); removeFile(fileObj.id); }}
+                              style={{ backgroundColor: 'transparent', border: 'none', color: '#ef4444', fontWeight: '600', cursor: 'pointer', fontSize: '0.85rem' }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </div>
+      )}
+
+      {/* Action Button */}
+      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
         <button 
           onClick={mergePdfsNow}
           disabled={isMerging || files.length < 2}
           style={{ 
-            padding: '0.75rem 1.75rem', 
-            backgroundColor: files.length < 2 ? '#94a3b8' : '#4f46e5', 
-            color: '#fff', 
+            padding: '0.8rem 2rem', 
+            backgroundColor: files.length < 2 ? '#cbd5e1' : '#4f46e5', 
+            color: files.length < 2 ? '#94a3b8' : '#ffffff', 
             border: 'none', 
             borderRadius: '0.5rem', 
-            fontWeight: '600', 
-            cursor: files.length < 2 ? 'not-allowed' : 'pointer'
+            fontWeight: '700', 
+            cursor: files.length < 2 ? 'not-allowed' : 'pointer',
+            boxShadow: files.length < 2 ? 'none' : '0 4px 14px rgba(79, 70, 229, 0.3)',
+            transition: 'all 0.2s'
           }}
         >
           {isMerging ? 'Merging Documents...' : 'Merge PDFs Now'}
