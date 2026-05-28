@@ -53,7 +53,7 @@ export default function PdfMerger() {
   };
 
   const removeFile = (id: string) => {
-    const fileToRemove = files.find(f => f.id === id);
+    const fileToRemove = files.find(f => f.id !== id);
     if (fileToRemove?.previewUrl) URL.revokeObjectURL(fileToRemove.previewUrl);
     if (activePreviewId === id) setActivePreviewId(null);
     setFiles(prev => prev.filter(f => f.id !== id));
@@ -122,7 +122,7 @@ export default function PdfMerger() {
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '2rem auto', padding: '1.5rem', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ maxWidth: '1250px', margin: '2rem auto', padding: '1.5rem', fontFamily: 'system-ui, sans-serif' }}>
       
       <input 
         type="file" 
@@ -134,21 +134,21 @@ export default function PdfMerger() {
       />
 
       {successMessage && (
-  <div style={{ padding: '1rem', marginBottom: '1.5rem', backgroundColor: '#ecfdf5', border: '1px solid #10b981', color: '#065f46', borderRadius: '0.5rem', fontWeight: '500', textAlign: 'center', width: '100%' }}>
-    {successMessage}
-  </div>
-)}
+        <div style={{ padding: '1rem', marginBottom: '1.5rem', backgroundColor: '#ecfdf5', border: '1px solid #10b981', color: '#065f46', borderRadius: '0.5rem', fontWeight: '500', textAlign: 'center', width: '100%' }}>
+          {successMessage}
+        </div>
+      )}
 
-      {/* 🚀 Main Split Layout Matrix */}
+      {/* Main Split Layout Matrix */}
       <div style={{ display: 'flex', flexDirection: files.length > 0 ? 'row' : 'column', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
         
-        {/* Left Control Panel Column */}
-        <div style={{ flex: files.length > 0 ? '1 1 350px' : '1 1 100%', width: '100%' }}>
-          <div style={{ backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', position: 'sticky', top: '100px' }}>
+        {/* Left Side: Upload Box Card Only (Fixed Area) */}
+        <div style={{ flex: files.length > 0 ? '1 1 320px' : '1 1 100%', width: '100%' }}>
+          <div style={{ backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', position: 'sticky', top: '20px' }}>
             <div 
               onClick={() => fileInputRef.current?.click()}
               style={{ 
-                padding: '2.5rem 1.5rem', 
+                padding: '3rem 1.5rem', 
                 border: '2px dashed #6366f1', 
                 borderRadius: '0.75rem', 
                 backgroundColor: '#f5f3ff', 
@@ -158,53 +158,34 @@ export default function PdfMerger() {
             >
               <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📂</div>
               <p style={{ color: '#4338ca', fontWeight: '700', fontSize: '1rem', margin: '0 0 0.25rem 0' }}>Drop files or click here</p>
-              <span style={{ fontSize: '0.8rem', color: '#6366f1', opacity: 0.8 }}>Upload multiple files</span>
-            </div>
-
-            <div style={{ marginTop: '1.5rem' }}>
-              <button 
-                onClick={mergePdfsNow}
-                disabled={isMerging || files.length < 2}
-                style={{ 
-                  width: '100%',
-                  padding: '0.8rem', 
-                  backgroundColor: files.length < 2 ? '#cbd5e1' : '#4f46e5', 
-                  color: files.length < 2 ? '#94a3b8' : '#ffffff', 
-                  border: 'none', 
-                  borderRadius: '0.5rem', 
-                  fontWeight: '700', 
-                  cursor: files.length < 2 ? 'not-allowed' : 'pointer',
-                  boxShadow: files.length < 2 ? 'none' : '0 4px 14px rgba(79, 70, 229, 0.3)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {isMerging ? 'Merging Documents...' : `Merge ${files.length} PDFs Now`}
-              </button>
+              <span style={{ fontSize: '0.8rem', color: '#6366f1', opacity: 0.8 }}>Add more PDF documents</span>
             </div>
           </div>
         </div>
 
-        {/* Right Active Grid Queue Column */}
+        {/* Right Side: Active Grid Workspace + Merge Button AT THE BOTTOM */}
         {files.length > 0 && (
-          <div style={{ flex: '2 1 600px', width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ flex: '2 1 700px', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
                 Queue Workspace ({files.length} Files Loaded)
               </h3>
               <span style={{ fontSize: '0.75rem', color: '#4f46e5', backgroundColor: '#e0e7ff', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: '600' }}>
-                ↕️ Drag list grids to sort order
+                ↕️ Hold the handle (⣿) and slide horizontally/vertically to sort
               </span>
             </div>
 
+            {/* Drag & Drop Wrapper with Horizontal Direction Support for Grid Layout */}
             <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="pdf-grid-queue">
+              <Droppable droppableId="pdf-grid-queue" direction="horizontal">
                 {(provided) => (
                   <div 
                     {...provided.droppableProps} 
                     ref={provided.innerRef} 
                     style={{ 
                       display: 'grid', 
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', 
                       gap: '1rem',
                       width: '100%'
                     }}
@@ -223,15 +204,20 @@ export default function PdfMerger() {
                               boxShadow: snapshot.isDragging ? '0 10px 20px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.02)',
                               display: 'flex',
                               flexDirection: 'column',
-                              gridColumn: activePreviewId === fileObj.id ? '1 / -1' : 'auto', // Expands full row if preview is open
-                              transition: 'box-shadow 0.2s',
+                              gridColumn: activePreviewId === fileObj.id ? '1 / -1' : 'auto', 
                               overflow: 'hidden'
                             }}
                           >
-                            {/* Card Header Structure */}
+                            {/* Card Content */}
                             <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', gap: '1rem' }}>
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-                                <span {...provided.dragHandleProps} style={{ color: '#94a3b8', cursor: 'grab', fontSize: '1.2rem', lineHeight: '1' }}>⣿</span>
+                                {/* Drag Handle Trigger Box */}
+                                <span 
+                                  {...provided.dragHandleProps} 
+                                  style={{ color: '#6366f1', cursor: 'grab', fontSize: '1.3rem', padding: '0 4px', userSelect: 'none' }}
+                                >
+                                  ⣿
+                                </span>
                                 <div style={{ overflow: 'hidden', width: '100%' }}>
                                   <div style={{ fontWeight: '600', fontSize: '0.85rem', color: '#1e293b', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={fileObj.name}>
                                     {index + 1}. {fileObj.name}
@@ -257,13 +243,13 @@ export default function PdfMerger() {
                               </div>
                             </div>
 
-                            {/* Inline Preview Window inside the expanded Grid row */}
+                            {/* Expanded Inline Preview */}
                             {activePreviewId === fileObj.id && fileObj.previewUrl && (
                               <div style={{ borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.5rem' }}>
                                 <iframe 
                                   src={`${fileObj.previewUrl}#toolbar=0&navpanes=0`} 
                                   style={{ width: '100%', height: '350px', border: 'none', borderRadius: '0.375rem', backgroundColor: '#ffffff' }}
-                                  title="Grid Panel Document Preview"
+                                  title="Workspace Preview Panel"
                                 />
                               </div>
                             )}
@@ -277,6 +263,29 @@ export default function PdfMerger() {
                 )}
               </Droppable>
             </DragDropContext>
+
+            {/* ✅ FIXED: Merge Button Positioned Perfectly Under All PDF Cards */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+              <button 
+                onClick={mergePdfsNow}
+                disabled={isMerging || files.length < 2}
+                style={{ 
+                  padding: '0.9rem 2.5rem', 
+                  backgroundColor: files.length < 2 ? '#cbd5e1' : '#4f46e5', 
+                  color: files.length < 2 ? '#94a3b8' : '#ffffff', 
+                  border: 'none', 
+                  borderRadius: '0.5rem', 
+                  fontWeight: '700', 
+                  fontSize: '0.95rem',
+                  cursor: files.length < 2 ? 'not-allowed' : 'pointer',
+                  boxShadow: files.length < 2 ? 'none' : '0 4px 14px rgba(79, 70, 229, 0.3)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {isMerging ? 'Merging Documents...' : `Merge ${files.length} PDFs Now`}
+              </button>
+            </div>
+
           </div>
         )}
 
