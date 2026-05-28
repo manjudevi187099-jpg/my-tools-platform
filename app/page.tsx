@@ -1,4 +1,4 @@
-// app/page.tsx
+// src/app/page.tsx
 import Link from "next/link";
 import { toolsRegistry } from "@/config/siteConfig";
 
@@ -8,8 +8,7 @@ export default function DashboardHome() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
       {/* Premium Navbar */}
-      // Sahi code (Line 11)
-<nav style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '1rem 2rem', position: 'sticky', top: 0, zIndex: 50 }}>
+      <nav style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '1rem 2rem', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4f46e5', letterSpacing: '-0.05em' }}>
             🛠️ MultiTools.io
@@ -44,7 +43,7 @@ export default function DashboardHome() {
                 border: '1px solid #e2e8f0',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'between',
+                justifyContent: 'space-between',
                 transition: 'transform 0.2s',
               }}
             >
