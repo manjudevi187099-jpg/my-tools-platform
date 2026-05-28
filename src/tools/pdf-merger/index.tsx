@@ -134,10 +134,10 @@ export default function PdfMerger() {
       />
 
       {successMessage && (
-        <div style={{ padding: '1rem', marginBottom: '1.5rem', backgroundColor: '#ecfdf5', border: '1px solid #10b981', color: '#065f46', borderRadius: '0.5rem', fontWeight: '500', textAlignment: 'center', width: '100%' }}>
-          {successMessage}
-        </div>
-      )}
+  <div style={{ padding: '1rem', marginBottom: '1.5rem', backgroundColor: '#ecfdf5', border: '1px solid #10b981', color: '#065f46', borderRadius: '0.5rem', fontWeight: '500', textAlign: 'center', width: '100%' }}>
+    {successMessage}
+  </div>
+)}
 
       {/* 🚀 Main Split Layout Matrix */}
       <div style={{ display: 'flex', flexDirection: files.length > 0 ? 'row' : 'column', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
