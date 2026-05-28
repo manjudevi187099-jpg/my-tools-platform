@@ -8,7 +8,8 @@ export default function DashboardHome() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
       {/* Premium Navbar */}
-      <nav style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '1rem 2rem', sticky: 'top' }}>
+      // Sahi code (Line 11)
+<nav style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '1rem 2rem', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4f46e5', letterSpacing: '-0.05em' }}>
             🛠️ MultiTools.io
