@@ -64,7 +64,6 @@ export default function PdfMerger() {
   };
 
   const onDragEnd = (result: DropResult) => {
-    // If dropped outside the list bounds, do nothing
     if (!result.destination) return;
     
     const reorderedFiles = Array.from(files);
@@ -125,7 +124,7 @@ export default function PdfMerger() {
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem 2rem 1.5rem', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ maxWidth: '850px', margin: '0 auto', padding: '0 1.5rem 2rem 1.5rem', fontFamily: 'system-ui, sans-serif' }}>
       
       <input 
         type="file" 
@@ -142,10 +141,10 @@ export default function PdfMerger() {
         </div>
       )}
 
-      {/* Main Split Layout Matrix */}
+      {/* Main Container Stack */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
         
-        {/* Top Section: Upload Box Panel (Full Width for Premium Symmetry) */}
+        {/* Upload Box Card */}
         <div style={{ width: '100%' }}>
           <div style={{ backgroundColor: '#ffffff', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
             <div 
@@ -166,30 +165,30 @@ export default function PdfMerger() {
           </div>
         </div>
 
-        {/* Bottom Section: Workspace Management Area */}
+        {/* Workspace Management List Area */}
         {files.length > 0 && (
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
               <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
                 Queue Workspace ({files.length} Files Loaded)
               </h3>
               <span style={{ fontSize: '0.75rem', color: '#4f46e5', backgroundColor: '#e0e7ff', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: '600' }}>
-                ↕️ Drag the number block inside any card to reorder sequence
+                ↕️ Hold the number box and drag vertically to reorder sequence
               </span>
             </div>
 
-            {/* Drag & Drop Context Map */}
+            {/* Drag & Drop Vertical Engine Context */}
             <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="pdf-grid-container" direction="horizontal">
+              <Droppable droppableId="pdf-vertical-list" direction="vertical">
                 {(provided) => (
                   <div 
                     {...provided.droppableProps} 
                     ref={provided.innerRef} 
                     style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-                      gap: '1rem',
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      gap: '0.75rem',
                       width: '100%'
                     }}
                   >
@@ -204,47 +203,52 @@ export default function PdfMerger() {
                               backgroundColor: '#ffffff',
                               border: snapshot.isDragging ? '2px solid #6366f1' : '1px solid #e2e8f0',
                               borderRadius: '0.75rem',
-                              boxShadow: snapshot.isDragging ? '0 10px 25px rgba(99, 102, 241, 0.15)' : '0 1px 3px rgba(0,0,0,0.01)',
+                              boxShadow: snapshot.isDragging ? '0 8px 20px rgba(99, 102, 241, 0.12)' : '0 1px 3px rgba(0,0,0,0.01)',
                               display: 'flex',
                               flexDirection: 'column',
-                              gridColumn: activePreviewId === fileObj.id ? '1 / -1' : 'auto', 
-                              overflow: 'hidden',
-                              transition: 'border-color 0.2s'
+                              overflow: 'hidden'
                             }}
                           >
-                            {/* Inner Structure Card Box */}
-                            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', gap: '1rem' }}>
+                            {/* Linear Full Width Card Content */}
+                            <div style={{ padding: '0.85rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                               
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                {/* 🚀 FIXED TRIGGER ZONE: Specific explicit drag handler over the beautiful number tag box */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: '1 1 300px', overflow: 'hidden' }}>
+                                {/* Safe isolated Numerical Drag Trigger */}
                                 <div 
                                   {...provided.dragHandleProps}
                                   style={{ 
                                     color: '#ffffff', 
-                                    fontSize: '0.9rem', 
+                                    fontSize: '0.85rem', 
                                     fontWeight: 'bold', 
                                     userSelect: 'none', 
                                     backgroundColor: '#4f46e5', 
-                                    padding: '6px 12px', 
+                                    minWidth: '28px',
+                                    height: '28px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                     borderRadius: '6px',
                                     cursor: snapshot.isDragging ? 'grabbing' : 'grab',
                                     boxShadow: '0 2px 4px rgba(79, 70, 229, 0.2)'
                                   }}
-                                  title="Hold and drag to shuffle"
+                                  title="Hold and drag up/down"
                                 >
                                   {index + 1}
                                 </div>
 
-                                <div style={{ overflow: 'hidden', width: '100%' }}>
-                                  <div style={{ fontWeight: '600', fontSize: '0.85rem', color: '#1e293b', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={fileObj.name}>
+                                <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                  <div style={{ fontWeight: '600', fontSize: '0.9rem', color: '#1e293b', textOverflow: 'ellipsis', overflow: 'hidden' }} title={fileObj.name}>
                                     {fileObj.name}
                                   </div>
                                   <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '1px' }}>{fileObj.size}</div>
                                 </div>
                               </div>
 
-                              {/* Operations Interface Action Bar */}
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1.25rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.6rem', fontSize: '0.8rem' }}>
+                              {/* Action Triggers */}
+                              <div 
+                                style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem' }}
+                                onMouseDown={(e) => e.stopPropagation()}
+                              >
                                 <button 
                                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleInlinePreview(fileObj.id); }}
                                   style={{ backgroundColor: 'transparent', border: 'none', color: '#2563eb', fontWeight: '600', cursor: 'pointer' }}
@@ -260,13 +264,13 @@ export default function PdfMerger() {
                               </div>
                             </div>
 
-                            {/* Accordion Layout Grid Box Preview Frame */}
+                            {/* Collapsible Accordion Preview Area */}
                             {activePreviewId === fileObj.id && fileObj.previewUrl && (
-                              <div style={{ borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.5rem' }}>
+                              <div style={{ borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.75rem' }}>
                                 <iframe 
                                   src={`${fileObj.previewUrl}#toolbar=0&navpanes=0`} 
-                                  style={{ width: '100%', height: '350px', border: 'none', borderRadius: '0.375rem', backgroundColor: '#ffffff' }}
-                                  title="Workspace Core Frame View Preview"
+                                  style={{ width: '100%', height: '400px', border: 'none', borderRadius: '0.5rem', backgroundColor: '#ffffff' }}
+                                  title="Workspace Linear Document View Preview"
                                 />
                               </div>
                             )}
@@ -281,7 +285,7 @@ export default function PdfMerger() {
               </Droppable>
             </DragDropContext>
 
-            {/* Merge Compiled System Trigger Footer Row */}
+            {/* Compiled System Action Footer */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
               <button 
                 onClick={mergePdfsNow}
