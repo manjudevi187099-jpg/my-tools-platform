@@ -18,8 +18,10 @@ export default function PdfMerger() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [previewModalUrl, setPreviewModalUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     return () => {
       files.forEach(f => {
         if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
@@ -115,8 +117,10 @@ export default function PdfMerger() {
     }
   };
 
+  if (!isMounted) return null;
+
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 1.5rem 2rem 1.5rem', fontFamily: 'system-ui, sans-serif', position: 'relative' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem 2rem 1.5rem', fontFamily: 'system-ui, sans-serif', position: 'relative' }}>
       
       <input 
         type="file" 
@@ -133,153 +137,165 @@ export default function PdfMerger() {
         </div>
       )}
 
-      {/* Side-by-Side Dual Column Layout (Saves Height) */}
-      <div style={{ display: 'flex', flexDirection: files.length > 0 ? 'row' : 'column', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        
-        {/* Left Side: Upload Box */}
-        <div style={{ flex: files.length > 0 ? '1 1 320px' : '1 1 100%', width: '100%' }}>
-          <div style={{ backgroundColor: '#ffffff', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', position: 'sticky', top: '20px' }}>
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              style={{ 
-                padding: '2.5rem 1.5rem', 
-                border: '2px dashed #6366f1', 
-                borderRadius: '0.75rem', 
-                backgroundColor: '#f5f3ff', 
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'border-color 0.2s'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.borderColor = '#4f46e5'}
-              onMouseOut={(e) => e.currentTarget.style.borderColor = '#6366f1'}
-            >
-              <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>📂</div>
-              <p style={{ color: '#4338ca', fontWeight: '700', fontSize: '0.95rem', margin: '0 0 0.25rem 0' }}>Drop files or click here</p>
-              <span style={{ fontSize: '0.75rem', color: '#6366f1', opacity: 0.8 }}>Add more PDF documents</span>
-            </div>
-          </div>
+      {/* Upload Zone - Top Header Style */}
+      <div style={{ width: '100%', marginBottom: '2rem' }}>
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          style={{ 
+            padding: '2.5rem 1.5rem', 
+            border: '2px dashed #6366f1', 
+            borderRadius: '0.75rem', 
+            backgroundColor: '#f5f3ff', 
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'border-color 0.2s'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.borderColor = '#4f46e5'}
+          onMouseOut={(e) => e.currentTarget.style.borderColor = '#6366f1'}
+        >
+          <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>📂</div>
+          <p style={{ color: '#4338ca', fontWeight: '700', fontSize: '1.1rem', margin: '0 0 0.25rem 0' }}>Drop PDF files here or Click to Browse</p>
+          <span style={{ fontSize: '0.8rem', color: '#6366f1', opacity: 0.8 }}>Add as many documents as you need</span>
         </div>
-
-        {/* Right Side: Scrollable Workspace Component */}
-        {files.length > 0 && (
-          <div style={{ flex: '2 1 600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
-                Queue Workspace ({files.length} Files)
-              </h3>
-              <span style={{ fontSize: '0.75rem', color: '#4f46e5', backgroundColor: '#e0e7ff', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: '600' }}>
-                ↕️ Click & hold anywhere on a card to drag
-              </span>
-            </div>
-
-            {/* Compact Scrolling Container (Never grows too tall) */}
-            <div style={{ 
-              backgroundColor: '#f8fafc', 
-              border: '1px solid #e2e8f0', 
-              borderRadius: '0.75rem', 
-              padding: '0.75rem',
-              maxHeight: '400px', // Strict scroll limit
-              overflowY: 'auto'
-            }}>
-              <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="pdf-vertical-list" direction="vertical">
-                  {(provided) => (
-                    <div 
-                      {...provided.droppableProps} 
-                      ref={provided.innerRef} 
-                      style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}
-                    >
-                      {files.map((fileObj, index) => (
-                        <Draggable key={fileObj.id} draggableId={fileObj.id} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps} // Whole card is draggable
-                              style={{
-                                ...provided.draggableProps.style,
-                                backgroundColor: '#ffffff',
-                                border: snapshot.isDragging ? '2px solid #6366f1' : '1px solid #e2e8f0',
-                                borderRadius: '0.5rem',
-                                boxShadow: snapshot.isDragging ? '0 10px 15px -3px rgba(99, 102, 241, 0.2)' : '0 1px 2px rgba(0,0,0,0.03)',
-                                padding: '0.75rem 1rem',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                gap: '1rem',
-                                cursor: snapshot.isDragging ? 'grabbing' : 'grab',
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', overflow: 'hidden' }}>
-                                <div style={{ color: '#ffffff', fontSize: '0.8rem', fontWeight: 'bold', backgroundColor: '#64748b', minWidth: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}>
-                                  {index + 1}
-                                </div>
-                                <div style={{ overflow: 'hidden' }}>
-                                  <div style={{ fontWeight: '600', fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }} title={fileObj.name}>
-                                    {fileObj.name}
-                                  </div>
-                                  <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{fileObj.size}</div>
-                                </div>
-                              </div>
-
-                              {/* Action Buttons with Drag Lock (stopPropagation) */}
-                              <div 
-                                style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem' }}
-                                onMouseDown={(e) => e.stopPropagation()} 
-                              >
-                                <button 
-                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewModalUrl(fileObj.previewUrl || null); }}
-                                  style={{ backgroundColor: 'transparent', border: 'none', color: '#2563eb', fontWeight: '600', cursor: 'pointer', outline: 'none' }}
-                                >
-                                  👁️ Preview
-                                </button>
-                                <button 
-                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeFile(fileObj.id); }}
-                                  style={{ backgroundColor: 'transparent', border: 'none', color: '#ef4444', fontWeight: '600', cursor: 'pointer', outline: 'none' }}
-                                >
-                                  Remove
-                                </button>
-                              </div>
-
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            </div>
-
-            {/* Merge Action Row Trigger */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-              <button 
-                onClick={mergePdfsNow}
-                disabled={isMerging || files.length < 2}
-                style={{ 
-                  padding: '0.85rem 2.5rem', 
-                  backgroundColor: files.length < 2 ? '#cbd5e1' : '#4f46e5', 
-                  color: files.length < 2 ? '#94a3b8' : '#ffffff', 
-                  border: 'none', 
-                  borderRadius: '0.5rem', 
-                  fontWeight: '700', 
-                  fontSize: '0.9rem',
-                  cursor: files.length < 2 ? 'not-allowed' : 'pointer',
-                  boxShadow: files.length < 2 ? 'none' : '0 4px 14px rgba(79, 70, 229, 0.3)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {isMerging ? 'Merging Documents...' : `Merge ${files.length} PDFs Now`}
-              </button>
-            </div>
-
-          </div>
-        )}
       </div>
 
-      {/* FULL-SCREEN POPUP MODAL PREVIEW (Safe & Secure) */}
+      {/* Grid Workspace Area */}
+      {files.length > 0 && (
+        <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '0.75rem', padding: '1.5rem' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
+              Queue Workspace ({files.length} Files)
+            </h3>
+            <span style={{ fontSize: '0.8rem', color: '#4f46e5', backgroundColor: '#e0e7ff', padding: '0.3rem 0.8rem', borderRadius: '6px', fontWeight: '600' }}>
+              ↔️ Drag & Drop cards to reorder
+            </span>
+          </div>
+
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="pdf-visual-grid" direction="horizontal">
+              {(provided) => (
+                <div 
+                  {...provided.droppableProps} 
+                  ref={provided.innerRef} 
+                  style={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: '1.25rem',
+                    width: '100%',
+                    minHeight: '200px'
+                  }}
+                >
+                  {files.map((fileObj, index) => (
+                    <Draggable key={fileObj.id} draggableId={fileObj.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          style={{
+                            ...provided.draggableProps.style,
+                            width: '200px', // Exact fixed width for grid stability
+                            height: '260px', // Exact fixed height
+                            backgroundColor: '#ffffff',
+                            border: snapshot.isDragging ? '2px solid #6366f1' : '1px solid #cbd5e1',
+                            borderRadius: '0.75rem',
+                            boxShadow: snapshot.isDragging ? '0 15px 25px rgba(99, 102, 241, 0.2)' : '0 4px 6px rgba(0,0,0,0.05)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            cursor: snapshot.isDragging ? 'grabbing' : 'grab',
+                            transition: snapshot.isDragging ? 'none' : 'transform 0.1s, box-shadow 0.1s'
+                          }}
+                          onMouseOver={(e) => { if(!snapshot.isDragging) e.currentTarget.style.boxShadow = '0 10px 15px rgba(0,0,0,0.1)' }}
+                          onMouseOut={(e) => { if(!snapshot.isDragging) e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)' }}
+                        >
+                          
+                          {/* Top Action Buttons Overlay */}
+                          <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 20, display: 'flex', gap: '6px' }}>
+                            <button 
+                              onMouseDown={(e) => e.stopPropagation()} 
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewModalUrl(fileObj.previewUrl || null); }}
+                              style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', backgroundColor: '#ffffff', color: '#1e293b', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}
+                              title="Zoom/Preview"
+                            >
+                              🔍
+                            </button>
+                            <button 
+                              onMouseDown={(e) => e.stopPropagation()} 
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeFile(fileObj.id); }}
+                              style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', backgroundColor: '#ffffff', color: '#ef4444', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}
+                              title="Remove"
+                            >
+                              ❌
+                            </button>
+                          </div>
+
+                          {/* Badge Number indicator */}
+                          <div style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 20, backgroundColor: '#4f46e5', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                            {index + 1}
+                          </div>
+
+                          {/* Visual PDF Thumbnail (Iframe rendering the first page) */}
+                          <div style={{ flex: 1, backgroundColor: '#f1f5f9', position: 'relative', overflow: 'hidden' }}>
+                            {/* Glass overlay to protect drag and drop from iframe interference */}
+                            <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}></div>
+                            
+                            {fileObj.previewUrl && (
+                              <iframe 
+                                src={`${fileObj.previewUrl}#view=FitH&toolbar=0&navpanes=0&scrollbar=0`} 
+                                style={{ width: '100%', height: '100%', border: 'none', pointerEvents: 'none' }}
+                                title="thumbnail"
+                                loading="lazy"
+                              />
+                            )}
+                          </div>
+
+                          {/* Footer Details */}
+                          <div style={{ padding: '0.75rem', borderTop: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+                            <div style={{ fontWeight: '600', fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }} title={fileObj.name}>
+                              {fileObj.name}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>{fileObj.size}</div>
+                          </div>
+
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+
+          {/* Merge Action Row Trigger */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+            <button 
+              onClick={mergePdfsNow}
+              disabled={isMerging || files.length < 2}
+              style={{ 
+                padding: '0.9rem 3rem', 
+                backgroundColor: files.length < 2 ? '#cbd5e1' : '#4f46e5', 
+                color: files.length < 2 ? '#94a3b8' : '#ffffff', 
+                border: 'none', 
+                borderRadius: '0.5rem', 
+                fontWeight: '700', 
+                fontSize: '1rem',
+                cursor: files.length < 2 ? 'not-allowed' : 'pointer',
+                boxShadow: files.length < 2 ? 'none' : '0 4px 14px rgba(79, 70, 229, 0.3)',
+                transition: 'all 0.2s'
+              }}
+            >
+              {isMerging ? 'Merging Documents...' : `Merge ${files.length} PDFs Now`}
+            </button>
+          </div>
+
+        </div>
+      )}
+
+      {/* FULL-SCREEN POPUP MODAL PREVIEW */}
       {previewModalUrl && (
         <div style={{ 
           position: 'fixed', 
@@ -293,7 +309,6 @@ export default function PdfMerger() {
           backdropFilter: 'blur(4px)',
           padding: '2rem'
         }}>
-          {/* Modal Header */}
           <div style={{ width: '100%', maxWidth: '900px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ color: 'white', margin: 0, fontSize: '1.2rem' }}>Document Preview</h3>
             <button 
@@ -308,7 +323,6 @@ export default function PdfMerger() {
             </button>
           </div>
           
-          {/* Modal PDF Viewer Frame */}
           <div style={{ width: '100%', maxWidth: '900px', height: '80vh', backgroundColor: '#ffffff', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' }}>
             <iframe 
               src={`${previewModalUrl}#toolbar=0`} 
