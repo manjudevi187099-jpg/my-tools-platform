@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { PDFDocument, PDFPage } from 'pdf-lib'; // Imported PDFPage explicitly
+import { PDFDocument, PDFPage } from 'pdf-lib';
 
 interface FileObject {
   id: string;
@@ -34,6 +34,8 @@ export default function PdfMerger() {
       }));
       setFiles(prev => [...prev, ...mappedFiles]);
     }
+    // Reset selection input values to allow uploading same file names
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const removeFile = (id: string) => {
@@ -52,17 +54,18 @@ export default function PdfMerger() {
 
       for (const fileObj of files) {
         const fileBuffer = await fileObj.file.arrayBuffer();
-        const pdfToMerge = await PDFDocument.load(fileBuffer);
+        const pdfToMerge = await PDFDocument.load(fileBuffer as ArrayBuffer);
         const copiedPages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
         
-        // Fixed: Defined explicit type for 'page' as PDFPage
         copiedPages.forEach((page: PDFPage) => {
           mergedPdf.addPage(page);
         });
       }
 
       const mergedPdfBytes = await mergedPdf.save();
-      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      const mergedPdfArray = new Uint8Array(mergedPdfBytes);
+      const blob = new Blob([mergedPdfArray], { type: 'application/pdf' });
+      
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -74,7 +77,7 @@ export default function PdfMerger() {
 
     } catch (error) {
       console.error("PDF Merging failed:", error);
-      alert("An error occurred while merging your PDFs.");
+      alert("An error occurred while merging your PDFs. Check console logs.");
     } finally {
       setIsMerging(false);
     }
@@ -91,6 +94,7 @@ export default function PdfMerger() {
         style={{ display: 'none' }} 
       />
 
+      {/* Interactive Drop Zone Area */}
       <div 
         onClick={() => fileInputRef.current?.click()}
         style={{ 
@@ -99,11 +103,11 @@ export default function PdfMerger() {
           borderRadius: '0.75rem', 
           backgroundColor: '#f8fafc', 
           textAlign: 'center',
-          cursor: 'pointer'
+          cursor: 'pointer' // Ensures browser treats this as clickable button element
         }}
       >
-        <p style={{ color: '#475569', fontWeight: '600' }}>📂 Click to select your PDF files here</p>
-        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Supports multiple high-quality PDF documents</span>
+        <p style={{ color: '#475569', fontWeight: '600', pointerEvents: 'none' }}>📂 Click to select your PDF files here</p>
+        <span style={{ fontSize: '0.8rem', color: '#94a3b8', pointerEvents: 'none' }}>Supports multiple high-quality PDF documents</span>
       </div>
 
       {files.length > 0 && (
