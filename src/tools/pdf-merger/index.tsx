@@ -124,15 +124,7 @@ export default function PdfMerger() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem 2rem 1.5rem', fontFamily: 'system-ui, sans-serif' }}>
       
-      {/* Dynamic Header Section - Reduced Margin & Upgraded Typography */}
-      <div style={{ marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
-        <h2 style={{ fontSize: '1.65rem', fontWeight: '800', color: '#0f172a', margin: '0 0 0.25rem 0', letterSpacing: '-0.02em' }}>
-          Professional PDF Merger
-        </h2>
-        <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>
-          Merge multiple PDF files into a single, high-quality document securely.
-        </p>
-      </div>
+      {/* 🔮 Double Header Hataya Gaya — Ab Sirf Clean Grid Render Hoga */}
 
       <input 
         type="file" 
@@ -152,7 +144,7 @@ export default function PdfMerger() {
       {/* Main Split Layout Matrix */}
       <div style={{ display: 'flex', flexDirection: files.length > 0 ? 'row' : 'column', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
         
-        {/* Left Side: Drag Box Panel */}
+        {/* Left Side: Upload Zone Trigger */}
         <div style={{ flex: files.length > 0 ? '1 1 320px' : '1 1 100%', width: '100%' }}>
           <div style={{ backgroundColor: '#ffffff', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.03)', position: 'sticky', top: '20px' }}>
             <div 
@@ -187,7 +179,7 @@ export default function PdfMerger() {
             </div>
 
             <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="pdf-grid-queue" direction="horizontal">
+              <Droppable droppableId="pdf-grid-queue" direction="vertical">
                 {(provided) => (
                   <div 
                     {...provided.droppableProps} 
@@ -205,7 +197,6 @@ export default function PdfMerger() {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            {...provided.dragHandleProps} // 🚀 FIXED: Moved drag handles here to make the WHOLE CARD draggable!
                             style={{
                               ...provided.draggableProps.style,
                               backgroundColor: '#ffffff',
@@ -215,12 +206,21 @@ export default function PdfMerger() {
                               display: 'flex',
                               flexDirection: 'column',
                               gridColumn: activePreviewId === fileObj.id ? '1 / -1' : 'auto', 
-                              cursor: snapshot.isDragging ? 'grabbing' : 'grab', // Updates cursor feedback dynamically
                               overflow: 'hidden'
                             }}
                           >
-                            {/* Card Content wrapper */}
-                            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', gap: '1rem' }}>
+                            <div 
+                              {...provided.dragHandleProps}
+                              style={{ 
+                                padding: '1rem', 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                justifyContent: 'space-between', 
+                                height: '100%', 
+                                gap: '1rem',
+                                cursor: snapshot.isDragging ? 'grabbing' : 'grab'
+                              }}
+                            >
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
                                 <span style={{ color: '#6366f1', fontSize: '1.1rem', fontWeight: 'bold', userSelect: 'none', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
                                   {index + 1}
@@ -233,24 +233,25 @@ export default function PdfMerger() {
                                 </div>
                               </div>
 
-                              {/* Actions Bar Footer */}
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1.25rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem', fontSize: '0.8rem' }}>
+                              <div 
+                                style={{ display: 'flex', justifyContent: 'flex-end', gap: '1.25rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem', fontSize: '0.8rem' }}
+                                onMouseDown={(e) => e.stopPropagation()}
+                              >
                                 <button 
-                                  onClick={(e) => { e.stopPropagation(); toggleInlinePreview(fileObj.id); }}
-                                  style={{ backgroundColor: 'transparent', border: 'none', color: '#2563eb', fontWeight: '600', cursor: 'pointer' }}
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleInlinePreview(fileObj.id); }}
+                                  style={{ backgroundColor: 'transparent', border: 'none', color: '#2563eb', fontWeight: '600', cursor: 'pointer', position: 'relative', zIndex: 10 }}
                                 >
                                   {activePreviewId === fileObj.id ? '❌ Close Box' : '👁️ Preview'}
                                 </button>
                                 <button 
-                                  onClick={(e) => { e.stopPropagation(); removeFile(fileObj.id); }}
-                                  style={{ backgroundColor: 'transparent', border: 'none', color: '#ef4444', fontWeight: '600', cursor: 'pointer' }}
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeFile(fileObj.id); }}
+                                  style={{ backgroundColor: 'transparent', border: 'none', color: '#ef4444', fontWeight: '600', cursor: 'pointer', position: 'relative', zIndex: 10 }}
                                 >
                                   Remove
                                 </button>
                               </div>
                             </div>
 
-                            {/* Inline Preview Window */}
                             {activePreviewId === fileObj.id && fileObj.previewUrl && (
                               <div style={{ borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.5rem' }}>
                                 <iframe 
@@ -271,7 +272,7 @@ export default function PdfMerger() {
               </Droppable>
             </DragDropContext>
 
-            {/* Merge Action Row Trigger */}
+            {/* Merge Action Button Container */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
               <button 
                 onClick={mergePdfsNow}
