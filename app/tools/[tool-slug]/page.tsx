@@ -7,8 +7,9 @@ import { toolsRegistry } from '../../../config/siteConfig';
 const PdfMerger = dynamic(() => import('../../../src/tools/pdf-merger'), { ssr: false });
 const SplitPdf = dynamic(() => import('../../../src/tools/split-pdf'), { ssr: false });
 const CompressPdf = dynamic(() => import('../../../src/tools/compress-pdf'), { ssr: false });
-// 👇 Naya Component Import 👇
 const UnlockPdf = dynamic(() => import('../../../src/tools/unlock-pdf'), { ssr: false });
+// 👇 Naya Protect PDF Import 👇
+const ProtectPdf = dynamic(() => import('../../../src/tools/protect-pdf'), { ssr: false });
 
 export default function ToolPage() {
   const params = useParams();
@@ -27,8 +28,10 @@ export default function ToolPage() {
     if (slug === 'pdf-merger') return <PdfMerger />;
     if (slug === 'split-pdf') return <SplitPdf />;
     if (slug === 'compress-pdf') return <CompressPdf />;
-    // 👇 Naya Tool Render Condition 👇
     if (slug === 'unlock-pdf') return <UnlockPdf />;
+    // 👇 Naya Protect PDF Render Condition 👇
+    if (slug === 'protect-pdf') return <ProtectPdf />;
+    
     return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found or still loading...</div>;
   };
 
