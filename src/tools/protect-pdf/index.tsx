@@ -49,8 +49,8 @@ export default function ProtectPdf() {
       const encryptedBytes = await encryptPDF(cleanPdfBytes, password);
 
       // Step 4: Download trigger karein
-      const blob = new Blob([encryptedBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
+// 🚀 'as any' laga diya taaki TypeScript error na de
+const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' });      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `Protected_${file.name}`;
