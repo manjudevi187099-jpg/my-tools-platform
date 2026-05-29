@@ -1,5 +1,6 @@
 // config/siteConfig.ts
 import DynamicPdfMerger from "../src/tools/pdf-merger";
+import SplitPdf from "../src/tools/split-pdf"; // 👈 Naya Tool Import Kiya
 
 export interface ToolMetadata {
   name: string;
@@ -16,5 +17,14 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["pdf merger", "combine pdf", "join pdf tools"],
     component: DynamicPdfMerger,
+  },
+  
+  // 👇 NAYA TOOL BASS YAHAN ADD KIYA HAI 👇
+  "split-pdf": {
+    name: "Split PDF Pro",
+    description: "Extract specific pages or split a large PDF visually in seconds.",
+    category: "pdf", 
+    keywords: ["split pdf", "extract pages", "cut pdf"],
+    component: SplitPdf, // 👈 Upar wala import yahan set kiya
   },
 };
