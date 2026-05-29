@@ -30,11 +30,16 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["unlock pdf", "remove password", "decrypt pdf"],
   },
-  // 👇 YEH WALA BLOCK HONA ZAROORI HAI 👇
   "protect-pdf": {
     name: "Protect PDF",
     description: "Add a secure password to your PDF file to prevent unauthorized access.",
     category: "pdf",
     keywords: ["protect pdf", "encrypt pdf", "add password pdf"],
+  },
+  "image-to-pdf": {
+    name: "Image to PDF",
+    description: "Convert single or multiple JPG/PNG images into a high-quality PDF document.",
+    category: "pdf",
+    keywords: ["image to pdf", "jpg to pdf", "png to pdf", "convert images"],
   }
 };
