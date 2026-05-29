@@ -10,33 +10,32 @@ if (typeof window !== 'undefined') {
 
 export default function CompressPdf() {
   const [file, setFile] = useState<File | null>(null);
+  const [quality, setQuality] = useState(50); // Slider default 50%
+  const [compressedSize, setCompressedSize] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];
-    if (uploadedFile && uploadedFile.type === 'application/pdf') {
+    if (uploadedFile?.type === 'application/pdf') {
       setFile(uploadedFile);
-      setProgress(0);
-    } else {
-      alert('Please upload a valid PDF file.');
+      setCompressedSize(null);
     }
   };
 
   const handleCompress = async () => {
     if (!file) return;
     setIsProcessing(true);
-    setProgress(10);
 
     try {
       const fileUrl = URL.createObjectURL(file);
       const pdf = await pdfjsLib.getDocument(fileUrl).promise;
       const newPdf = await PDFDocument.create();
+      const qualityFactor = quality / 100; // Slider 0-100 ko 0-1 mein badla
 
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.5 }); 
+        const viewport = page.getViewport({ scale: 1.0 }); 
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         
@@ -44,51 +43,48 @@ export default function CompressPdf() {
           canvas.width = viewport.width;
           canvas.height = viewport.height;
           await page.render({ canvasContext: context, viewport }).promise;
-          const compressedImageBase64 = canvas.toDataURL('image/jpeg', 0.5);
+          
+          const compressedImageBase64 = canvas.toDataURL('image/jpeg', qualityFactor);
           const jpgImage = await newPdf.embedJpg(compressedImageBase64);
           const newPage = newPdf.addPage([viewport.width, viewport.height]);
           newPage.drawImage(jpgImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
         }
-        setProgress(Math.round(((i) / pdf.numPages) * 100));
       }
 
       const pdfBytes = await newPdf.save();
-      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' }); // 🚀 Fixed type error
-      const compressedUrl = URL.createObjectURL(blob);
-
+      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
+      setCompressedSize(((blob.size / 1024) / 1024).toFixed(2) + ' MB');
+      
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = compressedUrl;
+      link.href = url;
       link.download = `Compressed_${file.name}`;
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(compressedUrl);
-    } catch (error) {
-      console.error("Compression error:", error);
-      alert('Error compressing the PDF.');
-    } finally {
-      setIsProcessing(false);
-      setProgress(0);
-    }
+    } catch (err) { alert('Compression failed!'); } 
+    finally { setIsProcessing(false); }
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '1rem', fontFamily: 'system-ui, sans-serif' }}>
-      {!file ? (
-        <div onClick={() => fileInputRef.current?.click()} style={{ padding: '4rem', border: '2px dashed #f59e0b', borderRadius: '1rem', backgroundColor: '#fffbeb', textAlign: 'center', cursor: 'pointer' }}>
-          <div style={{ fontSize: '3rem' }}>🗜️</div>
-          <h2>Select PDF to Compress</h2>
-        </div>
-      ) : (
-        <div style={{ padding: '2rem', border: '1px solid #e2e8f0', borderRadius: '1rem' }}>
-          <h3>{file.name}</h3>
-          {isProcessing && <div style={{ height: '10px', background: '#e2e8f0' }}><div style={{ width: `${progress}%`, background: '#f59e0b', height: '100%' }}></div></div>}
-          <button onClick={handleCompress} disabled={isProcessing} style={{ padding: '1rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}>
-            {isProcessing ? 'Compressing...' : 'Compress PDF'}
+    <div style={{ maxWidth: '600px', margin: '2rem auto', padding: '2rem', background: '#fff', borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+      <h2 style={{ textAlign: 'center' }}>PDF Compressor</h2>
+      
+      {/* Slider */}
+      <div style={{ margin: '2rem 0' }}>
+        <label>Compression Level: <strong>{quality}%</strong></label>
+        <input type="range" min="10" max="90" value={quality} onChange={(e) => setQuality(Number(e.target.value))} style={{ width: '100%' }} />
+      </div>
+
+      <input type="file" ref={fileInputRef} onChange={handleFileUpload} />
+      
+      {file && (
+        <div style={{ marginTop: '2rem' }}>
+          <p>Original: {(file.size / 1024 / 1024).toFixed(2)} MB</p>
+          {compressedSize && <p>New Size: <strong>{compressedSize}</strong></p>}
+          <button onClick={handleCompress} disabled={isProcessing} style={{ width: '100%', padding: '1rem', background: '#0070f3', color: '#fff', border: 'none', borderRadius: '0.5rem' }}>
+            {isProcessing ? 'Compressing...' : 'Compress & Download'}
           </button>
         </div>
       )}
-      <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
     </div>
   );
 }
