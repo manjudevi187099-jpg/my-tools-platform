@@ -11,6 +11,8 @@ const CompressPdf = dynamic(() => import('../../../src/tools/compress-pdf'), { s
 const UnlockPdf = dynamic(() => import('../../../src/tools/unlock-pdf'), { ssr: false });
 const ProtectPdf = dynamic(() => import('../../../src/tools/protect-pdf'), { ssr: false });
 const ImageToPdf = dynamic(() => import('../../../src/tools/image-to-pdf'), { ssr: false });
+// Naya Watermark Tool Import
+const WatermarkPdf = dynamic(() => import('../../../src/tools/watermark-pdf'), { ssr: false });
 
 export default function ToolPage() {
   const params = useParams();
@@ -31,7 +33,9 @@ export default function ToolPage() {
     if (slug === 'compress-pdf') return <CompressPdf />;
     if (slug === 'unlock-pdf') return <UnlockPdf />;
     if (slug === 'protect-pdf') return <ProtectPdf />;
-    if (slug === 'image-to-pdf') return <ImageToPdf />; // <--- Yeh crucial line thi
+    if (slug === 'image-to-pdf') return <ImageToPdf />;
+    // Naya Watermark Tool Condition
+    if (slug === 'watermark-pdf') return <WatermarkPdf />;
     
     return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found.</div>;
   };

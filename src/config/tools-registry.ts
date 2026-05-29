@@ -33,5 +33,14 @@ export const TOOLS_REGISTRY: ToolMeta[] = [
     description: 'Badi PDF ko alag-alag panno me todein aur extract karein.',
     category: 'Merge & Organize',
     isActive: true, // Naya tool yahan active kar diya hai
+  },
+// Naya Watermark Tool yahan add kiya hai
+  {
+    id: 'watermark-pdf',
+    name: 'Add PDF Watermark',
+    slug: 'watermark-pdf',
+    description: 'Apne documents ko secure karne ke liye text watermark add karein.',
+    category: 'PDF Security', // Fixed: 'PDF Tools' ki jagah valid category use ki
+    isActive: true,
   }
 ];
