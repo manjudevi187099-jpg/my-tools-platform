@@ -2,13 +2,11 @@
 
 import dynamic from 'next/dynamic';
 import { notFound } from 'next/navigation';
-// Dhyan rakhein, aapke project structure ke hisaab se import path set hai
 import { toolsRegistry } from '../../../config/siteConfig';
 
-// 🚀 Asli 'ssr: false' fix yahan aayega
+// 🚀 Sirf wahi tools load karenge jo ban chuke hain
 const PdfMerger = dynamic(() => import('../../../src/tools/pdf-merger'), { ssr: false });
 const SplitPdf = dynamic(() => import('../../../src/tools/split-pdf'), { ssr: false });
-const ProtectPdf = dynamic(() => import('../../../src/tools/protect-pdf'), { ssr: false });
 
 export default function ToolPage({ params }: { params: { 'tool-slug': string } }) {
   const slug = params['tool-slug'];
@@ -23,7 +21,6 @@ export default function ToolPage({ params }: { params: { 'tool-slug': string } }
     switch (slug) {
       case 'pdf-merger': return <PdfMerger />;
       case 'split-pdf': return <SplitPdf />;
-      case 'protect-pdf': return <ProtectPdf />;
       default: return <div style={{ padding: '3rem', textAlign: 'center' }}>Tool engine loading...</div>;
     }
   };
