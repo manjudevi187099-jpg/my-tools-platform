@@ -4,32 +4,39 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// 🚀 BULLETPROOF WORKER SETUP (Direct CDN Link, kabhi fail nahi hoga)
+// 🚀 Worker CDN Link - Exact Version Match
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 }
 
-// 🖼️ Naya Thumbnail Component (Bina strict-mode cancellation bug ke)
+// 🖼️ Naya Thumbnail Component (Canvas hatakar <img> tag laga diya)
 const PageThumbnail = ({ pdfDoc, pageNum, isSelected, onClick }: any) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [imgSrc, setImgSrc] = useState<string | null>(null); // Ab hum Image URL save karenge
 
   useEffect(() => {
     let isMounted = true;
     
     const renderPage = async () => {
-      if (!canvasRef.current || !pdfDoc) return;
+      if (!pdfDoc) return;
       try {
         const page = await pdfDoc.getPage(pageNum);
-        // Scale 1.0 rakha hai taaki image ekdam clear aur HD aaye
         const viewport = page.getViewport({ scale: 1.0 }); 
-        const canvas = canvasRef.current;
+        
+        // Background me nakli (offscreen) canvas banayenge
+        const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         
-        if (context && isMounted) {
+        if (context) {
           canvas.height = viewport.height;
           canvas.width = viewport.width;
-          // Render cancel nahi karenge taaki canvas blank na ho
+          
+          // PDF ko us canvas par draw karo
           await page.render({ canvasContext: context, viewport }).promise;
+          
+          // Agar sab theek hai, toh us canvas ko ek asli Photo (PNG) me badal do
+          if (isMounted) {
+            setImgSrc(canvas.toDataURL('image/png'));
+          }
         }
       } catch (err) {
         console.error(`Page ${pageNum} render issue:`, err);
@@ -39,7 +46,7 @@ const PageThumbnail = ({ pdfDoc, pageNum, isSelected, onClick }: any) => {
     renderPage();
 
     return () => {
-      isMounted = false; // Memory safe cleanup
+      isMounted = false; // Cleanup
     };
   }, [pdfDoc, pageNum]);
 
@@ -61,19 +68,21 @@ const PageThumbnail = ({ pdfDoc, pageNum, isSelected, onClick }: any) => {
         flexDirection: 'column'
       }}
     >
-      {/* Asli PDF Page ki Photo (Canvas) */}
       <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        {/* YAHAN HAI ASLI MAGIC: Ab Canvas nahi, direct Image dikhegi */}
+        {imgSrc ? (
+          <img src={imgSrc} alt={`Page ${pageNum}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        ) : (
+          <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Loading...</span>
+        )}
       </div>
 
-      {/* Selected hone par bada Tick Mark */}
       {isSelected && (
         <div style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', backgroundColor: '#4f46e5', color: '#ffffff', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 10 }}>
           ✓
         </div>
       )}
 
-      {/* Niche Page Number ka Badge */}
       <div style={{ position: 'absolute', bottom: '0.5rem', right: '0.5rem', backgroundColor: isSelected ? '#4f46e5' : 'rgba(15, 23, 42, 0.9)', color: '#ffffff', fontSize: '0.75rem', fontWeight: 'bold', padding: '3px 8px', borderRadius: '1rem', zIndex: 10 }}>
         Page {pageNum}
       </div>
@@ -105,12 +114,11 @@ export default function SplitPdf() {
       const buffer = await uploadedFile.arrayBuffer();
       setFileBuffer(buffer);
       
-      // 1. Load for Extracting (PDF-lib)
       const pdf = await PDFDocument.load(buffer);
       setPageCount(pdf.getPageCount());
 
-      // 2. Load for Visual Viewing (PDF.js)
-      const loadingTask = pdfjsLib.getDocument(new Uint8Array(buffer));
+      const tempFileUrl = URL.createObjectURL(uploadedFile);
+      const loadingTask = pdfjsLib.getDocument(tempFileUrl);
       const visualPdf = await loadingTask.promise;
       setPdfJsDoc(visualPdf);
 
@@ -151,7 +159,7 @@ export default function SplitPdf() {
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Extracted_Pages_${Date.now()}.pdf`;
+      link.download = `Split_${Date.now()}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
