@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-// 🚀 DHYAN DEIN: Yahan hum nayi library @cantoo/pdf-lib use kar rahe hain
 import { PDFDocument } from '@cantoo/pdf-lib';
+// 🚀 Asli encryption library yahan import hui hai
+import { encryptPDF } from '@pdfsmaller/pdf-encrypt';
 
 export default function ProtectPdf() {
   const [file, setFile] = useState<File | null>(null);
@@ -33,6 +34,7 @@ export default function ProtectPdf() {
       
       let pdfDoc;
       try {
+        // Step 1: File check karte hain ki already corrupt ya protected toh nahi
         pdfDoc = await PDFDocument.load(arrayBuffer);
       } catch (e) {
         setStatus("❌ Error: This PDF is already protected or corrupted.");
@@ -40,13 +42,14 @@ export default function ProtectPdf() {
         return;
       }
       
-      // 🚀 TypeScript error ko hatane ke liye 'as any' laga diya
-const pdfBytes = await pdfDoc.save({ 
-  userPassword: password, 
-  ownerPassword: password 
-} as any);
+      // Step 2: File ko clean bytes mein convert karte hain
+      const cleanPdfBytes = await pdfDoc.save();
 
-      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
+      // Step 3: 🚀 Asli Browser-Based Encryption yahan se hogi
+      const encryptedBytes = await encryptPDF(cleanPdfBytes, password);
+
+      // Step 4: Download trigger karein
+      const blob = new Blob([encryptedBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
