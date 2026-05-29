@@ -7,16 +7,18 @@ import { toolsRegistry } from '../../../config/siteConfig';
 const PdfMerger = dynamic(() => import('../../../src/tools/pdf-merger'), { ssr: false });
 const SplitPdf = dynamic(() => import('../../../src/tools/split-pdf'), { ssr: false });
 const CompressPdf = dynamic(() => import('../../../src/tools/compress-pdf'), { ssr: false });
+// 👇 Naya Component Import 👇
+const UnlockPdf = dynamic(() => import('../../../src/tools/unlock-pdf'), { ssr: false });
 
 export default function ToolPage() {
-  const params = useParams(); 
+  const params = useParams();
   const slug = (params?.['tool-slug'] as string) || (params?.slug as string);
 
   if (!slug) {
     return <div style={{ padding: '5rem', textAlign: 'center', color: '#64748b', fontSize: '1.2rem' }}>⏳ Loading Tool...</div>;
   }
 
-  const toolMeta = toolsRegistry[slug] || {
+  const toolMeta = toolsRegistry[slug as keyof typeof toolsRegistry] || {
     name: slug.replace('-', ' '),
     description: 'Advanced, fast, and secure utility engine.'
   };
@@ -24,7 +26,9 @@ export default function ToolPage() {
   const renderActiveTool = () => {
     if (slug === 'pdf-merger') return <PdfMerger />;
     if (slug === 'split-pdf') return <SplitPdf />;
-    if (slug === 'compress-pdf') return <CompressPdf />; 
+    if (slug === 'compress-pdf') return <CompressPdf />;
+    // 👇 Naya Tool Render Condition 👇
+    if (slug === 'unlock-pdf') return <UnlockPdf />;
     return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found or still loading...</div>;
   };
 
