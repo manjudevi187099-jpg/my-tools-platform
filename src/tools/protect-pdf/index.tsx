@@ -40,11 +40,11 @@ export default function ProtectPdf() {
         return;
       }
       
-      // 🚀 Yahan hum PDF par client-side password laga rahe hain
-      const pdfBytes = await pdfDoc.save({ 
-        userPassword: password, 
-        ownerPassword: password 
-      });
+      // 🚀 TypeScript error ko hatane ke liye 'as any' laga diya
+const pdfBytes = await pdfDoc.save({ 
+  userPassword: password, 
+  ownerPassword: password 
+} as any);
 
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
