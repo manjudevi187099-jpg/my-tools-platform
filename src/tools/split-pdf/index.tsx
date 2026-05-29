@@ -4,41 +4,42 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// 🚀 PDF.js Worker Setup (Yeh engine PDF ko images me badalta hai)
+// 🚀 BULLETPROOF WORKER SETUP (Direct CDN Link, kabhi fail nahi hoga)
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
-// 🖼️ Naya Component: Har page ki photo banane ke liye
+// 🖼️ Naya Thumbnail Component (Bina strict-mode cancellation bug ke)
 const PageThumbnail = ({ pdfDoc, pageNum, isSelected, onClick }: any) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    let renderTask: any;
+    let isMounted = true;
     
     const renderPage = async () => {
       if (!canvasRef.current || !pdfDoc) return;
       try {
         const page = await pdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 0.6 }); // Scale kam rakha hai taaki website fast chale
+        // Scale 1.0 rakha hai taaki image ekdam clear aur HD aaye
+        const viewport = page.getViewport({ scale: 1.0 }); 
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
         
-        if (context) {
+        if (context && isMounted) {
           canvas.height = viewport.height;
           canvas.width = viewport.width;
-          renderTask = page.render({ canvasContext: context, viewport });
-          await renderTask.promise;
+          // Render cancel nahi karenge taaki canvas blank na ho
+          await page.render({ canvasContext: context, viewport }).promise;
         }
       } catch (err) {
-        console.log(`Page ${pageNum} render cancelled`);
+        console.error(`Page ${pageNum} render issue:`, err);
       }
     };
 
     renderPage();
 
     return () => {
-      if (renderTask) renderTask.cancel(); // Memory leak se bachane ke liye
+      isMounted = false; // Memory safe cleanup
     };
   }, [pdfDoc, pageNum]);
 
@@ -61,7 +62,7 @@ const PageThumbnail = ({ pdfDoc, pageNum, isSelected, onClick }: any) => {
       }}
     >
       {/* Asli PDF Page ki Photo (Canvas) */}
-      <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#f1f5f9' }}>
+      <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <canvas ref={canvasRef} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </div>
 
@@ -73,8 +74,8 @@ const PageThumbnail = ({ pdfDoc, pageNum, isSelected, onClick }: any) => {
       )}
 
       {/* Niche Page Number ka Badge */}
-      <div style={{ position: 'absolute', bottom: '0.5rem', right: '0.5rem', backgroundColor: isSelected ? '#4f46e5' : 'rgba(15, 23, 42, 0.7)', color: '#ffffff', fontSize: '0.75rem', fontWeight: 'bold', padding: '2px 8px', borderRadius: '1rem', zIndex: 10 }}>
-        {pageNum}
+      <div style={{ position: 'absolute', bottom: '0.5rem', right: '0.5rem', backgroundColor: isSelected ? '#4f46e5' : 'rgba(15, 23, 42, 0.9)', color: '#ffffff', fontSize: '0.75rem', fontWeight: 'bold', padding: '3px 8px', borderRadius: '1rem', zIndex: 10 }}>
+        Page {pageNum}
       </div>
     </div>
   );
@@ -83,7 +84,7 @@ const PageThumbnail = ({ pdfDoc, pageNum, isSelected, onClick }: any) => {
 export default function SplitPdf() {
   const [file, setFile] = useState<File | null>(null);
   const [fileBuffer, setFileBuffer] = useState<ArrayBuffer | null>(null);
-  const [pdfJsDoc, setPdfJsDoc] = useState<any>(null); // Naya state PDF Engine ke liye
+  const [pdfJsDoc, setPdfJsDoc] = useState<any>(null); 
   const [pageCount, setPageCount] = useState<number>(0);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -150,7 +151,7 @@ export default function SplitPdf() {
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = `TaskSnap_Split_${Date.now()}.pdf`;
+      link.download = `Extracted_Pages_${Date.now()}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -203,8 +204,7 @@ export default function SplitPdf() {
             Click on the pages you want to extract:
           </p>
 
-          {/* 🚀 SMART VISUAL GRID: Yahan Thumbnail Engine call ho raha hai */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1.5rem', maxHeight: '550px', overflowY: 'auto', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1.5rem', maxHeight: '550px', overflowY: 'auto', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
             {pdfJsDoc ? (
               Array.from({ length: pageCount }).map((_, idx) => {
                 const pageNum = idx + 1;
