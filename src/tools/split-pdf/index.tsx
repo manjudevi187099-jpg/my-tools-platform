@@ -1,11 +1,89 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// 🚀 PDF.js Worker Setup (Yeh engine PDF ko images me badalta hai)
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+}
+
+// 🖼️ Naya Component: Har page ki photo banane ke liye
+const PageThumbnail = ({ pdfDoc, pageNum, isSelected, onClick }: any) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let renderTask: any;
+    
+    const renderPage = async () => {
+      if (!canvasRef.current || !pdfDoc) return;
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 0.6 }); // Scale kam rakha hai taaki website fast chale
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+        
+        if (context) {
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          renderTask = page.render({ canvasContext: context, viewport });
+          await renderTask.promise;
+        }
+      } catch (err) {
+        console.log(`Page ${pageNum} render cancelled`);
+      }
+    };
+
+    renderPage();
+
+    return () => {
+      if (renderTask) renderTask.cancel(); // Memory leak se bachane ke liye
+    };
+  }, [pdfDoc, pageNum]);
+
+  return (
+    <div 
+      onClick={onClick}
+      style={{
+        position: 'relative',
+        aspectRatio: '1/1.4',
+        backgroundColor: '#ffffff',
+        border: isSelected ? '3px solid #4f46e5' : '1px solid #cbd5e1',
+        borderRadius: '0.5rem',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        boxShadow: isSelected ? '0 4px 12px rgba(79, 70, 229, 0.4)' : '0 2px 4px rgba(0,0,0,0.05)',
+        transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+        transition: 'all 0.15s ease-in-out',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      {/* Asli PDF Page ki Photo (Canvas) */}
+      <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#f1f5f9' }}>
+        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      </div>
+
+      {/* Selected hone par bada Tick Mark */}
+      {isSelected && (
+        <div style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', backgroundColor: '#4f46e5', color: '#ffffff', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 10 }}>
+          ✓
+        </div>
+      )}
+
+      {/* Niche Page Number ka Badge */}
+      <div style={{ position: 'absolute', bottom: '0.5rem', right: '0.5rem', backgroundColor: isSelected ? '#4f46e5' : 'rgba(15, 23, 42, 0.7)', color: '#ffffff', fontSize: '0.75rem', fontWeight: 'bold', padding: '2px 8px', borderRadius: '1rem', zIndex: 10 }}>
+        {pageNum}
+      </div>
+    </div>
+  );
+};
 
 export default function SplitPdf() {
   const [file, setFile] = useState<File | null>(null);
   const [fileBuffer, setFileBuffer] = useState<ArrayBuffer | null>(null);
+  const [pdfJsDoc, setPdfJsDoc] = useState<any>(null); // Naya state PDF Engine ke liye
   const [pageCount, setPageCount] = useState<number>(0);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -20,14 +98,21 @@ export default function SplitPdf() {
 
     try {
       setFile(uploadedFile);
-      setSelectedPages([]); // Nayi file aane par selection reset karein
+      setSelectedPages([]); 
+      setPdfJsDoc(null);
       
       const buffer = await uploadedFile.arrayBuffer();
       setFileBuffer(buffer);
       
+      // 1. Load for Extracting (PDF-lib)
       const pdf = await PDFDocument.load(buffer);
-      const count = pdf.getPageCount();
-      setPageCount(count);
+      setPageCount(pdf.getPageCount());
+
+      // 2. Load for Visual Viewing (PDF.js)
+      const loadingTask = pdfjsLib.getDocument(new Uint8Array(buffer));
+      const visualPdf = await loadingTask.promise;
+      setPdfJsDoc(visualPdf);
+
     } catch (error) {
       console.error("PDF load error:", error);
       alert('Error reading the PDF. It might be encrypted or corrupted.');
@@ -49,36 +134,28 @@ export default function SplitPdf() {
 
   const extractAndDownload = async () => {
     if (!fileBuffer || selectedPages.length === 0) return;
-    
     setIsExtracting(true);
+    
     try {
-      // Nayi khali PDF banayein
       const newPdf = await PDFDocument.create();
-      // Original PDF load karein
       const loadedPdf = await PDFDocument.load(fileBuffer);
-      
-      // Page numbers UI me 1 se shuru hote hain, par code me 0 se
       const zeroIndexedPages = selectedPages.map(p => p - 1);
       
-      // Chune hue pages copy karein
       const copiedPages = await newPdf.copyPages(loadedPdf, zeroIndexedPages);
       copiedPages.forEach(page => newPdf.addPage(page));
       
-      // Nayi PDF save aur download karein
       const pdfBytes = await newPdf.save();
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = `TaskSnap_Extracted_${Date.now()}.pdf`;
+      link.download = `TaskSnap_Split_${Date.now()}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
     } catch (error) {
-      console.error("Extraction error:", error);
       alert('Failed to extract pages.');
     } finally {
       setIsExtracting(false);
@@ -88,6 +165,7 @@ export default function SplitPdf() {
   const resetTool = () => {
     setFile(null);
     setFileBuffer(null);
+    setPdfJsDoc(null);
     setPageCount(0);
     setSelectedPages([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -96,12 +174,8 @@ export default function SplitPdf() {
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem', fontFamily: 'system-ui, sans-serif' }}>
       
-      {/* Upload Zone */}
       {!file && (
-        <div 
-          onClick={() => fileInputRef.current?.click()} 
-          style={{ padding: '4rem 2rem', border: '2px dashed #4f46e5', borderRadius: '1rem', backgroundColor: '#eef2ff', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
-        >
+        <div onClick={() => fileInputRef.current?.click()} style={{ padding: '4rem 2rem', border: '2px dashed #4f46e5', borderRadius: '1rem', backgroundColor: '#eef2ff', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✂️</div>
           <h2 style={{ color: '#4f46e5', margin: '0 0 0.5rem 0' }}>Select PDF File to Split</h2>
           <p style={{ color: '#6366f1', margin: 0 }}>Extract pages or split your PDF visually</p>
@@ -110,7 +184,6 @@ export default function SplitPdf() {
 
       <input type="file" accept=".pdf" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
 
-      {/* Workspace Zone */}
       {file && (
         <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
           
@@ -127,49 +200,38 @@ export default function SplitPdf() {
           </div>
 
           <p style={{ fontSize: '0.9rem', color: '#4f46e5', marginBottom: '1rem', fontWeight: '500' }}>
-            Click on the page numbers you want to extract:
+            Click on the pages you want to extract:
           </p>
 
-          {/* Grid of Pages */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '1rem', maxHeight: '400px', overflowY: 'auto', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
-            {Array.from({ length: pageCount }).map((_, idx) => {
-              const pageNum = idx + 1;
-              const isSelected = selectedPages.includes(pageNum);
-              return (
-                <div 
-                  key={pageNum}
-                  onClick={() => togglePageSelection(pageNum)}
-                  style={{
-                    aspectRatio: '1/1.4',
-                    backgroundColor: isSelected ? '#4f46e5' : '#ffffff',
-                    border: isSelected ? '2px solid #4f46e5' : '1px solid #cbd5e1',
-                    borderRadius: '0.5rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: isSelected ? '0 4px 10px rgba(79, 70, 229, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
-                    transition: 'all 0.15s ease-in-out',
-                    transform: isSelected ? 'scale(1.05)' : 'scale(1)'
-                  }}
-                >
-                  <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: isSelected ? '#ffffff' : '#475569' }}>
-                    {pageNum}
-                  </span>
-                  {isSelected && <span style={{ fontSize: '0.7rem', color: '#e0e7ff', marginTop: '4px' }}>Selected</span>}
-                </div>
-              );
-            })}
+          {/* 🚀 SMART VISUAL GRID: Yahan Thumbnail Engine call ho raha hai */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1.5rem', maxHeight: '550px', overflowY: 'auto', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
+            {pdfJsDoc ? (
+              Array.from({ length: pageCount }).map((_, idx) => {
+                const pageNum = idx + 1;
+                const isSelected = selectedPages.includes(pageNum);
+                return (
+                  <PageThumbnail
+                    key={pageNum}
+                    pdfDoc={pdfJsDoc}
+                    pageNum={pageNum}
+                    isSelected={isSelected}
+                    onClick={() => togglePageSelection(pageNum)}
+                  />
+                );
+              })
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', gridColumn: '1 / -1', color: '#64748b' }}>
+                ⏳ Rendering visual pages... please wait.
+              </div>
+            )}
           </div>
 
-          {/* Action Button */}
           <div style={{ marginTop: '2rem', textAlign: 'center' }}>
             <button 
               onClick={extractAndDownload}
               disabled={isExtracting || selectedPages.length === 0}
               style={{
-                padding: '0.75rem 2.5rem',
+                padding: '1rem 3rem',
                 fontSize: '1.1rem',
                 fontWeight: '700',
                 backgroundColor: selectedPages.length === 0 ? '#cbd5e1' : '#10b981',
