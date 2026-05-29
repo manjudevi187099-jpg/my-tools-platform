@@ -24,11 +24,17 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["compress pdf", "reduce pdf size", "shrink pdf"],
   },
-  // 👇 Naya Unlock PDF Tool 👇
   "unlock-pdf": {
     name: "Unlock PDF",
     description: "Remove passwords from your protected PDF files quickly and securely.",
-    category: "pdf", // 👈 Yahan "pdf" aayega taaki interface se match ho
-    keywords: ["unlock pdf", "remove password", "decrypt pdf"], // 👈 Keywords bhi add kar diye hain
+    category: "pdf",
+    keywords: ["unlock pdf", "remove password", "decrypt pdf"],
+  },
+  // 👇 YEH WALA BLOCK HONA ZAROORI HAI 👇
+  "protect-pdf": {
+    name: "Protect PDF",
+    description: "Add a secure password to your PDF file to prevent unauthorized access.",
+    category: "pdf",
+    keywords: ["protect pdf", "encrypt pdf", "add password pdf"],
   }
 };
