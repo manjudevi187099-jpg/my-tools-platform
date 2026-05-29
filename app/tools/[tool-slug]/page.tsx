@@ -1,28 +1,36 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-// Dhyan dijiye: notFound ko hata diya gaya hai taaki 404 na aaye
+import { useParams } from 'next/navigation'; // 👈 Naya hook import kiya
 import { toolsRegistry } from '../../../config/siteConfig';
 
 const PdfMerger = dynamic(() => import('../../../src/tools/pdf-merger'), { ssr: false });
 const SplitPdf = dynamic(() => import('../../../src/tools/split-pdf'), { ssr: false });
+const ProtectPdf = dynamic(() => import('../../../src/tools/protect-pdf'), { ssr: false });
 
-// params ko 'any' rakha hai taaki Vercel nakhre na kare
-export default function ToolPage({ params }: any) {
-  // 1. Slug ko safely nikalenge, agar nahi mila toh by default 'split-pdf' open hoga
-  const slug = params?.['tool-slug'] || params?.slug || 'split-pdf';
+export default function ToolPage() {
+  const params = useParams(); // 👈 Hook se params nikalenge
   
-  // 2. Agar Vercel ko update hone me time lag raha hai, toh yeh backup data dikhayega
-  const toolMeta = toolsRegistry?.[slug] || {
-    name: slug === 'split-pdf' ? 'Split PDF Pro' : 'Professional Tool',
+  // URL se exact tool ka naam nikalenge
+  const slug = (params?.['tool-slug'] as string) || (params?.slug as string);
+
+  // Jab tak URL theek se load na ho jaye, loading dikhayenge taaki galat tool na khule
+  if (!slug) {
+    return <div style={{ padding: '5rem', textAlign: 'center', color: '#64748b', fontSize: '1.2rem' }}>⏳ Loading Tool...</div>;
+  }
+
+  // Sahi title aur description nikalenge
+  const toolMeta = toolsRegistry[slug] || {
+    name: slug.replace('-', ' '),
     description: 'Advanced, fast, and secure utility engine.'
   };
 
-  // 3. Tool load karne ka fail-safe logic
+  // Exact wahi tool load karenge jo URL me hai
   const renderActiveTool = () => {
-    if (slug.includes('split-pdf')) return <SplitPdf />;
-    if (slug.includes('pdf-merger')) return <PdfMerger />;
-    return <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>⏳ Loading engine...</div>;
+    if (slug === 'pdf-merger') return <PdfMerger />;
+    if (slug === 'split-pdf') return <SplitPdf />;
+    if (slug === 'protect-pdf') return <ProtectPdf />;
+    return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found or still loading...</div>;
   };
 
   return (
