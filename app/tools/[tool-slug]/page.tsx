@@ -4,14 +4,12 @@ import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { toolsRegistry } from '../../../config/siteConfig';
 
-// 🚀 Teeno tools yahan sahi se import ho gaye hain
 const PdfMerger = dynamic(() => import('../../../src/tools/pdf-merger'), { ssr: false });
 const SplitPdf = dynamic(() => import('../../../src/tools/split-pdf'), { ssr: false });
-const ProtectPdf = dynamic(() => import('../../../src/tools/protect-pdf'), { ssr: false }); // 👈 Yeh missing tha!
+const CompressPdf = dynamic(() => import('../../../src/tools/compress-pdf'), { ssr: false });
 
 export default function ToolPage() {
   const params = useParams(); 
-  
   const slug = (params?.['tool-slug'] as string) || (params?.slug as string);
 
   if (!slug) {
@@ -26,13 +24,12 @@ export default function ToolPage() {
   const renderActiveTool = () => {
     if (slug === 'pdf-merger') return <PdfMerger />;
     if (slug === 'split-pdf') return <SplitPdf />;
-    if (slug === 'protect-pdf') return <ProtectPdf />; 
+    if (slug === 'compress-pdf') return <CompressPdf />; 
     return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found or still loading...</div>;
   };
 
   return (
     <main style={{ minHeight: '100vh', backgroundColor: '#f8fafc', paddingBottom: '3rem', fontFamily: 'system-ui, sans-serif' }}>
-      
       <div style={{ padding: '2.5rem 1rem', textAlign: 'center', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', marginBottom: '2rem' }}>
         <h1 style={{ color: '#0f172a', margin: 0, fontSize: '2.2rem', fontWeight: '800', textTransform: 'capitalize' }}>
           {toolMeta.name}
@@ -41,9 +38,7 @@ export default function ToolPage() {
           {toolMeta.description}
         </p>
       </div>
-
       {renderActiveTool()}
-      
     </main>
   );
 }

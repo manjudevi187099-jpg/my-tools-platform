@@ -1,5 +1,3 @@
-// config/siteConfig.ts
-
 export interface ToolMetadata {
   name: string;
   description: string;
@@ -20,10 +18,10 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["split pdf", "extract pages", "cut pdf"],
   },
-  "protect-pdf": {
-    name: "Protect PDF (Add Password)",
-    description: "Secure your PDF files with a strong password. 100% private processing.",
+  "compress-pdf": {
+    name: "PDF Compressor Engine",
+    description: "Reduce PDF file size quickly right in your browser. 100% private.",
     category: "pdf",
-    keywords: ["protect pdf", "lock pdf", "pdf password"],
+    keywords: ["compress pdf", "reduce pdf size", "shrink pdf"],
   }
 };
