@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { PDFDocument } from '@cantoo/pdf-lib';
-// 🚀 Asli encryption library yahan import hui hai
 import { encryptPDF } from '@pdfsmaller/pdf-encrypt';
 
 export default function ProtectPdf() {
@@ -31,26 +30,23 @@ export default function ProtectPdf() {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
+      const originalBytes = new Uint8Array(arrayBuffer);
       
-      let pdfDoc;
+      // Step 1: Sirf check karte hain ki file pehle se lock toh nahi hai
       try {
-        // Step 1: File check karte hain ki already corrupt ya protected toh nahi
-        pdfDoc = await PDFDocument.load(arrayBuffer);
+        await PDFDocument.load(originalBytes);
       } catch (e) {
         setStatus("❌ Error: This PDF is already protected or corrupted.");
         setIsProcessing(false);
         return;
       }
       
-      // Step 2: File ko clean bytes mein convert karte hain
-      const cleanPdfBytes = await pdfDoc.save();
+      // 🚀 THE FIX: Hum directly original kachhe data (originalBytes) par lock laga rahe hain
+      // Isse aapka Hindi text ya koi bhi format bilkul nahi fategi!
+      const encryptedBytes = await encryptPDF(originalBytes, password);
 
-      // Step 3: 🚀 Asli Browser-Based Encryption yahan se hogi
-      const encryptedBytes = await encryptPDF(cleanPdfBytes, password);
-
-      // Step 4: Download trigger karein
-// 🚀 'as any' laga diya taaki TypeScript error na de
-const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' });      const url = URL.createObjectURL(blob);
+      const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `Protected_${file.name}`;
