@@ -45,14 +45,20 @@ export default function UnlockPdf() {
         for (let i = 1; i <= pdf.numPages; i++) {
           setStatus(`Unlocking page ${i} of ${pdf.numPages}...`);
           const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 2.0 }); // High Quality
+          
+          // 🚀 FIX: Scale ko 4.0 kar diya (Ultra HD Quality)
+          const viewport = page.getViewport({ scale: 4.0 }); 
+          
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           canvas.width = viewport.width; 
           canvas.height = viewport.height;
           
           await page.render({ canvasContext: ctx!, viewport }).promise;
-          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          
+          // 🚀 FIX: Quality ko 1.0 (100%) kar diya
+          const imgData = canvas.toDataURL('image/jpeg', 1.0); 
+          
           const jpg = await newPdf.embedJpg(imgData);
           const p = newPdf.addPage([viewport.width, viewport.height]);
           p.drawImage(jpg, { x: 0, y: 0, width: viewport.width, height: viewport.height });
