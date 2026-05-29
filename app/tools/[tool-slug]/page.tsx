@@ -4,12 +4,13 @@ import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { toolsRegistry } from '../../../config/siteConfig';
 
+// Imports
 const PdfMerger = dynamic(() => import('../../../src/tools/pdf-merger'), { ssr: false });
 const SplitPdf = dynamic(() => import('../../../src/tools/split-pdf'), { ssr: false });
 const CompressPdf = dynamic(() => import('../../../src/tools/compress-pdf'), { ssr: false });
 const UnlockPdf = dynamic(() => import('../../../src/tools/unlock-pdf'), { ssr: false });
-// 👇 Naya Protect PDF Import 👇
 const ProtectPdf = dynamic(() => import('../../../src/tools/protect-pdf'), { ssr: false });
+const ImageToPdf = dynamic(() => import('../../../src/tools/image-to-pdf'), { ssr: false });
 
 export default function ToolPage() {
   const params = useParams();
@@ -29,10 +30,10 @@ export default function ToolPage() {
     if (slug === 'split-pdf') return <SplitPdf />;
     if (slug === 'compress-pdf') return <CompressPdf />;
     if (slug === 'unlock-pdf') return <UnlockPdf />;
-    // 👇 Naya Protect PDF Render Condition 👇
     if (slug === 'protect-pdf') return <ProtectPdf />;
+    if (slug === 'image-to-pdf') return <ImageToPdf />; // <--- Yeh crucial line thi
     
-    return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found or still loading...</div>;
+    return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found.</div>;
   };
 
   return (
