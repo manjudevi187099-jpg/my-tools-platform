@@ -44,7 +44,11 @@ export default function RemoveWatermark() {
         // Jo words match kar rahe hain, unhe white color se dhak dein
         const searchWords = watermarkText.toLowerCase().split(' ');
         
-        data.words.forEach((word) => {
+        // Jo words match kar rahe hain, unhe white color se dhak dein
+        const searchWords = watermarkText.toLowerCase().split(' ');
+        
+        // YAHAN CHANGE KIYA HAI (as any aur word: any lagaya hai)
+        (data as any).words.forEach((word: any) => {
           const wordText = word.text.toLowerCase();
           // Agar AI ko watermark ka koi bhi word milta hai
           if (searchWords.some(sw => wordText.includes(sw) && sw.length > 2)) {
