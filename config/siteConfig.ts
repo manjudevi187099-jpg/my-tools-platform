@@ -56,4 +56,10 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["invert pdf", "white background", "pdf color fix"],
   },
-  };
+"remove-watermark": {
+  name: "Remove PDF Watermark",
+  description: "PDF se text watermark hatayein.",
+  category: "pdf",
+  keywords: ["remove watermark", "delete watermark"],
+},  
+};

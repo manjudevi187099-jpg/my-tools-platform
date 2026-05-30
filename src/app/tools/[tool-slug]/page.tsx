@@ -13,6 +13,7 @@ const ProtectPdf = dynamic(() => import('../../../../src/tools/protect-pdf'), { 
 const ImageToPdf = dynamic(() => import('../../../../src/tools/image-to-pdf'), { ssr: false });
 const WatermarkPdf = dynamic(() => import('../../../../src/tools/watermark-pdf'), { ssr: false });
 const InvertPdf = dynamic(() => import('../../../../src/tools/pdf-invert-colors'), { ssr: false });
+const RemoveWatermark = dynamic(() => import('../../../../src/tools/remove-watermark'), { ssr: false });
 
 export default function ToolPage() {
   const params = useParams();
@@ -36,6 +37,7 @@ export default function ToolPage() {
     if (slug === 'image-to-pdf') return <ImageToPdf />;
     if (slug === 'watermark-pdf') return <WatermarkPdf />;
     if (slug === 'invert-pdf') return <InvertPdf />; // Ye line add karo
+    if (slug === 'remove-watermark') return <RemoveWatermark />;
     
     
     return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found.</div>;
