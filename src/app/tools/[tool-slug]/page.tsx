@@ -2,17 +2,16 @@
 
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import { toolsRegistry } from '../../../config/siteConfig';
+import { toolsRegistry } from '../../../../config/siteConfig';
 
-// Imports
-const PdfMerger = dynamic(() => import('../../../src/tools/pdf-merger'), { ssr: false });
-const SplitPdf = dynamic(() => import('../../../src/tools/split-pdf'), { ssr: false });
-const CompressPdf = dynamic(() => import('../../../src/tools/compress-pdf'), { ssr: false });
-const UnlockPdf = dynamic(() => import('../../../src/tools/unlock-pdf'), { ssr: false });
-const ProtectPdf = dynamic(() => import('../../../src/tools/protect-pdf'), { ssr: false });
-const ImageToPdf = dynamic(() => import('../../../src/tools/image-to-pdf'), { ssr: false });
-// Naya Watermark Tool Import
-const WatermarkPdf = dynamic(() => import('../../../src/tools/watermark-pdf'), { ssr: false });
+// Saare Tools ka Dynamic Import (Sahi path ke saath)
+const PdfMerger = dynamic(() => import('../../../../src/tools/pdf-merger'), { ssr: false });
+const SplitPdf = dynamic(() => import('../../../../src/tools/split-pdf'), { ssr: false });
+const CompressPdf = dynamic(() => import('../../../../src/tools/compress-pdf'), { ssr: false });
+const UnlockPdf = dynamic(() => import('../../../../src/tools/unlock-pdf'), { ssr: false });
+const ProtectPdf = dynamic(() => import('../../../../src/tools/protect-pdf'), { ssr: false });
+const ImageToPdf = dynamic(() => import('../../../../src/tools/image-to-pdf'), { ssr: false });
+const WatermarkPdf = dynamic(() => import('../../../../src/tools/watermark-pdf'), { ssr: false });
 
 export default function ToolPage() {
   const params = useParams();
@@ -34,7 +33,6 @@ export default function ToolPage() {
     if (slug === 'unlock-pdf') return <UnlockPdf />;
     if (slug === 'protect-pdf') return <ProtectPdf />;
     if (slug === 'image-to-pdf') return <ImageToPdf />;
-    // Naya Watermark Tool Condition
     if (slug === 'watermark-pdf') return <WatermarkPdf />;
     
     return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found.</div>;

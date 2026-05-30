@@ -41,5 +41,12 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     description: "Convert single or multiple JPG/PNG images into a high-quality PDF document.",
     category: "pdf",
     keywords: ["image to pdf", "jpg to pdf", "png to pdf", "convert images"],
-  }
+  },
+  // Naya Watermark Tool entry
+  "watermark-pdf": {
+    name: "Add PDF Watermark",
+    description: "Apne documents ko secure karne ke liye text watermark add karein.",
+    category: "pdf",
+    keywords: ["watermark pdf", "add text watermark", "secure pdf"],
+  },
 };
