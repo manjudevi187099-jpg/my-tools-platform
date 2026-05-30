@@ -45,7 +45,7 @@ export default function InvertPdfColors() {
       }
 
       const pdfBytes = await newPdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const blob = new Blob([new Uint8Array(pdfBytes as any)], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
