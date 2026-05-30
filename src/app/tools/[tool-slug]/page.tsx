@@ -15,6 +15,9 @@ const WatermarkPdf = dynamic(() => import('../../../../src/tools/watermark-pdf')
 const InvertPdf = dynamic(() => import('../../../../src/tools/pdf-invert-colors'), { ssr: false });
 const RemoveWatermark = dynamic(() => import('../../../../src/tools/remove-watermark'), { ssr: false });
 
+// Naya PDF Stamper ka Dynamic Import
+const PdfStamper = dynamic(() => import('../../../../src/tools/pdf-stamper'), { ssr: false });
+
 export default function ToolPage() {
   const params = useParams();
   const slug = (params?.['tool-slug'] as string) || (params?.slug as string);
@@ -36,9 +39,11 @@ export default function ToolPage() {
     if (slug === 'protect-pdf') return <ProtectPdf />;
     if (slug === 'image-to-pdf') return <ImageToPdf />;
     if (slug === 'watermark-pdf') return <WatermarkPdf />;
-    if (slug === 'invert-pdf') return <InvertPdf />; // Ye line add karo
+    if (slug === 'invert-pdf') return <InvertPdf />;
     if (slug === 'remove-watermark') return <RemoveWatermark />;
     
+    // Naya PDF Stamper ka condition
+    if (slug === 'pdf-stamper') return <PdfStamper />;
     
     return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found.</div>;
   };

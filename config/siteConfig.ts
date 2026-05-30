@@ -42,24 +42,29 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["image to pdf", "jpg to pdf", "png to pdf", "convert images"],
   },
-  // Naya Watermark Tool entry
   "watermark-pdf": {
     name: "Add PDF Watermark",
     description: "Apne documents ko secure karne ke liye text watermark add karein.",
     category: "pdf",
     keywords: ["watermark pdf", "add text watermark", "secure pdf"],
   },
-
   "invert-pdf": {
     name: "Invert PDF Colors",
     description: "Dark background wali PDF ko white background mein convert karein.",
     category: "pdf",
     keywords: ["invert pdf", "white background", "pdf color fix"],
   },
-"remove-watermark": {
-  name: "Remove PDF Watermark",
-  description: "PDF se text watermark hatayein.",
-  category: "pdf",
-  keywords: ["remove watermark", "delete watermark"],
-},  
+  "remove-watermark": {
+    name: "Remove PDF Watermark",
+    description: "PDF se text watermark hatayein.",
+    category: "pdf",
+    keywords: ["remove watermark", "delete watermark"],
+  }, 
+  // Yeh raha aapka naya PDF Stamper Tool
+  "pdf-stamper": {
+    name: "PDF Stamper",
+    description: "Click and add custom stamps like VERIFIED or APPROVED anywhere on your PDF.",
+    category: "pdf",
+    keywords: ["pdf stamper", "add stamp", "verified stamp", "custom pdf stamp"],
+  },
 };

@@ -1,42 +1,36 @@
 'use client';
 import React, { useState } from 'react';
-import { PDFDocument, PDFName } from '@cantoo/pdf-lib';
 
 export default function RemoveWatermark() {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const cleanWatermarkLayers = async () => {
+  const sendToPythonBackend = async () => {
     if (!file) return alert("Pehle file upload karein!");
     setIsProcessing(true);
     
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const pages = pdfDoc.getPages();
+      const formData = new FormData();
+      formData.append("file", file);
 
-      pages.forEach((page) => {
-        // Remove Annotations & Stamps
-        if (page.node.has(PDFName.of('Annots'))) {
-          page.node.delete(PDFName.of('Annots'));
-        }
-        // Remove transparent overlays
-        const resources = page.node.Resources();
-        if (resources && resources.has(PDFName.of('ExtGState'))) {
-          resources.delete(PDFName.of('ExtGState')); 
-        }
+      // Python Backend ko call kar rahe hain
+      const response = await fetch("http://localhost:8000/remove-watermark", {
+        method: "POST",
+        body: formData,
       });
 
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([new Uint8Array(pdfBytes as any)], { type: 'application/pdf' });
+      if (!response.ok) throw new Error("Backend failed");
+
+      // Clean file download karna
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'cleaned-pdf.pdf';
+      a.download = 'perfect-clean-pdf.pdf';
       a.click();
     } catch (e) {
       console.error(e);
-      alert("Error processing file. File corrupted ho sakti hai.");
+      alert("Error! Kya aapne Python server (localhost:8000) chalu kiya hai?");
     } finally {
       setIsProcessing(false);
     }
@@ -44,9 +38,9 @@ export default function RemoveWatermark() {
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-2xl shadow-xl border border-gray-200">
-      <h2 className="text-2xl font-bold mb-2 text-blue-600">PDF Watermark Remover</h2>
+      <h2 className="text-2xl font-bold mb-2 text-green-600">AI OpenCV Watermark Remover</h2>
       <p className="text-sm text-gray-500 mb-6">
-        Yeh tool PDF se text aur layer-based watermarks ko automatically hata deta hai.
+        Yeh tool Python aur OpenCV backend ka use karke sabse ziddi baked watermarks ko image processing se uda deta hai.
       </p>
       
       <input 
@@ -57,11 +51,11 @@ export default function RemoveWatermark() {
       />
       
       <button 
-        onClick={cleanWatermarkLayers} 
+        onClick={sendToPythonBackend} 
         disabled={isProcessing} 
-        className="w-full py-4 bg-blue-600 hover:bg-blue-700 transition-colors text-white rounded-xl font-bold text-lg shadow-md"
+        className="w-full py-4 bg-green-600 hover:bg-green-700 transition-colors text-white rounded-xl font-bold text-lg shadow-md"
       >
-        {isProcessing ? 'Processing...' : 'Remove Watermark'}
+        {isProcessing ? 'OpenCV Processing...' : 'Remove Watermark (Python API)'}
       </button>
     </div>
   );
