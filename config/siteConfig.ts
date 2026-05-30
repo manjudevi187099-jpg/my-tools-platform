@@ -67,4 +67,10 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["pdf stamper", "add stamp", "verified stamp", "custom pdf stamp"],
   },
+"pdf-editor": {
+    name: "Advanced PDF Editor",
+    description: "All-in-one visual editor. Add text, erase content with whiteout, and highlight shapes directly on your PDF.",
+    category: "pdf",
+    keywords: ["pdf editor", "whiteout pdf", "add text to pdf", "edit pdf online"],
+  },
 };
