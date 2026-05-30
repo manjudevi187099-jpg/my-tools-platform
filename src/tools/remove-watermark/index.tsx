@@ -4,27 +4,28 @@ import { PDFDocument, rgb } from '@cantoo/pdf-lib';
 
 export default function RemoveWatermark() {
   const [file, setFile] = useState<File | null>(null);
-  const [coords, setCoords] = useState({ x: 100, y: 100, w: 200, h: 50 }); // Mask area
+  const [position, setPosition] = useState('bottom-right');
+  const [size, setSize] = useState('medium');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Preset logic
+  const getCoords = () => {
+    const s = size === 'small' ? { w: 100, h: 30 } : size === 'large' ? { w: 300, h: 100 } : { w: 200, h: 50 };
+    if (position === 'bottom-right') return { x: 350, y: 50, ...s };
+    if (position === 'top-center') return { x: 200, y: 750, ...s };
+    return { x: 100, y: 400, ...s }; // Center
+  };
 
   const applyMask = async () => {
     if (!file) return;
     setIsProcessing(true);
+    const { x, y, w, h } = getCoords();
+    
     try {
       const arrayBuffer = await file.arrayBuffer();
       const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const pages = pdfDoc.getPages();
-
-      pages.forEach((page) => {
-        // Watermark ki jagah ek white rectangle draw kar rahe hain
-        page.drawRectangle({
-          x: coords.x,
-          y: coords.y,
-          width: coords.w,
-          height: coords.h,
-          color: rgb(1, 1, 1), // White color
-          borderColor: rgb(1, 1, 1),
-        });
+      pdfDoc.getPages().forEach(page => {
+        page.drawRectangle({ x, y, width: w, height: h, color: rgb(1, 1, 1) });
       });
 
       const pdfBytes = await pdfDoc.save();
@@ -35,29 +36,34 @@ export default function RemoveWatermark() {
       a.download = 'watermark-removed.pdf';
       a.click();
     } catch (e) {
-      console.error(e);
-      alert("Error processing PDF");
+      alert("Error processing file");
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div className="max-w-xl mx-auto p-8 bg-white rounded-2xl shadow-xl border">
-      <h2 className="text-xl font-bold mb-4">Pro Watermark Remover (Area Masking)</h2>
+    <div className="max-w-md mx-auto p-6 bg-white rounded-2xl shadow-lg border">
+      <h2 className="text-xl font-bold mb-4">Easy Watermark Remover</h2>
       <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="mb-4 w-full" />
       
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <input type="number" placeholder="X (Left)" onChange={(e) => setCoords({...coords, x: Number(e.target.value)})} className="p-2 border rounded"/>
-        <input type="number" placeholder="Y (Bottom)" onChange={(e) => setCoords({...coords, y: Number(e.target.value)})} className="p-2 border rounded"/>
-        <input type="number" placeholder="Width" onChange={(e) => setCoords({...coords, w: Number(e.target.value)})} className="p-2 border rounded"/>
-        <input type="number" placeholder="Height" onChange={(e) => setCoords({...coords, h: Number(e.target.value)})} className="p-2 border rounded"/>
+      <div className="space-y-4">
+        <select onChange={(e) => setPosition(e.target.value)} className="w-full p-3 border rounded-lg">
+          <option value="bottom-right">Bottom Right (Kone mein)</option>
+          <option value="top-center">Top Center (Upar beech mein)</option>
+          <option value="center">Center (Beech mein)</option>
+        </select>
+        
+        <select onChange={(e) => setSize(e.target.value)} className="w-full p-3 border rounded-lg">
+          <option value="small">Small Watermark</option>
+          <option value="medium">Medium Watermark</option>
+          <option value="large">Large Watermark</option>
+        </select>
       </div>
 
-      <button onClick={applyMask} disabled={isProcessing} className="w-full py-4 bg-red-600 text-white rounded-xl">
-        {isProcessing ? 'Masking...' : 'Remove Watermark (Mask Area)'}
+      <button onClick={applyMask} disabled={isProcessing} className="w-full mt-6 py-3 bg-blue-600 text-white rounded-lg font-bold">
+        {isProcessing ? 'Removing...' : 'Remove Watermark'}
       </button>
-      <p className="text-xs text-gray-500 mt-2">Note: X, Y coordinates trial-and-error se set karein.</p>
     </div>
   );
 }
