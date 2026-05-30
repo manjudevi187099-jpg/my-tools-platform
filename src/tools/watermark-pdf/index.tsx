@@ -19,7 +19,6 @@ export default function WatermarkPdf() {
       const arrayBuffer = await file.arrayBuffer();
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       
-      // Font selection logic
       const font = await pdfDoc.embedFont(
         fontName === 'Courier' ? StandardFonts.Courier : 
         fontName === 'TimesRoman' ? StandardFonts.TimesRoman : 
@@ -40,12 +39,11 @@ export default function WatermarkPdf() {
           font: font,
           color: rgb(0, 0, 0),
           opacity: transparency,
-          rotate: degrees(rotation), // Fixed: Using degrees function
+          rotate: degrees(rotation),
         });
       }
 
       const pdfBytes = await pdfDoc.save();
-      // Fixed: Wrapped pdfBytes in [] for Blob
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -61,34 +59,67 @@ export default function WatermarkPdf() {
   };
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-md max-w-2xl mx-auto space-y-4 border border-slate-200">
-      <h2 className="text-xl font-bold">PDF Watermark Tool</h2>
-      <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-      
-      <input type="text" placeholder="Watermark Text" value={text} onChange={(e) => setText(e.target.value)} className="w-full p-2 border rounded" />
-      
-      <div className="grid grid-cols-2 gap-4">
-        <select onChange={(e) => setRotation(Number(e.target.value))} className="p-2 border rounded">
-          {[0, 45, 90, 135, 180, 225, 270].map(r => <option key={r} value={r}>{r} degrees</option>)}
-        </select>
-        <select onChange={(e) => setFontName(e.target.value)} className="p-2 border rounded">
-          {['Helvetica', 'Courier', 'TimesRoman'].map(f => <option key={f} value={f}>{f}</option>)}
-        </select>
+    <div className="max-w-xl mx-auto p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
+      <div className="mb-6">
+        <h2 className="text-2xl font-extrabold text-gray-900">PDF Watermark Tool</h2>
+        <p className="text-gray-500 text-sm mt-1">Apne documents ko secure aur branded banayein.</p>
       </div>
 
-      <div className="flex flex-col">
-        <label>Transparency: {Math.round(transparency * 100)}%</label>
-        <input type="range" min="0.1" max="1" step="0.1" value={transparency} onChange={(e) => setTransparency(Number(e.target.value))} />
-      </div>
+      <div className="space-y-5">
+        {/* File Upload */}
+        <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-500 transition-colors text-center">
+          <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-sm" />
+        </div>
 
-      <div className="flex gap-2">
-        <input type="number" placeholder="From Page" onChange={(e) => setPageRange({...pageRange, from: Number(e.target.value)})} className="w-full p-2 border rounded"/>
-        <input type="number" placeholder="To Page" onChange={(e) => setPageRange({...pageRange, to: Number(e.target.value)})} className="w-full p-2 border rounded"/>
-      </div>
+        {/* Text Input */}
+        <input 
+          type="text" 
+          placeholder="Watermark Text (e.g. NIRAJ CYBER CAFE)" 
+          value={text} 
+          onChange={(e) => setText(e.target.value)} 
+          className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+        />
 
-      <button onClick={applyWatermark} disabled={isProcessing} className="w-full p-3 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">
-        {isProcessing ? 'Processing...' : 'Apply Watermark'}
-      </button>
+        {/* Grid Settings */}
+        <div className="grid grid-cols-2 gap-4">
+          <select onChange={(e) => setRotation(Number(e.target.value))} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+            {[0, 45, 90, 135, 180].map(r => <option key={r} value={r}>{r}° Rotation</option>)}
+          </select>
+          <select onChange={(e) => setFontName(e.target.value)} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+            {['Helvetica', 'Courier', 'TimesRoman'].map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+
+        {/* Transparency */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm font-medium text-gray-700">
+            <span>Transparency</span>
+            <span>{Math.round(transparency * 100)}%</span>
+          </div>
+          <input 
+            type="range" 
+            min="0.1" max="1" step="0.1" 
+            value={transparency} 
+            onChange={(e) => setTransparency(Number(e.target.value))} 
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+          />
+        </div>
+
+        {/* Page Range */}
+        <div className="grid grid-cols-2 gap-4">
+          <input type="number" placeholder="From Page" onChange={(e) => setPageRange({...pageRange, from: Number(e.target.value)})} className="p-3 border border-gray-200 rounded-lg"/>
+          <input type="number" placeholder="To Page" onChange={(e) => setPageRange({...pageRange, to: Number(e.target.value)})} className="p-3 border border-gray-200 rounded-lg"/>
+        </div>
+
+        {/* Action Button */}
+        <button 
+          onClick={applyWatermark} 
+          disabled={isProcessing} 
+          className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg active:scale-[0.98]"
+        >
+          {isProcessing ? 'Processing...' : 'Apply Watermark Now'}
+        </button>
+      </div>
     </div>
   );
 }
