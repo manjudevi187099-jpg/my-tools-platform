@@ -1,137 +1,133 @@
 'use client';
-import React, { useState, useRef } from 'react';
-import { PDFDocument, rgb, degrees } from '@cantoo/pdf-lib';
+import React, { useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+import { PDFDocument } from '@cantoo/pdf-lib';
+import Tesseract from 'tesseract.js';
 
 // Worker setup
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export default function RemoveWatermark() {
   const [file, setFile] = useState<File | null>(null);
+  const [watermarkText, setWatermarkText] = useState('NIRAJ CYBER CAFE');
+  const [status, setStatus] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [clickPos, setClickPos] = useState<{x: number, y: number} | null>(null);
-  const [pdfDimensions, setPdfDimensions] = useState<{w: number, h: number} | null>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-    setFile(selectedFile);
-    setClickPos(null); // Reset click
-
-    // PDF ka pehla page screen par dikhane ke liye (Preview)
-    const arrayBuffer = await selectedFile.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 1.0 }); // Adjust scale as needed
-
-    setPdfDimensions({ w: viewport.width, h: viewport.height });
-
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const context = canvas.getContext('2d')!;
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      await page.render({ canvasContext: context, viewport }).promise;
-    }
-  };
-
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    
-    // Scale fix for accurate clicking
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-
-    setClickPos({ x, y });
-  };
-
-  const removeWatermark = async () => {
-    if (!file || !clickPos || !pdfDimensions) return alert("Pehle PDF preview par watermark ko click (tick) karein!");
+  const processOCR = async () => {
+    if (!file || !watermarkText) return alert("File aur Watermark Text daalein!");
     setIsProcessing(true);
+    setStatus('PDF load ho raha hai...');
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const pages = pdfDoc.getPages();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      // Naya PDF banayenge jisme clean images hongi
+      const newPdf = await PDFDocument.create();
 
-      pages.forEach((page) => {
-        const { width, height } = page.getSize();
+      for (let i = 1; i <= pdf.numPages; i++) {
+        setStatus(`Page ${i} process ho raha hai (Isme time lag sakta hai)...`);
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2.0 }); // High quality for better OCR
+        
+        // Canvas par PDF page render karein
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d')!;
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: context, viewport }).promise;
 
-        // Canvas (Top-Left) coordinate ko PDF (Bottom-Left) coordinate mein badalna
-        const pdfX = (clickPos.x / pdfDimensions.w) * width;
-        const pdfY = height - ((clickPos.y / pdfDimensions.h) * height);
-
-        // Jahan user ne click kiya wahan ek bada diagonal mask lagana
-        page.drawRectangle({
-          x: pdfX - 50, // Box ko center karne ke liye
-          y: pdfY - 20,
-          width: 400,   // Lamba box (Watermark chupane ke liye)
-          height: 60,   // Box ki motai
-          color: rgb(1, 1, 1), // White color
-          rotate: degrees(45), // Diagonal watermark ke liye tilt
+        setStatus(`Page ${i} par AI OCR chal raha hai...`);
+        // AI se text dhoondein
+        const { data } = await Tesseract.recognize(canvas, 'eng');
+        
+        // Jo words match kar rahe hain, unhe white color se dhak dein
+        const searchWords = watermarkText.toLowerCase().split(' ');
+        
+        data.words.forEach((word) => {
+          const wordText = word.text.toLowerCase();
+          // Agar AI ko watermark ka koi bhi word milta hai
+          if (searchWords.some(sw => wordText.includes(sw) && sw.length > 2)) {
+            // Us exact coordinate par white rectangle draw karein
+            context.fillStyle = '#ffffff';
+            // Thoda extra margin lekar dhakein taaki kinare na bachein
+            context.fillRect(
+              word.bbox.x0 - 5, 
+              word.bbox.y0 - 5, 
+              (word.bbox.x1 - word.bbox.x0) + 10, 
+              (word.bbox.y1 - word.bbox.y0) + 10
+            );
+          }
         });
-      });
 
-      const pdfBytes = await pdfDoc.save();
+        setStatus(`Page ${i} PDF mein add ho raha hai...`);
+        // Canvas ko image banakar naye PDF mein daalein
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
+        const img = await newPdf.embedJpg(imgData);
+        
+        const newPage = newPdf.addPage([viewport.width, viewport.height]);
+        newPage.drawImage(img, {
+          x: 0,
+          y: 0,
+          width: viewport.width,
+          height: viewport.height,
+        });
+      }
+
+      setStatus('Final PDF ban raha hai...');
+      const pdfBytes = await newPdf.save();
       const blob = new Blob([new Uint8Array(pdfBytes as any)], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'clean-pdf-clicked.pdf';
+      a.download = 'ocr-watermark-removed.pdf';
       a.click();
+      
+      setStatus('Success! Watermark hat gaya.');
     } catch (error) {
       console.error(error);
-      alert("Error aa gaya watermark hatane mein.");
+      setStatus('Error: Kuch galat ho gaya.');
+      alert("Error processing PDF via OCR.");
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-2xl shadow-xl border border-gray-200">
-      <h2 className="text-2xl font-bold mb-2 text-red-600">Smart Click Watermark Remover</h2>
-      <p className="text-sm text-gray-500 mb-4">
-        1. PDF upload karein.<br/>
-        2. Niche Preview mein watermark ke theek upar <b>Click (Tick)</b> karein.<br/>
-        3. Remove button dabayein, saare pages se us jagah ka watermark hat jayega.
+    <div className="max-w-md mx-auto p-6 bg-white rounded-2xl shadow-xl border border-gray-200">
+      <h2 className="text-2xl font-bold mb-2 text-indigo-600">AI OCR Watermark Remover</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Yeh tool AI se background image mein chhupe text ko dhoond kar automatically erase karta hai.
       </p>
       
       <input 
         type="file" 
         accept="application/pdf"
-        onChange={handleFileChange} 
+        onChange={(e) => setFile(e.target.files?.[0] || null)} 
         className="mb-4 w-full p-2 border border-gray-300 rounded" 
       />
 
-      {file && (
-        <div className="relative border-2 border-dashed border-gray-400 mb-4 overflow-auto max-h-96 text-center bg-gray-50">
-          <canvas 
-            ref={canvasRef} 
-            onClick={handleCanvasClick} 
-            className="cursor-crosshair mx-auto shadow-sm"
-          />
-          {clickPos && (
-            <div 
-              className="absolute w-4 h-4 bg-red-600 rounded-full pointer-events-none transform -translate-x-1/2 -translate-y-1/2 shadow-lg border-2 border-white"
-              style={{ left: `${(clickPos.x / (pdfDimensions?.w || 1)) * 100}%`, top: `${(clickPos.y / (pdfDimensions?.h || 1)) * 100}%` }}
-            />
-          )}
-        </div>
-      )}
+      <input 
+        type="text" 
+        value={watermarkText}
+        onChange={(e) => setWatermarkText(e.target.value)}
+        placeholder="Watermark text (e.g. NIRAJ CYBER CAFE)"
+        className="mb-6 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+      />
       
       <button 
-        onClick={removeWatermark} 
-        disabled={isProcessing || !clickPos} 
-        className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-md transition-colors ${clickPos ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-400 cursor-not-allowed'}`}
+        onClick={processOCR} 
+        disabled={isProcessing} 
+        className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-md transition-colors ${isProcessing ? 'bg-indigo-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700'}`}
       >
-        {isProcessing ? 'Removing Watermark...' : clickPos ? 'Remove Watermark Now' : 'Pehle Watermark Par Click Karein'}
+        {isProcessing ? 'AI Processing...' : 'Remove Watermark (AI)'}
       </button>
+
+      {status && (
+        <p className="mt-4 text-sm font-medium text-center text-gray-700 animate-pulse">
+          {status}
+        </p>
+      )}
     </div>
   );
 }
