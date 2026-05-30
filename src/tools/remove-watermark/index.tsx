@@ -41,9 +41,7 @@ export default function RemoveWatermark() {
         // AI se text dhoondein
         const { data } = await Tesseract.recognize(canvas, 'eng');
         
-        // Jo words match kar rahe hain, unhe white color se dhak dein
-        const searchWords = watermarkText.toLowerCase().split(' ');
-        
+      
         // Jo words match kar rahe hain, unhe white color se dhak dein
         const searchWords = watermarkText.toLowerCase().split(' ');
         
