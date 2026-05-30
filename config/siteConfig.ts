@@ -49,4 +49,11 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["watermark pdf", "add text watermark", "secure pdf"],
   },
-};
+
+  "invert-pdf": {
+    name: "Invert PDF Colors",
+    description: "Dark background wali PDF ko white background mein convert karein.",
+    category: "pdf",
+    keywords: ["invert pdf", "white background", "pdf color fix"],
+  },
+  };
