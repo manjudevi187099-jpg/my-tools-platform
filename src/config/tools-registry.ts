@@ -144,4 +144,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["passport size photo maker", "psd generator", "a4 photo format", "studio photo grid"],
     isActive: true,
   },
+  "smart-card-maker": {
+    name: "Smart Card A4 PSD Maker",
+    description: "PAN, Aadhaar, Voter ID jaise documents ko crop karein aur seedha A4 print sheet par perfectly arrange karke PSD download karein.",
+    category: "utility",
+    keywords: ["id card maker", "aadhaar print", "pan card print", "a4 smart card", "cr80 print format"],
+    isActive: true,
+  },
 };

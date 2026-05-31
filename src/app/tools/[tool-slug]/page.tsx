@@ -27,6 +27,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "image-resizer": dynamic(() => import('../../../tools/image-resizer'), { ssr: false }),
   "remove-background": dynamic(() => import('../../../tools/remove-background'), { ssr: false }),
   "passport-psd-maker": dynamic(() => import('../../../tools/passport-psd-maker'), { ssr: false }),
+  "smart-card-maker": dynamic(() => import('../../../tools/smart-card-maker'), { ssr: false }),
 };
 
 export default function ToolPage() {
