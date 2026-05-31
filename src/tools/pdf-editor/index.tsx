@@ -5,7 +5,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-type ToolType = 'text' | 'smart-edit' | 'whiteout' | 'highlight' | 'strikethrough' | 'image' | 'signature' | 'link' | 'checkbox' | 'pen' | 'none';
+type ToolType = 'select' | 'text' | 'smart-edit' | 'whiteout' | 'highlight' | 'strikethrough' | 'image' | 'signature' | 'link' | 'checkbox' | 'pen' | 'none';
 
 type Annotation = { 
   id: string; page: number; type: ToolType; 
@@ -13,7 +13,7 @@ type Annotation = {
   cWidth: number; cHeight: number; 
   text?: string; imageUrl?: string; imageFile?: File;
   color?: string; fontSize?: number;
-  paths?: {x: number, y: number}[]; // Naya: Freehand drawing coordinates ke liye
+  paths?: {x: number, y: number}[]; 
 };
 
 const hexToRgbPdf = (hex: string) => {
@@ -29,12 +29,13 @@ export default function AdvancedPdfEditor() {
   
   const [currentPage, setCurrentPage] = useState(1);
   const [numPages, setNumPages] = useState(1);
-  const [zoom, setZoom] = useState(1); // Naya: Zoom Level State
+  const [zoom, setZoom] = useState(1);
 
-  const [activeTool, setActiveTool] = useState<ToolType>('none');
+  // Default tool ab 'select' hai
+  const [activeTool, setActiveTool] = useState<ToolType>('select');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   
-  const [fontSize, setFontSize] = useState(14); // Pen ke liye ye thickness ka kaam karega
+  const [fontSize, setFontSize] = useState(14); 
   const [textColor, setTextColor] = useState('#000000');
 
   const [activeInput, setActiveInput] = useState<{ x: number, y: number, width: number, height: number, text: string } | null>(null);
@@ -43,9 +44,11 @@ export default function AdvancedPdfEditor() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number, y: number } | null>(null);
   const [dragCurrent, setDragCurrent] = useState<{ x: number, y: number } | null>(null);
-  
-  // Naya: Pen Tool Current Path
   const [currentPath, setCurrentPath] = useState<{x: number, y: number}[]>([]);
+
+  // NAYA: DRAG & DROP (MOVE) STATES
+  const [draggingAnnoId, setDraggingAnnoId] = useState<string | null>(null);
+  const [annoDragOffset, setAnnoDragOffset] = useState<{x: number, y: number} | null>(null);
 
   const [imageInput, setImageInput] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -58,7 +61,7 @@ export default function AdvancedPdfEditor() {
     setFile(selectedFile);
     setAnnotations([]); 
     setActiveInput(null);
-    setZoom(1); // Reset zoom
+    setZoom(1); 
     
     const arrayBuffer = await selectedFile.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -70,7 +73,7 @@ export default function AdvancedPdfEditor() {
 
   const renderPage = async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number) => {
     const page = await pdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 1.5 }); // High quality base render
+    const viewport = page.getViewport({ scale: 1.5 }); 
     setPdfDimensions({ w: viewport.width, h: viewport.height });
 
     const canvas = canvasRef.current;
@@ -95,7 +98,6 @@ export default function AdvancedPdfEditor() {
   const undoLastAction = () => setAnnotations((prev) => prev.slice(0, -1));
   const clearCurrentPage = () => setAnnotations((prev) => prev.filter((a) => a.page !== currentPage));
 
-  // MAGIC: Zoom adjust coordinates
   const getMouseCoords = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return { x: 0, y: 0 };
@@ -106,7 +108,7 @@ export default function AdvancedPdfEditor() {
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (activeTool === 'none') return;
+    if (activeTool === 'none' || activeTool === 'select') return; // Select mode handled on elements directly
     const { x, y } = getMouseCoords(e);
     
     if (activeTool === 'pen') {
@@ -121,8 +123,19 @@ export default function AdvancedPdfEditor() {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
     const { x, y } = getMouseCoords(e);
+
+    // NAYA: Handle moving existing annotations
+    if (draggingAnnoId && annoDragOffset) {
+      setAnnotations(prev => prev.map(a => 
+        a.id === draggingAnnoId 
+          ? { ...a, x: x - annoDragOffset.x, y: y - annoDragOffset.y }
+          : a
+      ));
+      return;
+    }
+
+    if (!isDragging) return;
 
     if (activeTool === 'pen') {
       setCurrentPath((prev) => [...prev, { x, y }]);
@@ -133,6 +146,13 @@ export default function AdvancedPdfEditor() {
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Drop the moving annotation
+    if (draggingAnnoId) {
+      setDraggingAnnoId(null);
+      setAnnoDragOffset(null);
+      return;
+    }
+
     if (!isDragging || !pdfDimensions) return;
     setIsDragging(false);
 
@@ -142,7 +162,7 @@ export default function AdvancedPdfEditor() {
           id: Date.now().toString(), page: currentPage, type: 'pen',
           x: 0, y: 0, width: 0, height: 0,
           cWidth: pdfDimensions.w, cHeight: pdfDimensions.h,
-          paths: currentPath, color: textColor, fontSize: fontSize // thickness
+          paths: currentPath, color: textColor, fontSize: fontSize 
         }]);
       }
       setCurrentPath([]);
@@ -188,6 +208,7 @@ export default function AdvancedPdfEditor() {
       }]);
     }
     setActiveInput(null);
+    setActiveTool('select'); // Automatically switch back to select/move mode after typing
   };
 
   const saveAndDownload = async () => {
@@ -212,14 +233,13 @@ export default function AdvancedPdfEditor() {
         const annoSize = anno.fontSize || 14;
 
         if (anno.type === 'pen' && anno.paths) {
-          // Freehand Drawing export logic
           for (let i = 0; i < anno.paths.length - 1; i++) {
             const p1 = anno.paths[i];
             const p2 = anno.paths[i+1];
             page.drawLine({
-              start: { x: (p1.x / anno.cWidth) * width, y: height - ((p1.y / anno.cHeight) * height) },
-              end: { x: (p2.x / anno.cWidth) * width, y: height - ((p2.y / anno.cHeight) * height) },
-              thickness: annoSize / 3, // Adjust thickness scale for PDF
+              start: { x: ((p1.x + anno.x) / anno.cWidth) * width, y: height - (((p1.y + anno.y) / anno.cHeight) * height) },
+              end: { x: ((p2.x + anno.x) / anno.cWidth) * width, y: height - (((p2.y + anno.y) / anno.cHeight) * height) },
+              thickness: annoSize / 3, 
               color: annoColor
             });
           }
@@ -275,13 +295,19 @@ export default function AdvancedPdfEditor() {
         
         <input type="file" accept="application/pdf" onChange={handleFileChange} className="mb-4 w-full text-sm border p-2 rounded" />
 
-        {/* UTILITY CONTROLS: UNDO & CLEAR */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-4">
           <button onClick={undoLastAction} disabled={annotations.length === 0} className="flex-1 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded font-medium text-sm transition disabled:opacity-50">↩️ Undo</button>
           <button onClick={clearCurrentPage} disabled={currentPageAnnotations.length === 0} className="flex-1 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded font-medium text-sm transition disabled:opacity-50">🗑️ Clear</button>
         </div>
 
-        {/* FONT/PEN STYLING */}
+        {/* NAYA: SELECT & MOVE TOOL */}
+        <div className="mb-4">
+           <button onClick={() => setActiveTool('select')} className={`w-full p-3 rounded-lg text-center font-bold text-sm transition border-2 ${activeTool === 'select' ? 'bg-indigo-600 text-white border-indigo-700 shadow-md scale-105' : 'bg-white text-indigo-700 hover:bg-indigo-50 border-indigo-200'}`}>
+             🖱️ Select & Move Elements
+           </button>
+           {activeTool === 'select' && <p className="text-xs text-indigo-500 mt-1 text-center">Click and drag elements to move them</p>}
+        </div>
+
         {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen') && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded">
             <h3 className="text-xs font-bold text-blue-800 uppercase mb-2">{activeTool === 'pen' ? 'Pen Styling' : 'Text Styling'}</h3>
@@ -298,13 +324,11 @@ export default function AdvancedPdfEditor() {
           </div>
         )}
 
-        {/* TOOLS LIST */}
         <div className="space-y-4">
           <div>
             <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Draw & Edit</h3>
             <div className="space-y-2">
-              {/* NAYA PEN TOOL */}
-              <button onClick={() => setActiveTool('pen')} className={`w-full p-2.5 rounded text-left font-bold text-sm transition ${activeTool === 'pen' ? 'bg-pink-600 text-white shadow scale-105' : 'bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200'}`}>✍️ Freehand Draw / Pen</button>
+              <button onClick={() => setActiveTool('pen')} className={`w-full p-2.5 rounded text-left font-bold text-sm transition ${activeTool === 'pen' ? 'bg-pink-600 text-white shadow' : 'bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200'}`}>✍️ Freehand Draw</button>
               <button onClick={() => setActiveTool('smart-edit')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'smart-edit' ? 'bg-indigo-600 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>✏️ Replace Word</button>
               <button onClick={() => setActiveTool('text')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'text' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>📝 Add Text</button>
             </div>
@@ -342,17 +366,14 @@ export default function AdvancedPdfEditor() {
       {/* MAIN PREVIEW AREA */}
       <div className="w-full md:flex-1 bg-white p-4 rounded-2xl shadow-xl border border-gray-200 flex flex-col h-[90vh]">
         
-        {/* TOP TOOLBAR: ZOOM & PAGINATION */}
+        {/* TOP TOOLBAR */}
         {file && (
           <div className="flex flex-wrap justify-between items-center bg-gray-100 p-3 rounded-lg mb-4 shadow-sm border border-gray-200 gap-4">
-            {/* ZOOM CONTROLS */}
             <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded border border-gray-300">
               <button onClick={() => setZoom(z => Math.max(0.5, z - 0.2))} className="font-bold text-lg px-2 hover:bg-gray-100 rounded text-blue-600">➖</button>
               <span className="font-bold text-gray-700 text-sm min-w-[50px] text-center">{Math.round(zoom * 100)}%</span>
               <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} className="font-bold text-lg px-2 hover:bg-gray-100 rounded text-blue-600">➕</button>
             </div>
-
-            {/* PAGINATION */}
             <div className="flex items-center gap-3">
               <button onClick={() => changePage(-1)} disabled={currentPage === 1} className="px-4 py-1.5 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 font-medium text-sm">◀ Prev</button>
               <span className="font-bold text-gray-700 text-sm">Pg {currentPage} / {numPages}</span>
@@ -366,48 +387,57 @@ export default function AdvancedPdfEditor() {
           {!file ? (
             <div className="flex items-center justify-center h-full text-gray-500 font-medium w-full">Upload a PDF to start editing...</div>
           ) : (
-            // MAGICAL ZOOM WRAPPER
             <div 
-              className={`relative inline-block m-8 shadow-2xl bg-white origin-top-left transition-transform duration-200 ${activeTool !== 'none' ? (activeTool === 'pen' ? 'cursor-crosshair' : 'cursor-crosshair') : ''}`}
+              className={`relative inline-block m-8 shadow-2xl bg-white origin-top-left transition-transform duration-200 
+                ${activeTool === 'select' ? 'cursor-default' : activeTool === 'none' ? '' : 'cursor-crosshair'}
+              `}
               style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
               onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
             >
               <canvas ref={canvasRef} className="pointer-events-none" />
               
-              {/* SVG FOR LIVE PEN DRAWING */}
               {currentPath.length > 0 && (
                 <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-50">
                   <polyline points={currentPath.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke={textColor} strokeWidth={fontSize} strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               )}
 
-              {/* LIVE DRAGGING PREVIEW BOX */}
-              {isDragging && dragStart && dragCurrent && activeTool !== 'pen' && (
+              {isDragging && dragStart && dragCurrent && activeTool !== 'pen' && activeTool !== 'select' && (
                 <div className="absolute border-2 border-blue-500 border-dashed bg-blue-400 bg-opacity-20 z-40 pointer-events-none"
                   style={{ left: Math.min(dragStart.x, dragCurrent.x), top: Math.min(dragStart.y, dragCurrent.y), width: Math.abs(dragCurrent.x - dragStart.x), height: Math.abs(dragCurrent.y - dragStart.y) }}
                 />
               )}
 
-              {/* RENDERED ANNOTATIONS */}
+              {/* RENDERED ANNOTATIONS (Make them clickable in Select mode) */}
               {currentPageAnnotations.map((anno) => (
-                <div key={anno.id} className="absolute pointer-events-none z-30" style={{ left: anno.x, top: anno.y, width: anno.width, height: anno.height }}>
+                <div 
+                  key={anno.id} 
+                  className={`absolute z-30 ${activeTool === 'select' ? 'pointer-events-auto hover:ring-2 hover:ring-indigo-500 cursor-move' : 'pointer-events-none'}`} 
+                  style={{ left: anno.x, top: anno.y, width: anno.width, height: anno.height }}
+                  onMouseDown={(e) => {
+                    if (activeTool !== 'select') return;
+                    e.stopPropagation(); // Stop background drag
+                    const { x, y } = getMouseCoords(e as any);
+                    setDraggingAnnoId(anno.id);
+                    setAnnoDragOffset({ x: x - anno.x, y: y - anno.y });
+                  }}
+                >
                   {anno.type === 'pen' && anno.paths && (
-                    <svg className="absolute top-0 left-0 overflow-visible" style={{ width: anno.cWidth, height: anno.cHeight, transform: `translate(-${anno.x}px, -${anno.y}px)` }}>
+                    <svg className="absolute top-0 left-0 overflow-visible" style={{ width: anno.cWidth, height: anno.cHeight }}>
                        <polyline points={anno.paths.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke={anno.color} strokeWidth={anno.fontSize} strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
-                  {anno.type === 'text' && <span className="absolute top-0 leading-none" style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
-                  {anno.type === 'link' && <span className="underline absolute top-0 leading-none" style={{ color: anno.color || 'blue', fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
-                  {anno.type === 'whiteout' && <div className="bg-white opacity-100 w-full h-full border border-gray-100"></div>}
+                  {anno.type === 'text' && <span className="absolute top-0 leading-none whitespace-nowrap" style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
+                  {anno.type === 'link' && <span className="underline absolute top-0 leading-none whitespace-nowrap" style={{ color: anno.color || 'blue', fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
+                  {anno.type === 'whiteout' && <div className="bg-white opacity-100 w-full h-full border border-gray-200"></div>}
                   {anno.type === 'highlight' && <div className="bg-yellow-300 opacity-50 mix-blend-multiply w-full h-full"></div>}
                   {anno.type === 'strikethrough' && <div className="w-full absolute top-1/2" style={{ height: '2px', backgroundColor: '#ef4444' }}></div>}
                   {anno.type === 'checkbox' && <span className="text-black text-xl leading-none absolute -top-1">☑</span>}
-                  {(anno.type === 'image' || anno.type === 'signature') && anno.imageUrl && <img src={anno.imageUrl} alt="preview" className="w-full h-full object-fill" />}
+                  {(anno.type === 'image' || anno.type === 'signature') && anno.imageUrl && <img src={anno.imageUrl} alt="preview" className="w-full h-full object-fill pointer-events-none" />}
                   {anno.type === 'smart-edit' && <span className="bg-white px-1 w-full h-full inline-block overflow-hidden" style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
                 </div>
               ))}
 
-              {/* INTERACTIVE INPUT BOX */}
               {activeInput && (
                 <div className="absolute z-50 flex items-start shadow-xl" style={{ left: activeInput.x, top: activeInput.y, width: activeInput.width, height: activeInput.height }}>
                   <textarea
