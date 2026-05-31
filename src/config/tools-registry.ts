@@ -116,4 +116,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["age calculator", "calculate age", "dob calculator", "form age"],
     isActive: true,
   },
+  "signature-on-photo": {
+    name: "Signature On Photo",
+    description: "Photo ke upar directly signature overlay karein (Transparent PNG style).",
+    category: "utility",
+    keywords: ["signature on photo", "overlay signature", "watermark signature", "self attest"],
+    isActive: true,
+  }
 };
