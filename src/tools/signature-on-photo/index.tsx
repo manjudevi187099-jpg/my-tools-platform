@@ -10,7 +10,7 @@ export default function ImageResizer() {
   const [width, setWidth] = useState<string>('');
   const [height, setHeight] = useState<string>('');
   
-  // File size (KB) state
+  // 🌟 File size (KB) state
   const [maxSizeKb, setMaxSizeKb] = useState<string>(''); 
   
   const [isProcessing, setIsProcessing] = useState(false);
@@ -171,8 +171,8 @@ export default function ImageResizer() {
             </div>
           </div>
 
-          {/* 🌟 UPDATED MAX FILE SIZE BOX 🌟 */}
-          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+          {/* 🌟 YE HAI NAYA BOX JO MISSING THA 🌟 */}
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 border-l-4 border-l-blue-500 shadow-sm">
             <h3 className="font-bold text-slate-700 mb-4">3. Max File Size (Optional)</h3>
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Target Size in KB (1 - 3000)</label>
@@ -182,10 +182,10 @@ export default function ImageResizer() {
                 max="3000"
                 value={maxSizeKb} 
                 onChange={(e) => setMaxSizeKb(e.target.value)}
-                placeholder="e.g. 250" 
+                placeholder="e.g. 50" 
                 className="w-full p-3 mt-1 border rounded-xl text-lg font-bold focus:border-blue-500 outline-none" 
               />
-              <p className="text-xs text-slate-400 mt-2">Kitne KB ki file chahiye? (1 KB se 3000 KB ke beech koi bhi number daalein)</p>
+              <p className="text-xs text-slate-500 mt-2 font-medium">Kitne KB ki file chahiye? (1 KB se 3000 KB ke beech koi bhi number daalein)</p>
             </div>
           </div>
 
