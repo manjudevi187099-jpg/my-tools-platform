@@ -5,18 +5,17 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-type ToolType = 'text' | 'smart-edit' | 'whiteout' | 'highlight' | 'strikethrough' | 'image' | 'signature' | 'link' | 'checkbox' | 'none';
+type ToolType = 'text' | 'smart-edit' | 'whiteout' | 'highlight' | 'strikethrough' | 'image' | 'signature' | 'link' | 'checkbox' | 'pen' | 'none';
 
-// Ab Annotation mein Page Number aur Canvas Size bhi save hoga perfect accuracy ke liye
 type Annotation = { 
   id: string; page: number; type: ToolType; 
   x: number; y: number; width: number; height: number; 
-  cWidth: number; cHeight: number; // Canvas dimensions at the time of drawing
+  cWidth: number; cHeight: number; 
   text?: string; imageUrl?: string; imageFile?: File;
   color?: string; fontSize?: number;
+  paths?: {x: number, y: number}[]; // Naya: Freehand drawing coordinates ke liye
 };
 
-// Helper: Hex color ko PDF RGB mein badalne ke liye
 const hexToRgbPdf = (hex: string) => {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -28,15 +27,14 @@ export default function AdvancedPdfEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   
-  // Multi-page states
   const [currentPage, setCurrentPage] = useState(1);
   const [numPages, setNumPages] = useState(1);
+  const [zoom, setZoom] = useState(1); // Naya: Zoom Level State
 
   const [activeTool, setActiveTool] = useState<ToolType>('none');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   
-  // Font Styling States
-  const [fontSize, setFontSize] = useState(14);
+  const [fontSize, setFontSize] = useState(14); // Pen ke liye ye thickness ka kaam karega
   const [textColor, setTextColor] = useState('#000000');
 
   const [activeInput, setActiveInput] = useState<{ x: number, y: number, width: number, height: number, text: string } | null>(null);
@@ -45,6 +43,9 @@ export default function AdvancedPdfEditor() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number, y: number } | null>(null);
   const [dragCurrent, setDragCurrent] = useState<{ x: number, y: number } | null>(null);
+  
+  // Naya: Pen Tool Current Path
+  const [currentPath, setCurrentPath] = useState<{x: number, y: number}[]>([]);
 
   const [imageInput, setImageInput] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -57,6 +58,7 @@ export default function AdvancedPdfEditor() {
     setFile(selectedFile);
     setAnnotations([]); 
     setActiveInput(null);
+    setZoom(1); // Reset zoom
     
     const arrayBuffer = await selectedFile.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -68,7 +70,7 @@ export default function AdvancedPdfEditor() {
 
   const renderPage = async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number) => {
     const page = await pdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 1.3 });
+    const viewport = page.getViewport({ scale: 1.5 }); // High quality base render
     setPdfDimensions({ w: viewport.width, h: viewport.height });
 
     const canvas = canvasRef.current;
@@ -90,33 +92,64 @@ export default function AdvancedPdfEditor() {
     }
   };
 
-  const undoLastAction = () => {
-    setAnnotations((prev) => prev.slice(0, -1));
-  };
+  const undoLastAction = () => setAnnotations((prev) => prev.slice(0, -1));
+  const clearCurrentPage = () => setAnnotations((prev) => prev.filter((a) => a.page !== currentPage));
 
-  const clearCurrentPage = () => {
-    setAnnotations((prev) => prev.filter((a) => a.page !== currentPage));
+  // MAGIC: Zoom adjust coordinates
+  const getMouseCoords = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0 };
+    return {
+      x: (e.clientX - rect.left) / zoom,
+      y: (e.clientY - rect.top) / zoom
+    };
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'none') return;
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    setDragStart({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    setDragCurrent({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    const { x, y } = getMouseCoords(e);
+    
+    if (activeTool === 'pen') {
+      setCurrentPath([{ x, y }]);
+      setIsDragging(true);
+      return;
+    }
+
+    setDragStart({ x, y });
+    setDragCurrent({ x, y });
     setIsDragging(true);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging || !dragStart) return;
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    setDragCurrent({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    if (!isDragging) return;
+    const { x, y } = getMouseCoords(e);
+
+    if (activeTool === 'pen') {
+      setCurrentPath((prev) => [...prev, { x, y }]);
+      return;
+    }
+
+    setDragCurrent({ x, y });
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging || !dragStart || !dragCurrent || !pdfDimensions) return;
+    if (!isDragging || !pdfDimensions) return;
     setIsDragging(false);
+
+    if (activeTool === 'pen') {
+      if (currentPath.length > 1) {
+        setAnnotations([...annotations, {
+          id: Date.now().toString(), page: currentPage, type: 'pen',
+          x: 0, y: 0, width: 0, height: 0,
+          cWidth: pdfDimensions.w, cHeight: pdfDimensions.h,
+          paths: currentPath, color: textColor, fontSize: fontSize // thickness
+        }]);
+      }
+      setCurrentPath([]);
+      return;
+    }
+
+    if (!dragStart || !dragCurrent) return;
 
     const startX = Math.min(dragStart.x, dragCurrent.x);
     const startY = Math.min(dragStart.y, dragCurrent.y);
@@ -127,8 +160,7 @@ export default function AdvancedPdfEditor() {
     if (boxHeight < 10) boxHeight = activeTool === 'checkbox' ? 20 : 25;
 
     const baseAnno = {
-      id: Date.now().toString(),
-      page: currentPage,
+      id: Date.now().toString(), page: currentPage,
       x: startX, y: startY, width: boxWidth, height: boxHeight,
       cWidth: pdfDimensions.w, cHeight: pdfDimensions.h
     };
@@ -137,9 +169,7 @@ export default function AdvancedPdfEditor() {
       setActiveInput({ x: startX, y: startY, width: boxWidth, height: boxHeight, text: '' });
       setTimeout(() => inputRef.current?.focus(), 50);
     } else if (activeTool === 'image' || activeTool === 'signature') {
-      if (imageInput) {
-        setAnnotations([...annotations, { ...baseAnno, type: activeTool, imageUrl: URL.createObjectURL(imageInput), imageFile: imageInput }]);
-      }
+      if (imageInput) setAnnotations([...annotations, { ...baseAnno, type: activeTool, imageUrl: URL.createObjectURL(imageInput), imageFile: imageInput }]);
     } else {
       setAnnotations([...annotations, { ...baseAnno, type: activeTool }]);
     }
@@ -170,7 +200,7 @@ export default function AdvancedPdfEditor() {
       const font = await pdf.embedFont(StandardFonts.Helvetica);
       
       for (const anno of annotations) {
-        const page = pdf.getPages()[anno.page - 1]; // Apply to SPECIFIC page
+        const page = pdf.getPages()[anno.page - 1]; 
         const { width, height } = page.getSize();
         
         const pdfX = (anno.x / anno.cWidth) * width;
@@ -181,7 +211,19 @@ export default function AdvancedPdfEditor() {
         const annoColor = anno.color ? hexToRgbPdf(anno.color) : rgb(0,0,0);
         const annoSize = anno.fontSize || 14;
 
-        if (anno.type === 'text') {
+        if (anno.type === 'pen' && anno.paths) {
+          // Freehand Drawing export logic
+          for (let i = 0; i < anno.paths.length - 1; i++) {
+            const p1 = anno.paths[i];
+            const p2 = anno.paths[i+1];
+            page.drawLine({
+              start: { x: (p1.x / anno.cWidth) * width, y: height - ((p1.y / anno.cHeight) * height) },
+              end: { x: (p2.x / anno.cWidth) * width, y: height - ((p2.y / anno.cHeight) * height) },
+              thickness: annoSize / 3, // Adjust thickness scale for PDF
+              color: annoColor
+            });
+          }
+        } else if (anno.type === 'text') {
           page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font, color: annoColor });
         } else if (anno.type === 'link') {
           page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font, color: annoColor });
@@ -212,7 +254,7 @@ export default function AdvancedPdfEditor() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'advanced-edited-document.pdf';
+      a.download = 'God-Level-Edited-Document.pdf';
       a.click();
     } catch (err) {
       console.error(err);
@@ -222,7 +264,6 @@ export default function AdvancedPdfEditor() {
     }
   };
 
-  // Only show annotations for the CURRENT page
   const currentPageAnnotations = annotations.filter(a => a.page === currentPage);
 
   return (
@@ -236,22 +277,18 @@ export default function AdvancedPdfEditor() {
 
         {/* UTILITY CONTROLS: UNDO & CLEAR */}
         <div className="flex gap-2 mb-6">
-          <button onClick={undoLastAction} disabled={annotations.length === 0} className="flex-1 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded font-medium text-sm transition disabled:opacity-50">
-            ↩️ Undo
-          </button>
-          <button onClick={clearCurrentPage} disabled={currentPageAnnotations.length === 0} className="flex-1 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded font-medium text-sm transition disabled:opacity-50">
-            🗑️ Clear Page
-          </button>
+          <button onClick={undoLastAction} disabled={annotations.length === 0} className="flex-1 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded font-medium text-sm transition disabled:opacity-50">↩️ Undo</button>
+          <button onClick={clearCurrentPage} disabled={currentPageAnnotations.length === 0} className="flex-1 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded font-medium text-sm transition disabled:opacity-50">🗑️ Clear</button>
         </div>
 
-        {/* FONT STYLING (Appears for text tools) */}
-        {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link') && (
+        {/* FONT/PEN STYLING */}
+        {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen') && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded">
-            <h3 className="text-xs font-bold text-blue-800 uppercase mb-2">Text Styling</h3>
+            <h3 className="text-xs font-bold text-blue-800 uppercase mb-2">{activeTool === 'pen' ? 'Pen Styling' : 'Text Styling'}</h3>
             <div className="flex gap-3 items-center">
               <div>
-                <label className="text-xs text-gray-600 block mb-1">Size:</label>
-                <input type="number" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className="w-16 p-1 border rounded text-sm" min="8" max="72" />
+                <label className="text-xs text-gray-600 block mb-1">{activeTool === 'pen' ? 'Thickness:' : 'Size:'}</label>
+                <input type="number" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className="w-16 p-1 border rounded text-sm" min="2" max="72" />
               </div>
               <div className="flex-1">
                 <label className="text-xs text-gray-600 block mb-1">Color:</label>
@@ -262,33 +299,36 @@ export default function AdvancedPdfEditor() {
         )}
 
         {/* TOOLS LIST */}
-        <div className="mb-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Text Tools</h3>
-          <div className="space-y-2">
-            <button onClick={() => setActiveTool('smart-edit')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'smart-edit' ? 'bg-indigo-600 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>✏️ Replace Word</button>
-            <button onClick={() => setActiveTool('text')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'text' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>📝 Add Text</button>
-            <button onClick={() => setActiveTool('link')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'link' ? 'bg-blue-400 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>🔗 Add Link</button>
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Draw & Edit</h3>
+            <div className="space-y-2">
+              {/* NAYA PEN TOOL */}
+              <button onClick={() => setActiveTool('pen')} className={`w-full p-2.5 rounded text-left font-bold text-sm transition ${activeTool === 'pen' ? 'bg-pink-600 text-white shadow scale-105' : 'bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200'}`}>✍️ Freehand Draw / Pen</button>
+              <button onClick={() => setActiveTool('smart-edit')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'smart-edit' ? 'bg-indigo-600 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>✏️ Replace Word</button>
+              <button onClick={() => setActiveTool('text')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'text' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>📝 Add Text</button>
+            </div>
           </div>
-        </div>
 
-        <div className="mb-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Mask & Annotate</h3>
-          <div className="space-y-2">
-            <button onClick={() => setActiveTool('whiteout')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'whiteout' ? 'bg-red-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>🧼 Whiteout</button>
-            <button onClick={() => setActiveTool('highlight')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'highlight' ? 'bg-yellow-400 text-black shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>🖍️ Highlight</button>
-            <button onClick={() => setActiveTool('strikethrough')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'strikethrough' ? 'bg-orange-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}><s>S</s> Strikethrough</button>
+          <div>
+            <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Mask & Annotate</h3>
+            <div className="space-y-2">
+              <button onClick={() => setActiveTool('whiteout')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'whiteout' ? 'bg-red-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>🧼 Whiteout</button>
+              <button onClick={() => setActiveTool('highlight')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'highlight' ? 'bg-yellow-400 text-black shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>🖍️ Highlight</button>
+              <button onClick={() => setActiveTool('strikethrough')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'strikethrough' ? 'bg-orange-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}><s>S</s> Strikethrough</button>
+            </div>
           </div>
-        </div>
 
-        <div className="mb-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Insert Media & Forms</h3>
-          <div className="space-y-2">
-            <button onClick={() => setActiveTool('image')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'image' ? 'bg-green-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>🖼️ Add Image</button>
-            <button onClick={() => setActiveTool('signature')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'signature' ? 'bg-teal-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>✒️ Upload Signature</button>
-            {(activeTool === 'image' || activeTool === 'signature') && (
-              <input type="file" accept="image/png, image/jpeg" onChange={(e) => setImageInput(e.target.files?.[0] || null)} className="w-full p-2 border rounded text-xs" />
-            )}
-            <button onClick={() => setActiveTool('checkbox')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'checkbox' ? 'bg-purple-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>☑️ Add Checkmark</button>
+          <div>
+            <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Insert Media & Links</h3>
+            <div className="space-y-2">
+              <button onClick={() => setActiveTool('link')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'link' ? 'bg-blue-400 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>🔗 Add Link</button>
+              <button onClick={() => setActiveTool('image')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'image' ? 'bg-green-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>🖼️ Add Image</button>
+              <button onClick={() => setActiveTool('signature')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'signature' ? 'bg-teal-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>✒️ Upload Signature</button>
+              {(activeTool === 'image' || activeTool === 'signature') && (
+                <input type="file" accept="image/png, image/jpeg" onChange={(e) => setImageInput(e.target.files?.[0] || null)} className="w-full p-2 border rounded text-xs" />
+              )}
+            </div>
           </div>
         </div>
 
@@ -302,45 +342,65 @@ export default function AdvancedPdfEditor() {
       {/* MAIN PREVIEW AREA */}
       <div className="w-full md:flex-1 bg-white p-4 rounded-2xl shadow-xl border border-gray-200 flex flex-col h-[90vh]">
         
-        {/* TOP PAGINATION BAR */}
+        {/* TOP TOOLBAR: ZOOM & PAGINATION */}
         {file && (
-          <div className="flex justify-between items-center bg-gray-100 p-3 rounded-lg mb-4 shadow-sm border border-gray-200">
-            <button onClick={() => changePage(-1)} disabled={currentPage === 1} className="px-4 py-1.5 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 font-medium">
-              ◀ Previous
-            </button>
-            <span className="font-bold text-gray-700">Page {currentPage} of {numPages}</span>
-            <button onClick={() => changePage(1)} disabled={currentPage === numPages} className="px-4 py-1.5 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 font-medium">
-              Next ▶
-            </button>
+          <div className="flex flex-wrap justify-between items-center bg-gray-100 p-3 rounded-lg mb-4 shadow-sm border border-gray-200 gap-4">
+            {/* ZOOM CONTROLS */}
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded border border-gray-300">
+              <button onClick={() => setZoom(z => Math.max(0.5, z - 0.2))} className="font-bold text-lg px-2 hover:bg-gray-100 rounded text-blue-600">➖</button>
+              <span className="font-bold text-gray-700 text-sm min-w-[50px] text-center">{Math.round(zoom * 100)}%</span>
+              <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} className="font-bold text-lg px-2 hover:bg-gray-100 rounded text-blue-600">➕</button>
+            </div>
+
+            {/* PAGINATION */}
+            <div className="flex items-center gap-3">
+              <button onClick={() => changePage(-1)} disabled={currentPage === 1} className="px-4 py-1.5 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 font-medium text-sm">◀ Prev</button>
+              <span className="font-bold text-gray-700 text-sm">Pg {currentPage} / {numPages}</span>
+              <button onClick={() => changePage(1)} disabled={currentPage === numPages} className="px-4 py-1.5 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 font-medium text-sm">Next ▶</button>
+            </div>
           </div>
         )}
 
-        {/* CANVAS EDITOR */}
-        <div className="overflow-auto flex justify-center flex-1 relative select-none bg-gray-200 rounded">
+        {/* CANVAS EDITOR AREA */}
+        <div className="overflow-auto flex flex-1 relative select-none bg-gray-300 rounded custom-scrollbar justify-center items-start">
           {!file ? (
-            <div className="flex items-center justify-center h-full text-gray-500 font-medium">Upload a PDF to start editing...</div>
+            <div className="flex items-center justify-center h-full text-gray-500 font-medium w-full">Upload a PDF to start editing...</div>
           ) : (
+            // MAGICAL ZOOM WRAPPER
             <div 
-              className={`relative inline-block m-4 shadow-2xl bg-white ${activeTool !== 'none' ? 'cursor-crosshair' : ''}`}
+              className={`relative inline-block m-8 shadow-2xl bg-white origin-top-left transition-transform duration-200 ${activeTool !== 'none' ? (activeTool === 'pen' ? 'cursor-crosshair' : 'cursor-crosshair') : ''}`}
+              style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
               onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
             >
               <canvas ref={canvasRef} className="pointer-events-none" />
               
+              {/* SVG FOR LIVE PEN DRAWING */}
+              {currentPath.length > 0 && (
+                <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-50">
+                  <polyline points={currentPath.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke={textColor} strokeWidth={fontSize} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+
               {/* LIVE DRAGGING PREVIEW BOX */}
-              {isDragging && dragStart && dragCurrent && (
+              {isDragging && dragStart && dragCurrent && activeTool !== 'pen' && (
                 <div className="absolute border-2 border-blue-500 border-dashed bg-blue-400 bg-opacity-20 z-40 pointer-events-none"
                   style={{ left: Math.min(dragStart.x, dragCurrent.x), top: Math.min(dragStart.y, dragCurrent.y), width: Math.abs(dragCurrent.x - dragStart.x), height: Math.abs(dragCurrent.y - dragStart.y) }}
                 />
               )}
 
-              {/* RENDERED ANNOTATIONS (CURRENT PAGE ONLY) */}
+              {/* RENDERED ANNOTATIONS */}
               {currentPageAnnotations.map((anno) => (
-                <div key={anno.id} className="absolute pointer-events-none" style={{ left: anno.x, top: anno.y, width: anno.width, height: anno.height }}>
+                <div key={anno.id} className="absolute pointer-events-none z-30" style={{ left: anno.x, top: anno.y, width: anno.width, height: anno.height }}>
+                  {anno.type === 'pen' && anno.paths && (
+                    <svg className="absolute top-0 left-0 overflow-visible" style={{ width: anno.cWidth, height: anno.cHeight, transform: `translate(-${anno.x}px, -${anno.y}px)` }}>
+                       <polyline points={anno.paths.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke={anno.color} strokeWidth={anno.fontSize} strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
                   {anno.type === 'text' && <span className="absolute top-0 leading-none" style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
                   {anno.type === 'link' && <span className="underline absolute top-0 leading-none" style={{ color: anno.color || 'blue', fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
-                  {anno.type === 'whiteout' && <div className="bg-white opacity-100 w-full h-full"></div>}
+                  {anno.type === 'whiteout' && <div className="bg-white opacity-100 w-full h-full border border-gray-100"></div>}
                   {anno.type === 'highlight' && <div className="bg-yellow-300 opacity-50 mix-blend-multiply w-full h-full"></div>}
-                  {anno.type === 'strikethrough' && <div className="bg-red-500 w-full absolute top-1/2" style={{ height: '2px' }}></div>}
+                  {anno.type === 'strikethrough' && <div className="w-full absolute top-1/2" style={{ height: '2px', backgroundColor: '#ef4444' }}></div>}
                   {anno.type === 'checkbox' && <span className="text-black text-xl leading-none absolute -top-1">☑</span>}
                   {(anno.type === 'image' || anno.type === 'signature') && anno.imageUrl && <img src={anno.imageUrl} alt="preview" className="w-full h-full object-fill" />}
                   {anno.type === 'smart-edit' && <span className="bg-white px-1 w-full h-full inline-block overflow-hidden" style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
