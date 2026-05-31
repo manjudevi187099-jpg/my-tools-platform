@@ -26,7 +26,7 @@ export default function SmartCardMaker() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState<Crop>({ unit: '%', width: 40, height: 40, x: 10, y: 10 });
   const [docType, setDocType] = useState<DocType>('Aadhaar');
-  const [printFormat, setPrintFormat] = useState<PrintFormat>('JointH'); // Default set to Joint (Horizontal)
+  const [printFormat, setPrintFormat] = useState<PrintFormat>('JointH'); 
   
   const [sheetCards, setSheetCards] = useState<SheetCard[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -52,12 +52,10 @@ export default function SmartCardMaker() {
     }
 
     const fmt = CARD_FORMATS[printFormat];
-    
     const canvas = document.createElement('canvas');
     const scaleX = imageRef.current.naturalWidth / imageRef.current.width;
     const scaleY = imageRef.current.naturalHeight / imageRef.current.height;
     
-    // Dynamic width & height based on user format selection
     canvas.width = fmt.pxW;
     canvas.height = fmt.pxH;
     
@@ -72,10 +70,8 @@ export default function SmartCardMaker() {
     const sw = crop.width * scaleX;
     const sh = crop.height * scaleY;
 
-    // Draw and stretch perfectly to the selected exact size
     ctx.drawImage(imageRef.current, sx, sy, sw, sh, 0, 0, fmt.pxW, fmt.pxH);
 
-    // Cutting Border
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, fmt.pxW, fmt.pxH);
@@ -99,38 +95,59 @@ export default function SmartCardMaker() {
     setSheetCards(sheetCards.filter(c => c.id !== id));
   };
 
-  // 🌟 SMART LAYOUT ENGINE FOR PDF
+  // 🌟 NAYA: PERFECT CENTER PDF LAYOUT ENGINE
   const generateAndDownloadPDF = () => {
     if (sheetCards.length === 0) return;
     setIsProcessing(true);
 
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
+      const PDF_W = 210;
       
-      let currX = 15; 
-      let currY = 15; 
+      const PDF_MARGIN_X_SINGLE = 14.4; 
+      const PDF_GAP_X = 10;
+      const PDF_MARGIN_Y = 10; 
+      const PDF_GAP_Y = 3.5; 
+
+      let currX = PDF_MARGIN_X_SINGLE; 
+      let currY = PDF_MARGIN_Y; 
       let rowMaxH = 0;
 
       sheetCards.forEach((card) => {
         const fmt = CARD_FORMATS[card.printFormat];
+        let drawX = currX;
+        let drawY = currY;
 
-        // Agar line mein jagah nahi hai, toh nayi line (row) mein jao
-        if (currX + fmt.mmW > 210 - 15) {
-          currX = 15;
-          currY += rowMaxH + 5; // 5mm vertical gap
-          rowMaxH = 0;
+        if (card.printFormat === 'JointH') {
+           if (currX > PDF_MARGIN_X_SINGLE) {
+               currX = PDF_MARGIN_X_SINGLE;
+               currY += rowMaxH + PDF_GAP_Y;
+               rowMaxH = 0;
+           }
+           drawX = (PDF_W - fmt.mmW) / 2; // Perfectly Center JointH
+           drawY = currY;
+           
+           rowMaxH = Math.max(rowMaxH, fmt.mmH);
+           currX = PDF_W; // Force newline for next item
+        } else {
+           if (currX + fmt.mmW > PDF_W - 10) {
+               currX = PDF_MARGIN_X_SINGLE;
+               currY += rowMaxH + PDF_GAP_Y;
+               rowMaxH = 0;
+           }
+           drawX = currX;
+           drawY = currY;
+           
+           rowMaxH = Math.max(rowMaxH, fmt.mmH);
+           currX = drawX + fmt.mmW + PDF_GAP_X;
         }
 
         const imgData = card.canvas.toDataURL('image/jpeg', 1.0);
-        doc.addImage(imgData, 'JPEG', currX, currY, fmt.mmW, fmt.mmH);
+        doc.addImage(imgData, 'JPEG', drawX, drawY, fmt.mmW, fmt.mmH);
         
-        // Print Border
         doc.setDrawColor(0);
         doc.setLineWidth(0.2);
-        doc.rect(currX, currY, fmt.mmW, fmt.mmH);
-
-        rowMaxH = Math.max(rowMaxH, fmt.mmH);
-        currX += fmt.mmW + 10; // 10mm horizontal gap
+        doc.rect(drawX, drawY, fmt.mmW, fmt.mmH);
       });
 
       doc.save(`Smart_Cards_A4_Print_${sheetCards.length}_Items.pdf`);
@@ -143,7 +160,7 @@ export default function SmartCardMaker() {
     }
   };
 
-  // 🌟 SMART LAYOUT ENGINE FOR PSD
+  // 🌟 NAYA: PERFECT CENTER PSD LAYOUT ENGINE
   const generateAndDownloadPSD = async () => {
     if (sheetCards.length === 0) return;
     setIsProcessing(true);
@@ -158,31 +175,56 @@ export default function SmartCardMaker() {
         bgCtx.fillStyle = '#ffffff';
         bgCtx.fillRect(0, 0, A4_W, A4_H);
       }
-      childrenLayers.push({ name: 'White A4 Paper', canvas: bgCanvas });
+      // Fixed: White paper layer perfectly aligned at 0,0
+      childrenLayers.push({ name: 'White A4 Paper', canvas: bgCanvas, left: 0, top: 0 });
 
-      let currX = 150; 
-      let currY = 150; 
+      const MARGIN_X_SINGLE = 189; // Perfectly centers 2 single cards
+      const GAP_X = 80; 
+      const MARGIN_Y = 80;  // Optimized Top Margin to fit 5 Rows safely
+      const GAP_Y = 45; // Space between rows
+
+      let currX = MARGIN_X_SINGLE; 
+      let currY = MARGIN_Y; 
       let rowMaxH = 0;
 
       sheetCards.forEach((card, index) => {
         const fmt = CARD_FORMATS[card.printFormat];
+        let drawX = currX;
+        let drawY = currY;
 
-        // Agar sheet ki width cross ho rahi hai, next line pe shift karo
-        if (currX + fmt.pxW > A4_W - 150) {
-          currX = 150;
-          currY += rowMaxH + 50; 
-          rowMaxH = 0;
+        if (card.printFormat === 'JointH') {
+           // Agar pehle se line me koi single card hai, toh ise nayi line me dalo
+           if (currX > MARGIN_X_SINGLE) {
+               currX = MARGIN_X_SINGLE;
+               currY += rowMaxH + GAP_Y;
+               rowMaxH = 0;
+           }
+           // JointH Card ko A4 ke ekdum Center me set karo
+           drawX = (A4_W - fmt.pxW) / 2; 
+           drawY = currY;
+           
+           rowMaxH = Math.max(rowMaxH, fmt.pxH);
+           currX = A4_W; // Force next card to a new line
+        } else {
+           // Single or JointV Card
+           if (currX + fmt.pxW > A4_W - 150) {
+               currX = MARGIN_X_SINGLE;
+               currY += rowMaxH + GAP_Y;
+               rowMaxH = 0;
+           }
+           drawX = currX;
+           drawY = currY;
+           
+           rowMaxH = Math.max(rowMaxH, fmt.pxH);
+           currX = drawX + fmt.pxW + GAP_X;
         }
 
         childrenLayers.push({
           name: `${card.docType} ${index + 1} (${card.printFormat})`,
           canvas: card.canvas,
-          left: currX,
-          top: currY,
+          left: drawX,
+          top: drawY,
         });
-
-        rowMaxH = Math.max(rowMaxH, fmt.pxH);
-        currX += fmt.pxW + 100;
       });
 
       const psd = { width: A4_W, height: A4_H, children: childrenLayers };
@@ -259,7 +301,6 @@ export default function SmartCardMaker() {
                 <option value="Custom">Custom Card</option>
               </select>
             </div>
-            {/* 🌟 NAYA OPTION: Card Format Selection */}
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Print Layout Size</label>
               <select value={printFormat} onChange={(e) => setPrintFormat(e.target.value as PrintFormat)} className="w-full p-3 border rounded-xl font-bold bg-slate-50 focus:border-blue-500 outline-none text-blue-800">
@@ -297,7 +338,6 @@ export default function SmartCardMaker() {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {sheetCards.map((card, index) => (
-                  // JointH (Horizontal) card will automatically take full width in preview
                   <div key={card.id} className={`relative group bg-slate-50 border border-slate-200 rounded p-2 shadow-sm text-center ${card.printFormat === 'JointH' ? 'col-span-2' : 'col-span-1'}`}>
                     <span className="block text-[10px] font-bold text-slate-500 mb-1">{card.docType} {index + 1} ({card.printFormat})</span>
                     <img src={card.canvas.toDataURL()} alt="Card Preview" className="w-full h-auto object-contain rounded-sm border border-slate-300 max-h-32 mx-auto" />
@@ -316,7 +356,7 @@ export default function SmartCardMaker() {
 
           <div className="mt-6 border-t pt-4">
              <p className="text-xs text-slate-500 font-medium text-center mb-3">
-               Automatically sets exact Standard/Joint sizes. Ready for direct A4 printing.
+               Automatically centers exactly 5 Joint cards on one A4 sheet without overflowing.
              </p>
              
              <div className="flex gap-3">
