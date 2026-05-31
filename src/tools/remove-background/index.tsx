@@ -9,7 +9,6 @@ export default function RemoveBackground() {
   const [selectedColor, setSelectedColor] = useState<string>('transparent');
   const [progress, setProgress] = useState<string>('');
 
-  // Standard Colors (Screenshot jaisa palette)
   const colorPalette = [
     'transparent', 'custom', '#ffffff', '#ff3b30', 
     '#e81e63', '#9c27b0', '#673ab7', '#3f51b5',
@@ -24,7 +23,7 @@ export default function RemoveBackground() {
     if (file) {
       const url = URL.createObjectURL(file);
       setOriginalImage(url);
-      setProcessedImage(null); // Reset on new upload
+      setProcessedImage(null); 
     }
   };
 
@@ -34,9 +33,9 @@ export default function RemoveBackground() {
     setProgress('Loading AI Model... (Takes 10-20 secs on first run)');
 
     try {
-      // AI Background Removal Process
-      const imageBlob = await imglyRemoveBackground(originalImage, {
-        progress: (key, current, total) => {
+      // 🌟 FIX: TypeScript errors resolved here by casting and adding types
+      const imageBlob = await (imglyRemoveBackground as any)(originalImage, {
+        progress: (key: string, current: number, total: number) => {
           setProgress(`Processing: ${Math.round((current / total) * 100)}%`);
         }
       });
@@ -64,16 +63,13 @@ export default function RemoveBackground() {
       canvas.height = img.height;
 
       if (ctx) {
-        // Agar color transparent nahi hai, toh background fill karein
         if (selectedColor !== 'transparent') {
           ctx.fillStyle = selectedColor;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
         
-        // Transparent PNG (Process Image) ko upar draw karein
         ctx.drawImage(img, 0, 0);
 
-        // Download logic
         const link = document.createElement('a');
         link.download = `Bg_Removed_${selectedColor === 'transparent' ? 'PNG' : 'Colored'}.png`;
         link.href = canvas.toDataURL('image/png', 1.0);
@@ -87,7 +83,6 @@ export default function RemoveBackground() {
     <div className="max-w-6xl mx-auto p-6 bg-slate-50 min-h-screen">
       <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col md:flex-row">
         
-        {/* LEFT COLUMN: Image Preview */}
         <div className="flex-1 bg-slate-100 p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-200 relative min-h-[400px]">
           <div className="absolute top-4 left-4 bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
             Image Preview
@@ -104,7 +99,6 @@ export default function RemoveBackground() {
             </div>
           ) : (
             <div className="w-full max-w-md relative flex flex-col items-center">
-              {/* Image Container with Dynamic Background */}
               <div 
                 className="relative rounded-lg shadow-2xl overflow-hidden transition-all duration-300"
                 style={{
@@ -137,7 +131,6 @@ export default function RemoveBackground() {
           )}
         </div>
 
-        {/* RIGHT COLUMN: Controls (Palette) */}
         <div className="w-full md:w-[400px] p-8 flex flex-col bg-white">
           <h2 className="text-3xl font-black text-slate-900 leading-tight">Remove Image Background</h2>
           <p className="text-slate-500 text-sm mt-1 mb-8">100% Automatically and Free</p>
