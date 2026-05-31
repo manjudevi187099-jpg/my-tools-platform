@@ -111,7 +111,7 @@ export default function ProfessionalPdfEditor() {
       await renderAllPages(pdf, {});
     } catch (err: any) {
       if (err.name === 'PasswordException') {
-        const userPwd = prompt("🔒 This PDF is Password Protected. Enter password to open:");
+        const userPwd = prompt("🔒 This PDF is Password Protected (e.g. Aadhaar). Enter password to open:");
         if (userPwd) loadNewFile(newFile, userPwd);
       } else {
         alert("Error loading PDF: " + err.message);
@@ -271,7 +271,6 @@ export default function ProfessionalPdfEditor() {
 
   const undoLastAction = () => setAnnotations((prev) => prev.slice(0, -1));
 
-  // 🌟 NAYA: Clear Edits Button logic
   const clearCurrentPageEdits = () => {
     setAnnotations(prev => prev.filter(a => a.page !== currentPage));
   };
@@ -366,7 +365,6 @@ export default function ProfessionalPdfEditor() {
     }
   };
 
-  // 🌟 NAYA: Save & Download accepts an override parameter for exporting single pages
   const saveAndDownload = async (rangeOverride?: string) => {
     if (!file) return;
     setIsProcessing(true);
@@ -451,7 +449,7 @@ export default function ProfessionalPdfEditor() {
       for (const pageNum of sortedDeletedPages) pdf.removePage(pageNum - 1);
 
       let finalPdf = pdf;
-      const finalRange = rangeOverride || exportRange; // Use override if passed
+      const finalRange = rangeOverride || exportRange; 
       if (finalRange.trim() !== '') {
          const newPdf = await PDFDocument.create();
          const ranges = finalRange.split('-').map(Number);
@@ -496,7 +494,7 @@ export default function ProfessionalPdfEditor() {
   const visiblePages = Array.from({length: numPages}, (_, i) => i + 1).filter(p => !deletedPages.includes(p));
 
   return (
-    <div className={`max-w-[1350px] mx-auto my-6 flex flex-col h-[88vh] font-sans overflow-hidden transition-colors duration-300 rounded-2xl shadow-2xl border ${isDarkMode ? 'border-slate-800' : 'border-slate-200'} ${themeText}`}>
+    <div className={`max-w-[1350px] mx-auto my-6 flex flex-col h-[88vh] font-sans overflow-hidden transition-colors duration-300 rounded-2xl shadow-2xl border ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'} ${themeText}`}>
       
       {/* 🌟 TOP NAVBAR */}
       <header className={`h-16 border-b flex items-center justify-between px-6 z-20 shrink-0 ${panelBg}`}>
@@ -549,7 +547,6 @@ export default function ProfessionalPdfEditor() {
               <button onClick={rotateCurrentPage} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>🔄 Rotate Curr Page</button>
               <button onClick={togglePageDelete} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 hover:bg-red-50 text-red-600`}>🗑️ Delete Curr Page</button>
               
-              {/* 🌟 NAYA: Export Current Page & Clear Page Edits */}
               <button onClick={() => saveAndDownload(`${currentPage}-${currentPage}`)} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 hover:bg-green-50 text-green-700`}>📥 Export Curr Page</button>
               <button onClick={clearCurrentPageEdits} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 hover:bg-orange-50 text-orange-600`}>🧹 Clear Page Edits</button>
             </div>
@@ -619,7 +616,7 @@ export default function ProfessionalPdfEditor() {
           </div>
         </aside>
 
-        {/* 🌟 WORKSPACE (CANVAS AREA) - FIGMA GRID & MIN-W-MAX FIX */}
+        {/* 🌟 WORKSPACE (CANVAS AREA) - THE GOD-TIER SCROLL FIX */}
         <main 
           className="flex-1 overflow-auto relative custom-scrollbar" 
           onScroll={handleScroll}
@@ -639,7 +636,6 @@ export default function ProfessionalPdfEditor() {
           )}
 
           {!file ? (
-            // 🌟 A4 DEFAULT EMPTY STATE FORMAT
             <div className="flex w-full h-full items-center justify-center p-8">
               <div className="flex flex-col items-center justify-center w-full max-w-[650px] aspect-[1/1.414] bg-white shadow-2xl rounded-sm border border-slate-200">
                  <span className="text-6xl mb-4 opacity-70">📄</span>
@@ -648,8 +644,8 @@ export default function ProfessionalPdfEditor() {
               </div>
             </div>
           ) : (
-            // 🌟 THE FIX: min-w-max prevents Left Clipping at high Zoom
-            <div className="min-w-max min-h-full flex flex-col items-center gap-12 pt-10 pb-32 px-10">
+            // 🌟 THE FIX: "w-max min-w-full" forces the container to expand properly for scrollbars
+            <div className="w-max min-w-full min-h-full flex flex-col items-center gap-12 pt-10 pb-32 px-10">
               {visiblePages.map((pageNum) => {
                 const dims = pdfDimensions[pageNum];
                 if (!dims) return null;
