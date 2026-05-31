@@ -51,11 +51,10 @@ export default function ProfessionalPdfEditor() {
   const [fontSize, setFontSize] = useState(14); 
   const [textColor, setTextColor] = useState('#ef4444');
 
-  // 🌟 MULTI-PAGE ENGINE STATES
   const [pdfDimensions, setPdfDimensions] = useState<Record<number, {w: number, h: number}>>({});
   const canvasRefs = useRef<Record<number, HTMLCanvasElement | null>>({});
   
-  const [actionPage, setActionPage] = useState<number | null>(null); // Tracks which page mouse is dragging on
+  const [actionPage, setActionPage] = useState<number | null>(null); 
   const [activeInput, setActiveInput] = useState<{ page: number, x: number, y: number, width: number, height: number, text: string } | null>(null);
   
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -152,7 +151,6 @@ export default function ProfessionalPdfEditor() {
     setIsProcessing(false);
   };
 
-  // 🌟 NAYA: ENGINE TO RENDER ALL PAGES VERTICALLY
   const renderAllPages = async (pdf: pdfjsLib.PDFDocumentProxy, rotations: Record<number, number>) => {
     const dims: Record<number, {w: number, h: number, pageObj: any, vp: any}> = {};
     for (let i = 1; i <= pdf.numPages; i++) {
@@ -189,7 +187,6 @@ export default function ProfessionalPdfEditor() {
     }
   };
 
-  // 🌟 NAYA: AUTOMATIC SCROLL TRACKING
   const handleScroll = () => {
      let closestPage = 1;
      let minDistance = Infinity;
@@ -274,7 +271,11 @@ export default function ProfessionalPdfEditor() {
 
   const undoLastAction = () => setAnnotations((prev) => prev.slice(0, -1));
 
-  // 🌟 NAYA: MOUSE COORDS WITH PAGE NUMBER
+  // 🌟 NAYA: Clear Edits Button logic
+  const clearCurrentPageEdits = () => {
+    setAnnotations(prev => prev.filter(a => a.page !== currentPage));
+  };
+
   const getMouseCoords = (e: React.MouseEvent<HTMLDivElement>, pageNum: number) => {
     const canvas = canvasRefs.current[pageNum];
     if (!canvas || !pdfDimensions[pageNum]) return { x: 0, y: 0 };
@@ -365,7 +366,8 @@ export default function ProfessionalPdfEditor() {
     }
   };
 
-  const saveAndDownload = async () => {
+  // 🌟 NAYA: Save & Download accepts an override parameter for exporting single pages
+  const saveAndDownload = async (rangeOverride?: string) => {
     if (!file) return;
     setIsProcessing(true);
 
@@ -449,9 +451,10 @@ export default function ProfessionalPdfEditor() {
       for (const pageNum of sortedDeletedPages) pdf.removePage(pageNum - 1);
 
       let finalPdf = pdf;
-      if (exportRange.trim() !== '') {
+      const finalRange = rangeOverride || exportRange; // Use override if passed
+      if (finalRange.trim() !== '') {
          const newPdf = await PDFDocument.create();
-         const ranges = exportRange.split('-').map(Number);
+         const ranges = finalRange.split('-').map(Number);
          if (ranges.length === 2 && ranges[0] > 0 && ranges[1] <= pdf.getPageCount()) {
             const indices = Array.from({length: ranges[1] - ranges[0] + 1}, (_, i) => ranges[0] - 1 + i);
             const copiedPages = await newPdf.copyPages(pdf, indices);
@@ -478,7 +481,7 @@ export default function ProfessionalPdfEditor() {
       a.href = url;
       
       const originalName = file.name.replace('.pdf', '');
-      a.download = exportRange ? `${originalName}_Pages_${exportRange}.pdf` : `${originalName}_Pro_Edited.pdf`;
+      a.download = finalRange ? `${originalName}_Pages_${finalRange}.pdf` : `${originalName}_Pro_Edited.pdf`;
       a.click();
     } catch (err) {
       console.error(err); alert("Error saving PDF.");
@@ -487,15 +490,13 @@ export default function ProfessionalPdfEditor() {
     }
   };
 
-  const themeBg = isDarkMode ? 'bg-slate-900' : 'bg-slate-100';
   const themeText = isDarkMode ? 'text-slate-200' : 'text-slate-800';
   const panelBg = isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
-  const canvasBg = isDarkMode ? 'bg-slate-950' : 'bg-slate-200';
-
+  
   const visiblePages = Array.from({length: numPages}, (_, i) => i + 1).filter(p => !deletedPages.includes(p));
 
   return (
-    <div className={`max-w-[1350px] mx-auto my-6 flex flex-col h-[88vh] font-sans overflow-hidden transition-colors duration-300 rounded-2xl shadow-2xl border ${themeBg} ${themeText}`}>
+    <div className={`max-w-[1350px] mx-auto my-6 flex flex-col h-[88vh] font-sans overflow-hidden transition-colors duration-300 rounded-2xl shadow-2xl border ${isDarkMode ? 'border-slate-800' : 'border-slate-200'} ${themeText}`}>
       
       {/* 🌟 TOP NAVBAR */}
       <header className={`h-16 border-b flex items-center justify-between px-6 z-20 shrink-0 ${panelBg}`}>
@@ -543,10 +544,14 @@ export default function ProfessionalPdfEditor() {
             </div>
 
             <div className="space-y-1 mb-6">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Actions</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Page Actions</label>
               <button onClick={() => setActiveTool('select')} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 ${activeTool === 'select' ? 'bg-blue-600 text-white shadow' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🖱️ Select & Move</button>
               <button onClick={rotateCurrentPage} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>🔄 Rotate Curr Page</button>
               <button onClick={togglePageDelete} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 hover:bg-red-50 text-red-600`}>🗑️ Delete Curr Page</button>
+              
+              {/* 🌟 NAYA: Export Current Page & Clear Page Edits */}
+              <button onClick={() => saveAndDownload(`${currentPage}-${currentPage}`)} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 hover:bg-green-50 text-green-700`}>📥 Export Curr Page</button>
+              <button onClick={clearCurrentPageEdits} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 hover:bg-orange-50 text-orange-600`}>🧹 Clear Page Edits</button>
             </div>
 
             {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen' || activeTool === 'arrow' || activeTool === 'circle' || activeTool === 'strikethrough') && (
@@ -606,7 +611,7 @@ export default function ProfessionalPdfEditor() {
             <div className={`mt-auto p-4 rounded-xl border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                <label className="text-[10px] font-bold text-slate-500 block mb-1 uppercase">✂️ Export Range (e.g. 1-3)</label>
                <input type="text" value={exportRange} onChange={(e) => setExportRange(e.target.value)} placeholder="All Pages" className={`w-full p-2 border rounded text-xs mb-3 ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white'}`} />
-               <button onClick={saveAndDownload} disabled={isProcessing || !file} className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-bold shadow-md transition-all text-sm">
+               <button onClick={() => saveAndDownload()} disabled={isProcessing || !file} className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-bold shadow-md transition-all text-sm">
                  {isProcessing ? 'Applying Magic...' : '✨ Export Final PDF'}
                </button>
             </div>
@@ -614,8 +619,16 @@ export default function ProfessionalPdfEditor() {
           </div>
         </aside>
 
-        {/* 🌟 WORKSPACE (CANVAS AREA) - CONTINUOUS SCROLL ENABLED */}
-        <main className={`flex-1 overflow-auto relative ${canvasBg} custom-scrollbar p-6`} onScroll={handleScroll}>
+        {/* 🌟 WORKSPACE (CANVAS AREA) - FIGMA GRID & MIN-W-MAX FIX */}
+        <main 
+          className="flex-1 overflow-auto relative custom-scrollbar" 
+          onScroll={handleScroll}
+          style={{
+             backgroundColor: isDarkMode ? '#020617' : '#f8fafc',
+             backgroundImage: isDarkMode ? 'radial-gradient(#334155 1.5px, transparent 1px)' : 'radial-gradient(#cbd5e1 1.5px, transparent 1px)',
+             backgroundSize: '24px 24px'
+          }}
+        >
           
           {file && (
              <div className={`fixed bottom-10 right-10 z-50 flex items-center gap-1 px-3 py-2 rounded-full border shadow-2xl ${isDarkMode ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'}`}>
@@ -626,16 +639,17 @@ export default function ProfessionalPdfEditor() {
           )}
 
           {!file ? (
-            // 🌟 A4 EMPTY STATE FORMAT
-            <div className="flex w-full h-full items-center justify-center">
-              <div className="flex flex-col items-center justify-center w-full max-w-[700px] aspect-[1/1.414] bg-white shadow-2xl rounded-sm border border-slate-200 p-10">
-                 <span className="text-7xl mb-6 opacity-80">📄</span>
-                 <p className="text-3xl font-black text-slate-300 tracking-wider">A4 WORKSPACE</p>
-                 <p className="text-sm font-bold text-slate-400 mt-3">Upload a Document to start editing</p>
+            // 🌟 A4 DEFAULT EMPTY STATE FORMAT
+            <div className="flex w-full h-full items-center justify-center p-8">
+              <div className="flex flex-col items-center justify-center w-full max-w-[650px] aspect-[1/1.414] bg-white shadow-2xl rounded-sm border border-slate-200">
+                 <span className="text-6xl mb-4 opacity-70">📄</span>
+                 <p className="text-2xl font-black text-slate-300 tracking-wider">A4 WORKSPACE</p>
+                 <p className="text-sm font-bold text-slate-400 mt-2">Upload a Document to start editing</p>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-10 pb-20 w-full min-h-full">
+            // 🌟 THE FIX: min-w-max prevents Left Clipping at high Zoom
+            <div className="min-w-max min-h-full flex flex-col items-center gap-12 pt-10 pb-32 px-10">
               {visiblePages.map((pageNum) => {
                 const dims = pdfDimensions[pageNum];
                 if (!dims) return null;
@@ -644,7 +658,7 @@ export default function ProfessionalPdfEditor() {
                   <div 
                     key={pageNum} 
                     id={`pdf-page-${pageNum}`}
-                    className="relative transition-all duration-200 shadow-2xl bg-white shrink-0"
+                    className="relative transition-all duration-200 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)] bg-white shrink-0 ring-1 ring-slate-200"
                     style={{ width: `${dims.w * zoom}px`, height: `${dims.h * zoom}px` }}
                   >
                     <div 
