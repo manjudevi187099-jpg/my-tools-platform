@@ -101,4 +101,11 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["add name on photo", "photo editor", "date on photo", "form photo"],
     isActive: true,
   },
+  "photo-signature-joiner": {
+  name: "Photo Signature Joiner",
+  description: "Form bharne ke liye photo aur signature ko ek single image mein merge karein.",
+  category: "utility",
+  keywords: ["join photo signature", "merge image", "exam form photo"],
+  isActive: true,
+},
 };

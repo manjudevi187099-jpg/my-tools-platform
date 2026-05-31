@@ -21,6 +21,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "remove-watermark": dynamic(() => import('../../../tools/remove-watermark'), { ssr: false }),
   "pdf-stamper": dynamic(() => import('../../../tools/pdf-stamper'), { ssr: false }),
   "add-name-date": dynamic(() => import('../../../tools/add-name-date'), { ssr: false }),
+  "photo-signature-joiner": dynamic(() => import('../../../tools/photo-signature-joiner'), { ssr: false }),
 };
 
 export default function ToolPage() {
