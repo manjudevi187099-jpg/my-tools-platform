@@ -2,65 +2,74 @@
 
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import { toolsRegistry } from '../../../../config/siteConfig';
+import { toolsRegistry } from '../../../config/siteConfig'; // Path check kar lena
 
-// Saare Tools ka Dynamic Import (Sahi path ke saath)
-const PdfMerger = dynamic(() => import('../../../../src/tools/pdf-merger'), { ssr: false });
-const SplitPdf = dynamic(() => import('../../../../src/tools/split-pdf'), { ssr: false });
-const CompressPdf = dynamic(() => import('../../../../src/tools/compress-pdf'), { ssr: false });
-const UnlockPdf = dynamic(() => import('../../../../src/tools/unlock-pdf'), { ssr: false });
-const ProtectPdf = dynamic(() => import('../../../../src/tools/protect-pdf'), { ssr: false });
-const ImageToPdf = dynamic(() => import('../../../../src/tools/image-to-pdf'), { ssr: false });
-const WatermarkPdf = dynamic(() => import('../../../../src/tools/watermark-pdf'), { ssr: false });
-const InvertPdf = dynamic(() => import('../../../../src/tools/pdf-invert-colors'), { ssr: false });
-const RemoveWatermark = dynamic(() => import('../../../../src/tools/remove-watermark'), { ssr: false });
-const PdfEditor = dynamic(() => import('../../../../src/tools/pdf-editor'), { ssr: false });
-
-// Naya PDF Stamper ka Dynamic Import
-const PdfStamper = dynamic(() => import('../../../../src/tools/pdf-stamper'), { ssr: false });
+// 🌟 SAARE TOOLS KA DYNAMIC IMPORT
+// Sahi path: 'src/tools/...' se import ho raha hai
+const ToolComponents: Record<string, React.ElementType> = {
+  "pdf-merger": dynamic(() => import('@/tools/pdf-merger'), { ssr: false }),
+  "split-pdf": dynamic(() => import('@/tools/split-pdf'), { ssr: false }),
+  "compress-pdf": dynamic(() => import('@/tools/compress-pdf'), { ssr: false }),
+  "unlock-pdf": dynamic(() => import('@/tools/unlock-pdf'), { ssr: false }),
+  "protect-pdf": dynamic(() => import('@/tools/protect-pdf'), { ssr: false }),
+  "image-to-pdf": dynamic(() => import('@/tools/image-to-pdf'), { ssr: false }),
+  "watermark-pdf": dynamic(() => import('@/tools/watermark-pdf'), { ssr: false }),
+  "invert-pdf": dynamic(() => import('@/tools/pdf-invert-colors'), { ssr: false }),
+  "remove-watermark": dynamic(() => import('@/tools/remove-watermark'), { ssr: false }),
+  "pdf-editor": dynamic(() => import('@/tools/pdf-editor'), { ssr: false }),
+  "pdf-stamper": dynamic(() => import('@/tools/pdf-stamper'), { ssr: false }),
+  "pdf-to-word": dynamic(() => import('@/tools/pdf-to-word'), { ssr: false }),
+};
 
 export default function ToolPage() {
   const params = useParams();
-  const slug = (params?.['tool-slug'] as string) || (params?.slug as string);
+  const slug = params?.slug as string;
 
+  // 1. Loading State
   if (!slug) {
-    return <div style={{ padding: '5rem', textAlign: 'center', color: '#64748b', fontSize: '1.2rem' }}>⏳ Loading Tool...</div>;
+    return <div className="min-h-screen flex items-center justify-center text-slate-500 text-xl font-bold">⏳ Loading Tool...</div>;
   }
 
-  const toolMeta = toolsRegistry[slug as keyof typeof toolsRegistry] || {
-    name: slug.replace('-', ' '),
-    description: 'Advanced, fast, and secure utility engine.'
-  };
+  // 2. Tool Data Fetching
+  const toolMeta = toolsRegistry[slug];
 
-  const renderActiveTool = () => {
-    if (slug === 'pdf-merger') return <PdfMerger />;
-    if (slug === 'split-pdf') return <SplitPdf />;
-    if (slug === 'compress-pdf') return <CompressPdf />;
-    if (slug === 'unlock-pdf') return <UnlockPdf />;
-    if (slug === 'protect-pdf') return <ProtectPdf />;
-    if (slug === 'image-to-pdf') return <ImageToPdf />;
-    if (slug === 'watermark-pdf') return <WatermarkPdf />;
-    if (slug === 'invert-pdf') return <InvertPdf />;
-    if (slug === 'remove-watermark') return <RemoveWatermark />;
-    if (slug === 'pdf-editor') return <PdfEditor />;
-    
-    // Naya PDF Stamper ka condition
-    if (slug === 'pdf-stamper') return <PdfStamper />;
-    
-    return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>⚠️ Tool not found.</div>;
-  };
+  // 3. 404 Handling (Agar tool registry mein nahi hai)
+  if (!toolMeta) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
+        <h1 className="text-6xl font-black text-slate-300 mb-4">404</h1>
+        <p className="text-xl font-bold text-slate-600">Tool "{slug}" nahi mila!</p>
+        <a href="/" className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg font-bold">Wapas Home Jayein</a>
+      </div>
+    );
+  }
+
+  // 4. Dynamic Component Rendering
+  const ActiveToolComponent = ToolComponents[slug];
 
   return (
-    <main style={{ minHeight: '100vh', backgroundColor: '#f8fafc', paddingBottom: '3rem', fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ padding: '2.5rem 1rem', textAlign: 'center', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', marginBottom: '2rem' }}>
-        <h1 style={{ color: '#0f172a', margin: 0, fontSize: '2.2rem', fontWeight: '800', textTransform: 'capitalize' }}>
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 pb-12 font-sans">
+      
+      {/* 🌟 Professional Header */}
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-10 px-4 text-center shadow-sm">
+        <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
           {toolMeta.name}
         </h1>
-        <p style={{ color: '#64748b', marginTop: '0.5rem', fontSize: '1.1rem' }}>
+        <p className="text-slate-500 dark:text-slate-400 mt-3 max-w-xl mx-auto text-lg">
           {toolMeta.description}
         </p>
       </div>
-      {renderActiveTool()}
+
+      {/* 🌟 TOOL RENDERING */}
+      <div className="mt-8 px-4">
+        {ActiveToolComponent ? (
+          <ActiveToolComponent />
+        ) : (
+          <div className="text-center p-20 text-red-500 font-bold">
+            ⚠️ Component file exist nahi karti. Check path in ToolComponents!
+          </div>
+        )}
+      </div>
     </main>
   );
 }

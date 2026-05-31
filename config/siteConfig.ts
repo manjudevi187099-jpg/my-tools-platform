@@ -60,17 +60,23 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["remove watermark", "delete watermark"],
   }, 
-  // Yeh raha aapka naya PDF Stamper Tool
   "pdf-stamper": {
     name: "PDF Stamper",
     description: "Click and add custom stamps like VERIFIED or APPROVED anywhere on your PDF.",
     category: "pdf",
     keywords: ["pdf stamper", "add stamp", "verified stamp", "custom pdf stamp"],
   },
-"pdf-editor": {
+  "pdf-editor": {
     name: "Advanced PDF Editor",
     description: "All-in-one visual editor. Add text, erase content with whiteout, and highlight shapes directly on your PDF.",
     category: "pdf",
     keywords: ["pdf editor", "whiteout pdf", "add text to pdf", "edit pdf online"],
+  },
+  // 🌟 NAYA ADD KIYA HUA: PDF TO WORD CONVERTER
+  "pdf-to-word": {
+    name: "PDF to Word Converter",
+    description: "Extract text and paragraphs into an editable DOC file. 100% Free & Secure Client-side processing.",
+    category: "pdf",
+    keywords: ["pdf to word", "pdf to doc", "convert pdf to word", "extract text from pdf"],
   },
 };
