@@ -13,7 +13,7 @@ type Annotation = {
   cWidth: number; cHeight: number; 
   text?: string; imageUrl?: string; imageFile?: File;
   color?: string; fontSize?: number;
-  fontFamily?: string; bgColor?: string; checkboxStyle?: string; // 🌟 PRO ADDITIONS
+  fontFamily?: string; bgColor?: string; checkboxStyle?: string;
   paths?: {x: number, y: number}[]; 
 };
 
@@ -50,7 +50,6 @@ export default function ProfessionalPdfEditor() {
   const [activeTool, setActiveTool] = useState<ToolType>('select');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   
-  // 🌟 NAYA: PROFESSIONAL STYLING STATES
   const [fontSize, setFontSize] = useState(14); 
   const [textColor, setTextColor] = useState('#ef4444');
   const [fontFamily, setFontFamily] = useState('Helvetica');
@@ -343,7 +342,6 @@ export default function ProfessionalPdfEditor() {
     setActiveInput(null); setActiveTool('select'); 
   };
 
-  // 🌟 NAYA: LIVE UPDATE ANY SELECTED ELEMENT
   const updateAnnotation = (id: string, updates: Partial<Annotation>) => {
     setAnnotations(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
   };
@@ -354,6 +352,34 @@ export default function ProfessionalPdfEditor() {
     } else {
       const scale = action === 'grow' ? 1.1 : 0.9;
       setAnnotations(prev => prev.map(a => a.id === id ? { ...a, width: a.width * scale, height: a.height * scale, fontSize: a.fontSize ? a.fontSize * scale : undefined } : a));
+    }
+  };
+
+  const extractPageText = async () => {
+    if (!pdfDoc) return '';
+    try {
+      const page = await pdfDoc.getPage(currentPage);
+      const textContent = await page.getTextContent();
+      return textContent.items.map((item: any) => item.str).join(' ');
+    } catch (e) { return ''; }
+  };
+
+  const copyTextToClipboard = async () => {
+    const text = await extractPageText();
+    if (text) { navigator.clipboard.writeText(text); alert('✅ Text copied!'); }
+  };
+
+  const toggleReadAloud = async () => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel(); setIsSpeaking(false);
+    } else {
+      const text = await extractPageText();
+      if (text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onend = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+        setIsSpeaking(true);
+      } else { alert('No text found to read.'); }
     }
   };
 
@@ -418,7 +444,6 @@ export default function ProfessionalPdfEditor() {
         } else if (anno.type === 'highlight') { page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(1, 1, 0), opacity: 0.4 });
         } else if (anno.type === 'strikethrough') { page.drawLine({ start: { x: pdfX, y: pdfY - (pdfHeight/2) }, end: { x: pdfX + pdfWidth, y: pdfY - (pdfHeight/2) }, thickness: 1.5, color: rgb(1, 0, 0) });
         } else if (anno.type === 'checkbox') {
-          // 🌟 NAYA: EXPORTING CHECKBOX STYLES
           if (anno.checkboxStyle === 'fill') {
              page.drawRectangle({ x: pdfX, y: pdfY - 15, width: 15 * (pdfWidth/20), height: 15 * (pdfHeight/20), color: annoColor });
           } else {
@@ -436,7 +461,6 @@ export default function ProfessionalPdfEditor() {
           let pdfImage = anno.imageFile.type === 'image/png' ? await pdf.embedPng(imgBuffer) : await pdf.embedJpg(imgBuffer);
           page.drawImage(pdfImage, { x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight });
         } else if (anno.type === 'smart-edit') {
-          // 🌟 NAYA: EXPORTING SMART-EDIT WITH BG COLOR
           const bgRgb = anno.bgColor ? hexToRgbPdf(anno.bgColor) : rgb(1,1,1);
           page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: bgRgb });
           page.drawText(anno.text || '', { x: pdfX + 2, y: pdfY - annoSize, size: annoSize, font: textFont, color: annoColor });
@@ -522,6 +546,15 @@ export default function ProfessionalPdfEditor() {
         
         {file && (
           <div className="flex items-center gap-4">
+             <div className="flex gap-2">
+               <button onClick={copyTextToClipboard} className={`px-3 py-1.5 text-xs font-bold rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 hover:bg-slate-600' : 'border-slate-300 bg-white hover:bg-slate-50'}`}>📋 Copy Text</button>
+               <button onClick={toggleReadAloud} className={`px-3 py-1.5 text-xs font-bold rounded-md border transition ${isSpeaking ? 'bg-blue-500 text-white border-blue-600 animate-pulse' : (isDarkMode ? 'border-slate-600 bg-slate-700 text-green-400' : 'border-slate-300 bg-white text-green-600')}`}>
+                 {isSpeaking ? '⏹️ Stop' : '🔊 Read'}
+               </button>
+             </div>
+
+             <div className="w-px h-8 bg-slate-300 mx-2"></div>
+
              <div className="flex items-center gap-2">
                 <button onClick={() => changePage(-1)} disabled={currentPage === 1} className={`px-3 py-1.5 border rounded-md font-bold text-sm disabled:opacity-40 transition ${isDarkMode ? 'border-slate-600 hover:bg-slate-700' : 'bg-white hover:bg-blue-50 border-slate-300'}`}>◀ Prev</button>
                 <span className="font-bold text-sm px-2">Pg {currentPage} / {numPages}</span>
@@ -557,22 +590,24 @@ export default function ProfessionalPdfEditor() {
               <button onClick={clearCurrentPageEdits} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 hover:bg-orange-50 text-orange-600`}>🧹 Clear Page Edits</button>
             </div>
 
-            {/* 🌟 NAYA: ENHANCED PRO STYLING CONTROLS */}
-            {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen' || activeTool === 'arrow' || activeTool === 'circle' || activeTool === 'strikethrough') && (
+            {/* 🌟 FIX: PRO STYLING CONTROLS */}
+            {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen' || activeTool === 'arrow' || activeTool === 'circle' || activeTool === 'strikethrough' || activeTool === 'whiteout') && (
               <div className={`mb-6 p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-blue-50 border-blue-200'}`}>
                 <label className="text-[10px] font-black text-blue-500 uppercase mb-3 block">🎨 PRO Styling</label>
-                <div className="flex gap-3 mb-2">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Size/Thick</label>
-                    <input type="number" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className={`w-14 p-1 border rounded text-xs ${isDarkMode?'bg-slate-800 border-slate-600':''}`} />
+                
+                {activeTool !== 'whiteout' && (
+                  <div className="flex gap-3 mb-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Size/Thick</label>
+                      <input type="number" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className={`w-14 p-1 border rounded text-xs ${isDarkMode?'bg-slate-800 border-slate-600':''}`} />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Main Color</label>
+                      <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-full h-6 cursor-pointer rounded border-none" />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Main Color</label>
-                    <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-full h-6 cursor-pointer rounded border-none" />
-                  </div>
-                </div>
+                )}
 
-                {/* Font Family Selection */}
                 {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link') && (
                   <div className="mb-2">
                     <label className="text-[10px] font-bold text-slate-500 block mb-1">Font Style</label>
@@ -584,7 +619,6 @@ export default function ProfessionalPdfEditor() {
                   </div>
                 )}
 
-                {/* Smart Edit Background Matching */}
                 {(activeTool === 'smart-edit' || activeTool === 'whiteout') && (
                   <div>
                     <label className="text-[10px] font-bold text-slate-500 block mb-1">Match Paper Background</label>
@@ -594,7 +628,6 @@ export default function ProfessionalPdfEditor() {
               </div>
             )}
 
-            {/* 🌟 NAYA: ENHANCED CHECKBOX CONTROLS */}
             {activeTool === 'checkbox' && (
                <div className={`mb-6 p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-blue-50 border-blue-200'}`}>
                  <label className="text-[10px] font-black text-blue-500 uppercase mb-3 block">☑️ Checkbox Style</label>
@@ -743,7 +776,6 @@ export default function ProfessionalPdfEditor() {
                             setSelectedAnnoId(anno.id); setDraggingAnnoId(anno.id); setAnnoDragOffset({ x: x - anno.x, y: y - anno.y });
                           }}
                         >
-                          {/* 🌟 NAYA: LIVE COLOR CHANGER IN FLOATING POPUP MENU */}
                           {selectedAnnoId === anno.id && activeTool === 'select' && (
                             <div className="absolute -top-12 left-0 flex items-center gap-2 bg-slate-800 p-1.5 rounded-lg shadow-xl z-50" onMouseDown={e => e.stopPropagation()}>
                               {(anno.type === 'text' || anno.type === 'smart-edit' || anno.type === 'pen' || anno.type === 'arrow' || anno.type === 'circle' || anno.type === 'link' || anno.type === 'checkbox') && (
@@ -773,7 +805,6 @@ export default function ProfessionalPdfEditor() {
                           {anno.type === 'highlight' && <div className="bg-yellow-300 opacity-50 mix-blend-multiply w-full h-full"></div>}
                           {anno.type === 'strikethrough' && <div className="w-full absolute top-1/2" style={{ height: '2px', backgroundColor: '#ef4444' }}></div>}
                           
-                          {/* 🌟 NAYA: DYNAMIC CHECKBOX PREVIEW */}
                           {anno.type === 'checkbox' && (
                             <div className="w-full h-full flex items-center justify-center">
                               {anno.checkboxStyle === 'fill' && <div className="w-[75%] h-[75%] mt-[-5px]" style={{ backgroundColor: anno.color || '#000000' }}></div>}
