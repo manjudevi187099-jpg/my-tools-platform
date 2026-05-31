@@ -3,22 +3,24 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
+// Yahan ensure karo ki import path wahi hai jahan aapki registry file hai
 import { TOOLS_REGISTRY, ToolMetadata } from '../../../config/tools-registry';
 
-// Dynamic Tool Imports
+// Dynamic Tool Components Map
 const ToolComponents: Record<string, React.ElementType> = {
+  "pdf-merger": dynamic(() => import('../../../tools/pdf-merger'), { ssr: false }),
+  "image-to-pdf": dynamic(() => import('../../../tools/image-to-pdf'), { ssr: false }),
+  "split-pdf": dynamic(() => import('../../../tools/split-pdf'), { ssr: false }),
+  "watermark-pdf": dynamic(() => import('../../../tools/watermark-pdf'), { ssr: false }),
   "pdf-editor": dynamic(() => import('../../../tools/pdf-editor'), { ssr: false }),
   "pdf-to-word": dynamic(() => import('../../../tools/pdf-to-word'), { ssr: false }),
-  "pdf-merger": dynamic(() => import('../../../tools/pdf-merger'), { ssr: false }),
-  "split-pdf": dynamic(() => import('../../../tools/split-pdf'), { ssr: false }),
   "compress-pdf": dynamic(() => import('../../../tools/compress-pdf'), { ssr: false }),
   "unlock-pdf": dynamic(() => import('../../../tools/unlock-pdf'), { ssr: false }),
   "protect-pdf": dynamic(() => import('../../../tools/protect-pdf'), { ssr: false }),
-  "image-to-pdf": dynamic(() => import('../../../tools/image-to-pdf'), { ssr: false }),
-  "watermark-pdf": dynamic(() => import('../../../tools/watermark-pdf'), { ssr: false }),
   "invert-pdf": dynamic(() => import('../../../tools/pdf-invert-colors'), { ssr: false }),
   "remove-watermark": dynamic(() => import('../../../tools/remove-watermark'), { ssr: false }),
   "pdf-stamper": dynamic(() => import('../../../tools/pdf-stamper'), { ssr: false }),
+  "add-name-date": dynamic(() => import('../../../tools/add-name-date'), { ssr: false }),
 };
 
 export default function ToolPage() {
@@ -27,11 +29,11 @@ export default function ToolPage() {
 
   if (!slug) return <div className="p-20 text-center">⏳ Loading...</div>;
 
-  // Type safe access to registry with isActive check
-  const toolMeta = TOOLS_REGISTRY[slug as keyof typeof TOOLS_REGISTRY] as unknown as ToolMetadata;
+  // Registry se metadata aur component fetch karein
+  const toolMeta = TOOLS_REGISTRY[slug] as ToolMetadata;
   const ActiveToolComponent = ToolComponents[slug];
 
-  // 🌟 NAYA: Check if tool exists and is Active
+  // Agar tool registry mein nahi hai ya isActive: false hai, toh error dikhayein
   if (!toolMeta || !toolMeta.isActive) {
     return (
       <div className="p-20 text-center text-red-500 font-bold text-lg">
@@ -42,13 +44,11 @@ export default function ToolPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 pb-12">
-      {/* 🌟 Professional Header */}
       <div className="bg-white border-b py-10 px-4 text-center shadow-sm">
         <h1 className="text-3xl font-black text-slate-900">{toolMeta.name}</h1>
         <p className="text-slate-500 mt-2">{toolMeta.description}</p>
       </div>
       
-      {/* 🌟 Active Tool Container */}
       <div className="mt-8 px-4">
         {ActiveToolComponent ? (
           <ActiveToolComponent />

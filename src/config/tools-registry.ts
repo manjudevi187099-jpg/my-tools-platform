@@ -93,4 +93,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["pdf stamper", "add stamp", "verified stamp"],
     isActive: true,
   },
+"add-name-date": {
+  name: "Add Name & Date",
+  description: "Apni photo par naam aur date add karein taaki wo form filling ke liye ready rahe.",
+  category: "utility",
+  keywords: ["add name on photo", "photo editor"],
+  isActive: true, // <--- YE 'true' hona chahiye
+},
 };
