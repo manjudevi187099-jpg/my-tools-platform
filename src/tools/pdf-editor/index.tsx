@@ -23,7 +23,7 @@ const hexToRgbPdf = (hex: string) => {
   return rgb(r, g, b);
 };
 
-export default function AdvancedPdfEditor() {
+export default function ProfessionalPdfEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   
@@ -31,23 +31,21 @@ export default function AdvancedPdfEditor() {
   const [numPages, setNumPages] = useState(1);
   const [zoom, setZoom] = useState(1);
 
-  // 🌟 ULTRA PRO STATES
+  // 🌟 STATES
   const [deletedPages, setDeletedPages] = useState<number[]>([]);
   const [pageRotations, setPageRotations] = useState<Record<number, number>>({});
   const [globalWatermark, setGlobalWatermark] = useState('');
-  const [addedBlankPages, setAddedBlankPages] = useState(0);
+  const [exportRange, setExportRange] = useState('');
 
-  // 🌟 NEW BOSS STATES
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [exportRange, setExportRange] = useState(''); // e.g. "1-5"
 
   const [selectedAnnoId, setSelectedAnnoId] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<ToolType>('select');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   
   const [fontSize, setFontSize] = useState(14); 
-  const [textColor, setTextColor] = useState('#ef4444'); // Default red for pro shapes
+  const [textColor, setTextColor] = useState('#ef4444');
 
   const [activeInput, setActiveInput] = useState<{ x: number, y: number, width: number, height: number, text: string } | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -68,12 +66,16 @@ export default function AdvancedPdfEditor() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
-    setFile(selectedFile);
+    await loadNewFile(selectedFile);
+  };
+
+  const loadNewFile = async (newFile: File) => {
+    setFile(newFile);
     setAnnotations([]); setDeletedPages([]); setPageRotations({});
-    setGlobalWatermark(''); setAddedBlankPages(0); setExportRange('');
+    setGlobalWatermark(''); setExportRange('');
     setActiveInput(null); setSelectedAnnoId(null); setZoom(1); 
     
-    const arrayBuffer = await selectedFile.arrayBuffer();
+    const arrayBuffer = await newFile.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     setPdfDoc(pdf);
     setNumPages(pdf.numPages);
@@ -106,6 +108,30 @@ export default function AdvancedPdfEditor() {
     }
   };
 
+  // 🌟 BUG FIX: LIVE BLANK PAGE WITH UINT8ARRAY
+  const addBlankPageLive = async () => {
+    if (!file || !pdfDoc) return;
+    setIsProcessing(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const doc = await PDFDocument.load(arrayBuffer);
+      doc.addPage([595.28, 841.89]); 
+      const pdfBytes = await doc.save();
+      const newBlob = new Blob([new Uint8Array(pdfBytes as any)], { type: 'application/pdf' });
+      const newFile = new File([newBlob], file.name, { type: 'application/pdf' });
+      
+      setFile(newFile);
+      const newPdfjs = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+      setPdfDoc(newPdfjs);
+      setNumPages(newPdfjs.numPages);
+      setCurrentPage(newPdfjs.numPages);
+      renderPage(newPdfjs, newPdfjs.numPages, 0);
+    } catch (err) {
+      console.error(err);
+    }
+    setIsProcessing(false);
+  };
+
   const rotateCurrentPage = () => {
     if (!pdfDoc) return;
     const newRot = ((pageRotations[currentPage] || 0) + 90) % 360;
@@ -114,30 +140,22 @@ export default function AdvancedPdfEditor() {
   };
 
   const extractPageText = async () => {
-    if (!pdfDoc) return;
+    if (!pdfDoc) return '';
     try {
       const page = await pdfDoc.getPage(currentPage);
       const textContent = await page.getTextContent();
-      const text = textContent.items.map((item: any) => item.str).join(' ');
-      return text;
-    } catch (e) {
-      return '';
-    }
+      return textContent.items.map((item: any) => item.str).join(' ');
+    } catch (e) { return ''; }
   };
 
   const copyTextToClipboard = async () => {
     const text = await extractPageText();
-    if (text) {
-      navigator.clipboard.writeText(text);
-      alert('✅ Text copied to clipboard!');
-    }
+    if (text) { navigator.clipboard.writeText(text); alert('✅ Text copied!'); }
   };
 
-  // 🌟 NAYA: READ ALOUD (Text to Speech)
   const toggleReadAloud = async () => {
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
+      window.speechSynthesis.cancel(); setIsSpeaking(false);
     } else {
       const text = await extractPageText();
       if (text) {
@@ -145,9 +163,7 @@ export default function AdvancedPdfEditor() {
         utterance.onend = () => setIsSpeaking(false);
         window.speechSynthesis.speak(utterance);
         setIsSpeaking(true);
-      } else {
-        alert('No text found on this page to read.');
-      }
+      } else { alert('No text found to read.'); }
     }
   };
 
@@ -156,12 +172,18 @@ export default function AdvancedPdfEditor() {
   };
 
   const undoLastAction = () => setAnnotations((prev) => prev.slice(0, -1));
-  const clearCurrentPage = () => setAnnotations((prev) => prev.filter((a) => a.page !== currentPage));
 
+  // 🌟 BUG FIX: ROBUST COORDINATE MATH
   const getMouseCoords = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0 };
-    return { x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom };
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -170,9 +192,7 @@ export default function AdvancedPdfEditor() {
       return; 
     }
     const { x, y } = getMouseCoords(e);
-    if (activeTool === 'pen') {
-      setCurrentPath([{ x, y }]); setIsDragging(true); return;
-    }
+    if (activeTool === 'pen') { setCurrentPath([{ x, y }]); setIsDragging(true); return; }
     setDragStart({ x, y }); setDragCurrent({ x, y }); setIsDragging(true);
   };
 
@@ -194,11 +214,7 @@ export default function AdvancedPdfEditor() {
 
     if (activeTool === 'pen') {
       if (currentPath.length > 1) {
-        setAnnotations([...annotations, {
-          id: Date.now().toString(), page: currentPage, type: 'pen',
-          x: 0, y: 0, width: 0, height: 0, cWidth: pdfDimensions.w, cHeight: pdfDimensions.h,
-          paths: currentPath, color: textColor, fontSize: fontSize 
-        }]);
+        setAnnotations([...annotations, { id: Date.now().toString(), page: currentPage, type: 'pen', x: 0, y: 0, width: 0, height: 0, cWidth: pdfDimensions.w, cHeight: pdfDimensions.h, paths: currentPath, color: textColor, fontSize: fontSize }]);
       }
       setCurrentPath([]); return;
     }
@@ -212,10 +228,7 @@ export default function AdvancedPdfEditor() {
     if (boxWidth < 10 && activeTool !== 'arrow') boxWidth = activeTool === 'checkbox' ? 20 : 150;
     if (boxHeight < 10 && activeTool !== 'arrow') boxHeight = activeTool === 'checkbox' ? 20 : 25;
 
-    const baseAnno = {
-      id: Date.now().toString(), page: currentPage, x: startX, y: startY, width: boxWidth, height: boxHeight,
-      cWidth: pdfDimensions.w, cHeight: pdfDimensions.h, color: textColor, fontSize: fontSize
-    };
+    const baseAnno = { id: Date.now().toString(), page: currentPage, x: startX, y: startY, width: boxWidth, height: boxHeight, cWidth: pdfDimensions.w, cHeight: pdfDimensions.h, color: textColor, fontSize: fontSize };
 
     if (activeTool === 'smart-edit' || activeTool === 'text' || activeTool === 'link') {
       setActiveInput({ x: startX, y: startY, width: boxWidth, height: boxHeight, text: '' });
@@ -223,7 +236,6 @@ export default function AdvancedPdfEditor() {
     } else if (activeTool === 'image' || activeTool === 'signature') {
       if (imageInput) setAnnotations([...annotations, { ...baseAnno, type: activeTool, imageUrl: URL.createObjectURL(imageInput), imageFile: imageInput }]);
     } else if (activeTool === 'arrow') {
-      // For arrow, we save actual start/end coordinates in paths
       setAnnotations([...annotations, { ...baseAnno, type: 'arrow', x: 0, y: 0, width: 0, height: 0, paths: [dragStart, dragCurrent] }]);
     } else {
       setAnnotations([...annotations, { ...baseAnno, type: activeTool }]);
@@ -274,30 +286,25 @@ export default function AdvancedPdfEditor() {
 
         if (anno.type === 'pen' && anno.paths) {
           for (let i = 0; i < anno.paths.length - 1; i++) {
-            const p1 = anno.paths[i]; const p2 = anno.paths[i+1];
             page.drawLine({
-              start: { x: ((p1.x + anno.x) / anno.cWidth) * width, y: height - (((p1.y + anno.y) / anno.cHeight) * height) },
-              end: { x: ((p2.x + anno.x) / anno.cWidth) * width, y: height - (((p2.y + anno.y) / anno.cHeight) * height) },
+              start: { x: ((anno.paths[i].x + anno.x) / anno.cWidth) * width, y: height - (((anno.paths[i].y + anno.y) / anno.cHeight) * height) },
+              end: { x: ((anno.paths[i+1].x + anno.x) / anno.cWidth) * width, y: height - (((anno.paths[i+1].y + anno.y) / anno.cHeight) * height) },
               thickness: annoSize / 3, color: annoColor
             });
           }
         } else if (anno.type === 'arrow' && anno.paths) {
-            const p1 = anno.paths[0]; const p2 = anno.paths[1];
-            const startX = ((p1.x + anno.x) / anno.cWidth) * width; const startY = height - (((p1.y + anno.y) / anno.cHeight) * height);
-            const endX = ((p2.x + anno.x) / anno.cWidth) * width; const endY = height - (((p2.y + anno.y) / anno.cHeight) * height);
+            const startX = ((anno.paths[0].x + anno.x) / anno.cWidth) * width; const startY = height - (((anno.paths[0].y + anno.y) / anno.cHeight) * height);
+            const endX = ((anno.paths[1].x + anno.x) / anno.cWidth) * width; const endY = height - (((anno.paths[1].y + anno.y) / anno.cHeight) * height);
             page.drawLine({ start: { x: startX, y: startY }, end: { x: endX, y: endY }, thickness: annoSize / 3, color: annoColor });
-            // Arrowhead math for PDF export
             const angle = Math.atan2(endY - startY, endX - startX);
-            const headlen = 15;
-            page.drawLine({ start: { x: endX, y: endY }, end: { x: endX - headlen * Math.cos(angle - Math.PI / 6), y: endY - headlen * Math.sin(angle - Math.PI / 6) }, thickness: annoSize / 3, color: annoColor });
-            page.drawLine({ start: { x: endX, y: endY }, end: { x: endX - headlen * Math.cos(angle + Math.PI / 6), y: endY - headlen * Math.sin(angle + Math.PI / 6) }, thickness: annoSize / 3, color: annoColor });
+            page.drawLine({ start: { x: endX, y: endY }, end: { x: endX - 15 * Math.cos(angle - Math.PI / 6), y: endY - 15 * Math.sin(angle - Math.PI / 6) }, thickness: annoSize / 3, color: annoColor });
+            page.drawLine({ start: { x: endX, y: endY }, end: { x: endX - 15 * Math.cos(angle + Math.PI / 6), y: endY - 15 * Math.sin(angle + Math.PI / 6) }, thickness: annoSize / 3, color: annoColor });
         } else if (anno.type === 'circle') {
           page.drawEllipse({ x: pdfX + pdfWidth/2, y: pdfY - pdfHeight/2, xScale: pdfWidth/2, yScale: pdfHeight/2, borderColor: annoColor, borderWidth: annoSize/4, color: undefined });
         } else if (anno.type === 'text') { page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font, color: annoColor });
         } else if (anno.type === 'link') {
           page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font, color: annoColor });
-          const textWidth = font.widthOfTextAtSize(anno.text || '', annoSize);
-          page.drawLine({ start: { x: pdfX, y: pdfY - annoSize - 2 }, end: { x: pdfX + textWidth, y: pdfY - annoSize - 2 }, thickness: 1, color: annoColor });
+          page.drawLine({ start: { x: pdfX, y: pdfY - annoSize - 2 }, end: { x: pdfX + font.widthOfTextAtSize(anno.text || '', annoSize), y: pdfY - annoSize - 2 }, thickness: 1, color: annoColor });
         } else if (anno.type === 'whiteout') { page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(1, 1, 1) });
         } else if (anno.type === 'highlight') { page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(1, 1, 0), opacity: 0.4 });
         } else if (anno.type === 'strikethrough') { page.drawLine({ start: { x: pdfX, y: pdfY - (pdfHeight/2) }, end: { x: pdfX + pdfWidth, y: pdfY - (pdfHeight/2) }, thickness: 1.5, color: rgb(1, 0, 0) });
@@ -332,12 +339,9 @@ export default function AdvancedPdfEditor() {
         }
       }
 
-      for (let i = 0; i < addedBlankPages; i++) pdf.addPage([595.28, 841.89]); 
-
       const sortedDeletedPages = [...deletedPages].sort((a, b) => b - a);
       for (const pageNum of sortedDeletedPages) pdf.removePage(pageNum - 1);
 
-      // 🌟 NAYA: PDF SPLIT (Export Range)
       let finalPdf = pdf;
       if (exportRange.trim() !== '') {
          const newPdf = await PDFDocument.create();
@@ -347,17 +351,16 @@ export default function AdvancedPdfEditor() {
             const copiedPages = await newPdf.copyPages(pdf, indices);
             copiedPages.forEach(p => newPdf.addPage(p));
             finalPdf = newPdf;
-         } else {
-            alert('Invalid range. Exporting entire document instead.');
-         }
+         } else { alert('Invalid range. Exporting entire document instead.'); }
       }
 
+      // 🌟 BUG FIX: UINT8ARRAY FOR FINAL BLOB
       const pdfBytes = await finalPdf.save();
       const blob = new Blob([new Uint8Array(pdfBytes as any)], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = exportRange ? `Split_Pages_${exportRange}.pdf` : 'God-Tier-Edited.pdf';
+      a.download = exportRange ? `Split_Pages_${exportRange}.pdf` : 'Final-Pro-Document.pdf';
       a.click();
     } catch (err) {
       console.error(err); alert("Error saving PDF.");
@@ -369,152 +372,162 @@ export default function AdvancedPdfEditor() {
   const currentPageAnnotations = annotations.filter(a => a.page === currentPage);
   const isPageDeleted = deletedPages.includes(currentPage);
 
+  // 🌟 PROFESSIONAL & CLEAN UI THEME
+  const themeBg = isDarkMode ? 'bg-slate-900' : 'bg-slate-50';
+  const themeText = isDarkMode ? 'text-slate-200' : 'text-slate-800';
+  const panelBg = isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
+  const canvasBg = isDarkMode ? 'bg-slate-950' : 'bg-slate-200';
+
   return (
-    // 🌙 NAYA: DARK MODE SUPPORT
-    <div className={`max-w-[1400px] mx-auto p-4 flex flex-col md:flex-row gap-6 min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-black'}`}>
+    <div className={`flex flex-col h-screen w-full font-sans overflow-hidden transition-colors duration-300 ${themeBg} ${themeText}`}>
       
-      {/* SIDEBAR TOOLBAR */}
-      <div className={`w-full md:w-[340px] p-5 rounded-2xl shadow-xl border h-[90vh] overflow-y-auto custom-scrollbar flex flex-col transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-        <div className={`flex justify-between items-center sticky top-0 z-10 pb-2 border-b mb-4 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-400">ULTIMATE EDITOR</h2>
-          <button onClick={() => setIsDarkMode(!isDarkMode)} className="text-2xl hover:scale-110 transition-transform">{isDarkMode ? '☀️' : '🌙'}</button>
+      {/* 🌟 TOP NAVBAR */}
+      <header className={`h-16 border-b flex items-center justify-between px-6 shadow-sm z-20 ${panelBg}`}>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-black tracking-tight text-blue-600">PRO PDF</h1>
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className="text-xl p-2 hover:bg-slate-500 hover:bg-opacity-20 rounded-full transition-colors">
+            {isDarkMode ? '☀️' : '🌙'}
+          </button>
         </div>
-        
-        <input type="file" accept="application/pdf" onChange={handleFileChange} className={`mb-4 w-full text-sm border p-2 rounded ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50'}`} />
-
-        <div className="flex gap-2 mb-4">
-          <button onClick={undoLastAction} disabled={annotations.length === 0} className="flex-1 py-2 bg-gray-500 bg-opacity-20 hover:bg-opacity-30 rounded font-bold text-sm transition">↩️ Undo</button>
-          <button onClick={clearCurrentPage} disabled={currentPageAnnotations.length === 0} className="flex-1 py-2 bg-red-500 bg-opacity-20 hover:bg-opacity-30 text-red-500 rounded font-bold text-sm transition">🗑️ Clear</button>
-        </div>
-
-        <div className="mb-4">
-           <button onClick={() => setActiveTool('select')} className={`w-full p-3 rounded-lg text-center font-bold text-sm transition border-2 ${activeTool === 'select' ? 'bg-indigo-600 text-white border-indigo-700 shadow-md scale-105' : 'bg-transparent text-indigo-500 border-indigo-500 hover:bg-indigo-500 hover:bg-opacity-10'}`}>
-             🖱️ Select & Move Elements
-           </button>
-        </div>
-
-        {/* 🌟 ULTRA PRO FEATURES */}
-        <div className={`mb-5 p-4 rounded-xl shadow-inner border ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200'}`}>
-          <h3 className="text-xs font-black text-purple-500 uppercase mb-3">✨ Ultra Pro Features</h3>
-          <div className="mb-3">
-            <label className="text-xs text-purple-400 font-bold block mb-1">©️ Global Watermark:</label>
-            <input type="text" value={globalWatermark} onChange={(e) => setGlobalWatermark(e.target.value)} placeholder="CONFIDENTIAL" className={`w-full p-2 border rounded text-sm ${isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-purple-200'}`} />
-          </div>
-          <div>
-            <label className="text-xs text-purple-400 font-bold block mb-1">📄 Add Blank Pages:</label>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setAddedBlankPages(Math.max(0, addedBlankPages - 1))} className="px-3 py-1 border rounded font-bold">-</button>
-              <span className="font-bold text-sm w-8 text-center">{addedBlankPages}</span>
-              <button onClick={() => setAddedBlankPages(addedBlankPages + 1)} className="px-3 py-1 border rounded font-bold">+</button>
-            </div>
-          </div>
-        </div>
-
-        {/* STYLING & TOOLS */}
-        {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen' || activeTool === 'arrow' || activeTool === 'circle') && (
-          <div className={`mb-4 p-3 rounded border ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-blue-50 border-blue-100'}`}>
-            <h3 className="text-xs font-bold text-blue-500 uppercase mb-2">Styling</h3>
-            <div className="flex gap-3 items-center">
-              <div><label className="text-xs text-gray-400 block mb-1">Size/Thick:</label><input type="number" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className={`w-16 p-1 border rounded text-sm ${isDarkMode?'bg-gray-800':''}`} min="2" max="72" /></div>
-              <div className="flex-1"><label className="text-xs text-gray-400 block mb-1">Color:</label><input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-full h-8 cursor-pointer rounded border-none" /></div>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Draw & Annotate</h3>
-            <div className="space-y-2">
-              {/* 🌟 NAYA: PRO SHAPES */}
-              <button onClick={() => setActiveTool('arrow')} className={`w-full p-2.5 rounded text-left font-bold text-sm transition ${activeTool === 'arrow' ? 'bg-red-500 text-white' : 'bg-gray-500 bg-opacity-10'}`}>➡️ Draw Arrow</button>
-              <button onClick={() => setActiveTool('circle')} className={`w-full p-2.5 rounded text-left font-bold text-sm transition ${activeTool === 'circle' ? 'bg-green-500 text-white' : 'bg-gray-500 bg-opacity-10'}`}>⭕ Hollow Circle</button>
-              <button onClick={() => setActiveTool('pen')} className={`w-full p-2.5 rounded text-left font-bold text-sm transition ${activeTool === 'pen' ? 'bg-pink-600 text-white' : 'bg-gray-500 bg-opacity-10'}`}>✍️ Freehand Draw</button>
-              <button onClick={() => setActiveTool('highlight')} className={`w-full p-2.5 rounded text-left font-bold text-sm transition ${activeTool === 'highlight' ? 'bg-yellow-500 text-white' : 'bg-gray-500 bg-opacity-10'}`}>🖍️ Highlight Box</button>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Text & Mask</h3>
-            <div className="space-y-2">
-              <button onClick={() => setActiveTool('smart-edit')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'smart-edit' ? 'bg-indigo-600 text-white' : 'bg-gray-500 bg-opacity-10'}`}>✏️ Replace Word</button>
-              <button onClick={() => setActiveTool('text')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'text' ? 'bg-blue-600 text-white' : 'bg-gray-500 bg-opacity-10'}`}>📝 Add Text</button>
-              <button onClick={() => setActiveTool('whiteout')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'whiteout' ? 'bg-red-500 text-white' : 'bg-gray-500 bg-opacity-10'}`}>🧼 Whiteout Erase</button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1"></div>
-
-        {/* 🌟 NAYA: EXPORT RANGE (SPLIT) */}
-        <div className={`mt-4 p-3 rounded-xl border ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-           <label className="text-xs font-bold text-gray-500 block mb-1">✂️ Export Pages Range (e.g. 1-3)</label>
-           <input type="text" value={exportRange} onChange={(e) => setExportRange(e.target.value)} placeholder="All Pages" className={`w-full p-2 border rounded text-sm mb-2 ${isDarkMode ? 'bg-gray-800 text-white border-gray-600' : ''}`} />
-           <button onClick={saveAndDownload} disabled={isProcessing || !file} className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-black shadow-lg text-lg">
-             {isProcessing ? 'Applying Magic...' : '✨ Export PDF'}
-           </button>
-        </div>
-      </div>
-
-      {/* MAIN PREVIEW AREA */}
-      <div className={`w-full md:flex-1 p-4 rounded-2xl shadow-xl border flex flex-col h-[90vh] transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         
         {file && (
-          <div className={`flex flex-wrap justify-between items-center p-3 rounded-lg mb-4 shadow-sm border gap-4 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-100 border-gray-200'}`}>
-            
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded border ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}>
-                <button onClick={() => setZoom(z => Math.max(0.5, z - 0.2))} className="font-bold px-2 text-blue-500">➖</button>
-                <span className="font-bold text-xs min-w-[40px] text-center">{Math.round(zoom * 100)}%</span>
-                <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} className="font-bold px-2 text-blue-500">➕</button>
-              </div>
-              <button onClick={copyTextToClipboard} className={`text-xs px-3 py-1.5 rounded font-bold shadow-sm border ${isDarkMode ? 'bg-gray-800 border-gray-600 text-blue-400' : 'bg-white border-gray-300 text-blue-700'}`}>📋 Copy Text</button>
-              {/* 🌟 NAYA: READ ALOUD BUTTON */}
-              <button onClick={toggleReadAloud} className={`text-xs px-3 py-1.5 rounded font-bold shadow-sm border transition ${isSpeaking ? 'bg-blue-500 text-white border-blue-600 animate-pulse' : (isDarkMode ? 'bg-gray-800 border-gray-600 text-green-400' : 'bg-white border-gray-300 text-green-600')}`}>
-                {isSpeaking ? '⏹️ Stop Reading' : '🔊 Read Aloud'}
-              </button>
-            </div>
+          <div className="flex items-center gap-4">
+             {/* Text Tools */}
+             <div className="flex gap-2">
+               <button onClick={copyTextToClipboard} className={`px-3 py-1.5 text-xs font-bold rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 hover:bg-slate-600' : 'border-slate-300 bg-white hover:bg-slate-50'}`}>📋 Copy Text</button>
+               <button onClick={toggleReadAloud} className={`px-3 py-1.5 text-xs font-bold rounded-md border transition ${isSpeaking ? 'bg-blue-500 text-white border-blue-600 animate-pulse' : (isDarkMode ? 'border-slate-600 bg-slate-700 text-green-400' : 'border-slate-300 bg-white text-green-600')}`}>
+                 {isSpeaking ? '⏹️ Stop Reading' : '🔊 Read Aloud'}
+               </button>
+             </div>
 
-            <div className="flex items-center gap-2">
-              <button onClick={() => changePage(-1)} disabled={currentPage === 1} className={`px-3 py-1 border rounded font-bold text-xs disabled:opacity-40 ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}>◀ Prev</button>
-              <span className="font-bold text-sm px-2">Pg {currentPage} / {numPages}</span>
-              <button onClick={() => changePage(1)} disabled={currentPage === numPages} className={`px-3 py-1 border rounded font-bold text-xs disabled:opacity-40 ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}>Next ▶</button>
-              
-              <button onClick={rotateCurrentPage} className="ml-2 px-3 py-1.5 rounded font-bold text-xs border shadow-sm bg-blue-500 bg-opacity-20 text-blue-500 border-blue-500 hover:bg-opacity-30">🔄 Rotate</button>
-              <button onClick={togglePageDelete} className={`ml-1 px-3 py-1.5 rounded font-bold text-xs border shadow-sm transition ${isPageDeleted ? 'bg-green-500 bg-opacity-20 text-green-500 border-green-500' : 'bg-red-500 bg-opacity-20 text-red-500 border-red-500'}`}>
-                {isPageDeleted ? '↩️ Restore' : '🗑️ Delete'}
-              </button>
-            </div>
+             <div className="w-px h-8 bg-slate-300 mx-2"></div>
+
+             {/* Zoom */}
+             <div className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border shadow-inner ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-100 border-slate-300'}`}>
+                <button onClick={() => setZoom(z => Math.max(0.5, z - 0.2))} className="font-bold text-lg hover:text-blue-500">➖</button>
+                <span className="font-bold text-sm min-w-[50px] text-center">{Math.round(zoom * 100)}%</span>
+                <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} className="font-bold text-lg hover:text-blue-500">➕</button>
+             </div>
+             
+             {/* Pagination */}
+             <div className="flex items-center gap-2">
+                <button onClick={() => changePage(-1)} disabled={currentPage === 1} className={`px-3 py-1.5 border rounded-md font-bold text-sm disabled:opacity-40 transition ${isDarkMode ? 'border-slate-600 hover:bg-slate-700' : 'hover:bg-blue-50'}`}>◀ Prev</button>
+                <span className="font-bold text-sm px-2">Pg {currentPage} of {numPages}</span>
+                <button onClick={() => changePage(1)} disabled={currentPage === numPages} className={`px-3 py-1.5 border rounded-md font-bold text-sm disabled:opacity-40 transition ${isDarkMode ? 'border-slate-600 hover:bg-slate-700' : 'hover:bg-blue-50'}`}>Next ▶</button>
+             </div>
           </div>
         )}
+      </header>
 
-        {/* CANVAS EDITOR AREA */}
-        <div className={`overflow-auto flex flex-1 relative select-none rounded custom-scrollbar justify-center items-start ${isDarkMode ? 'bg-gray-950' : 'bg-gray-300'}`}>
+      <div className="flex flex-1 overflow-hidden">
+        
+        {/* 🌟 LEFT SIDEBAR */}
+        <aside className={`w-[320px] flex flex-col border-r h-full overflow-y-auto custom-scrollbar shadow-sm z-10 ${panelBg}`}>
+          <div className="p-5">
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Document</label>
+            <input type="file" accept="application/pdf" onChange={handleFileChange} className={`w-full text-xs border p-2 rounded-md mb-4 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`} />
+
+            <div className="flex gap-2 mb-6">
+              <button onClick={undoLastAction} disabled={annotations.length === 0} className={`flex-1 py-1.5 border rounded-md font-bold text-xs transition disabled:opacity-30 ${isDarkMode ? 'border-slate-600 hover:bg-slate-700' : 'hover:bg-slate-100'}`}>↩️ Undo</button>
+              <button onClick={addBlankPageLive} disabled={!file} className={`flex-1 py-1.5 border rounded-md font-bold text-xs transition disabled:opacity-30 text-blue-600 ${isDarkMode ? 'border-slate-600 hover:bg-slate-700' : 'hover:bg-blue-50'}`}>➕ Page</button>
+            </div>
+
+            {/* Action Tools */}
+            <div className="space-y-1 mb-6">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Actions</label>
+              <button onClick={() => setActiveTool('select')} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 ${activeTool === 'select' ? 'bg-blue-600 text-white shadow' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>
+                🖱️ Select & Move
+              </button>
+              <button onClick={rotateCurrentPage} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}>
+                🔄 Rotate Page
+              </button>
+              <button onClick={togglePageDelete} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 ${isPageDeleted ? 'bg-green-100 text-green-700' : (isDarkMode ? 'hover:bg-red-900 text-red-400' : 'hover:bg-red-50 text-red-600')}`}>
+                {isPageDeleted ? '↩️ Restore Page' : '🗑️ Delete Page'}
+              </button>
+            </div>
+
+            {/* Styling Box */}
+            {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen' || activeTool === 'arrow' || activeTool === 'circle') && (
+              <div className={`mb-6 p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-blue-50 border-blue-200'}`}>
+                <div className="flex gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1 uppercase">Size/Thick</label>
+                    <input type="number" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className={`w-14 p-1 border rounded text-xs ${isDarkMode?'bg-slate-800 border-slate-600':''}`} />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1 uppercase">Color</label>
+                    <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-full h-6 cursor-pointer rounded border-none" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Annotation Tools */}
+            <div className="space-y-1 mb-6">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Draw & Pro Shapes</label>
+              <button onClick={() => setActiveTool('arrow')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'arrow' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>➡️ Draw Arrow</button>
+              <button onClick={() => setActiveTool('circle')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'circle' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>⭕ Circle</button>
+              <button onClick={() => setActiveTool('pen')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'pen' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>✍️ Freehand Draw</button>
+              <button onClick={() => setActiveTool('highlight')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'highlight' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🖍️ Highlight</button>
+            </div>
+
+            <div className="space-y-1 mb-6">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Edit Text & Mask</label>
+              <button onClick={() => setActiveTool('text')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'text' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>📝 Add Text</button>
+              <button onClick={() => setActiveTool('smart-edit')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'smart-edit' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>✏️ Replace Word</button>
+              <button onClick={() => setActiveTool('whiteout')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'whiteout' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🧼 Whiteout</button>
+              <button onClick={() => setActiveTool('link')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'link' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🔗 Add Link</button>
+            </div>
+
+            <div className="space-y-1 mb-8">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Advanced Config</label>
+              <input type="text" value={globalWatermark} onChange={(e) => setGlobalWatermark(e.target.value)} placeholder="Global Watermark..." className={`w-full mb-2 p-2 text-xs border rounded-md ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`} />
+              <button onClick={() => setActiveTool('image')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'image' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🖼️ Insert Image</button>
+              {activeTool === 'image' && (
+                <input type="file" accept="image/png, image/jpeg" onChange={(e) => setImageInput(e.target.files?.[0] || null)} className="w-full mt-1 p-1 border rounded text-[10px]" />
+              )}
+            </div>
+
+            {/* Split & Export Section */}
+            <div className={`mt-auto p-4 rounded-xl border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+               <label className="text-[10px] font-bold text-slate-500 block mb-1 uppercase">✂️ Export Range (Optional)</label>
+               <input type="text" value={exportRange} onChange={(e) => setExportRange(e.target.value)} placeholder="e.g. 1-3" className={`w-full p-2 border rounded text-xs mb-3 ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white'}`} />
+               <button onClick={saveAndDownload} disabled={isProcessing || !file} className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-bold shadow-md transition-all text-sm">
+                 {isProcessing ? 'Applying Magic...' : '✨ Export Final PDF'}
+               </button>
+            </div>
+
+          </div>
+        </aside>
+
+        {/* 🌟 WORKSPACE (CANVAS AREA) */}
+        <main className={`flex-1 overflow-auto relative ${canvasBg} flex justify-center items-start pt-10 pb-20 px-4 custom-scrollbar`}>
           {!file ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 font-medium w-full gap-4">
-               <span className="text-6xl">🚀</span>
-               <p className="text-xl font-bold">Upload a PDF to Unleash God-Tier Editing</p>
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4 mt-20">
+               <span className="text-5xl">📄</span>
+               <p className="text-lg font-bold">Upload a Document to start editing</p>
             </div>
           ) : (
             <div 
-              className={`relative inline-block m-8 shadow-2xl origin-top-left transition-transform duration-200 
+              className={`relative inline-block shadow-2xl transition-transform duration-200 bg-white
                 ${activeTool === 'select' ? 'cursor-default' : activeTool === 'none' ? '' : 'cursor-crosshair'}
-                ${isDarkMode ? 'filter invert hue-rotate-180 brightness-90' : 'bg-white'}
               `}
-              style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
+              style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', minWidth: 'fit-content' }}
               onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
             >
               {isPageDeleted && (
-                <div className="absolute inset-0 bg-red-900 bg-opacity-70 z-50 flex items-center justify-center pointer-events-none">
-                  <h1 className="text-white text-4xl font-black tracking-widest transform rotate-[-30deg] border-4 border-white p-4">DELETED</h1>
+                <div className="absolute inset-0 bg-red-900 bg-opacity-80 z-50 flex items-center justify-center pointer-events-none backdrop-blur-sm">
+                  <h1 className="text-white text-5xl font-black tracking-widest transform rotate-[-20deg] border-4 border-white p-6">PAGE DELETED</h1>
                 </div>
               )}
 
               {globalWatermark && !isPageDeleted && (
-                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden opacity-20">
-                    <h1 className="text-gray-500 font-black tracking-widest transform -rotate-45 whitespace-nowrap" style={{ fontSize: '100px' }}>{globalWatermark}</h1>
+                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden opacity-10">
+                    <h1 className="text-slate-900 font-black tracking-widest transform -rotate-45 whitespace-nowrap" style={{ fontSize: '120px' }}>{globalWatermark}</h1>
                  </div>
               )}
 
-              <canvas ref={canvasRef} className="pointer-events-none" />
+              <canvas ref={canvasRef} className="pointer-events-none block" style={{ maxWidth: 'none' }} />
               
               {currentPath.length > 0 && (
                 <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-40">
@@ -522,18 +535,19 @@ export default function AdvancedPdfEditor() {
                 </svg>
               )}
 
-              {/* 🌟 NAYA: LIVE PREVIEW FOR ARROW AND CIRCLE DURING DRAG */}
+              {/* 🌟 FIX: ARROW AND CIRCLE LIVE PREVIEW BUG */}
               {isDragging && dragStart && dragCurrent && activeTool !== 'pen' && activeTool !== 'select' && (
-                <div className="absolute pointer-events-none z-40"
-                  style={{ left: Math.min(dragStart.x, dragCurrent.x), top: Math.min(dragStart.y, dragCurrent.y), width: Math.abs(dragCurrent.x - dragStart.x), height: Math.abs(dragCurrent.y - dragStart.y) }}>
-                  {activeTool === 'circle' && <div className="w-full h-full rounded-full" style={{ border: `${fontSize/2}px solid ${textColor}` }}></div>}
+                <div className="absolute pointer-events-none z-40 top-0 left-0 w-full h-full">
                   {activeTool === 'arrow' && (
-                     <svg className="absolute overflow-visible" style={{ left: dragStart.x < dragCurrent.x ? 0 : dragCurrent.x - dragStart.x, top: dragStart.y < dragCurrent.y ? 0 : dragCurrent.y - dragStart.y, width: Math.abs(dragCurrent.x - dragStart.x), height: Math.abs(dragCurrent.y - dragStart.y) }}>
-                        <line x1={0} y1={0} x2={dragCurrent.x - dragStart.x} y2={dragCurrent.y - dragStart.y} stroke={textColor} strokeWidth={fontSize/2} />
-                     </svg>
+                    <svg className="w-full h-full overflow-visible">
+                      <line x1={dragStart.x} y1={dragStart.y} x2={dragCurrent.x} y2={dragCurrent.y} stroke={textColor} strokeWidth={fontSize/2} />
+                    </svg>
+                  )}
+                  {activeTool === 'circle' && (
+                    <div className="absolute rounded-full" style={{ left: Math.min(dragStart.x, dragCurrent.x), top: Math.min(dragStart.y, dragCurrent.y), width: Math.abs(dragCurrent.x - dragStart.x), height: Math.abs(dragCurrent.y - dragStart.y), border: `${fontSize/2}px solid ${textColor}` }}></div>
                   )}
                   {(activeTool === 'whiteout' || activeTool === 'highlight' || activeTool === 'smart-edit' || activeTool === 'text') && (
-                     <div className="w-full h-full border-2 border-blue-500 border-dashed bg-blue-400 bg-opacity-20" />
+                    <div className="absolute border-2 border-blue-500 border-dashed bg-blue-500 bg-opacity-20" style={{ left: Math.min(dragStart.x, dragCurrent.x), top: Math.min(dragStart.y, dragCurrent.y), width: Math.abs(dragCurrent.x - dragStart.x), height: Math.abs(dragCurrent.y - dragStart.y) }} />
                   )}
                 </div>
               )}
@@ -541,7 +555,7 @@ export default function AdvancedPdfEditor() {
               {currentPageAnnotations.map((anno) => (
                 <div 
                   key={anno.id} 
-                  className={`absolute z-30 ${activeTool === 'select' ? 'pointer-events-auto cursor-move hover:ring-2 hover:ring-indigo-400' : 'pointer-events-none'}`} 
+                  className={`absolute z-30 ${activeTool === 'select' ? 'pointer-events-auto cursor-move hover:ring-2 hover:ring-blue-500 hover:shadow-lg' : 'pointer-events-none'}`} 
                   style={{ left: anno.x, top: anno.y, width: anno.width, height: anno.height }}
                   onMouseDown={(e) => {
                     if (activeTool !== 'select') return;
@@ -551,10 +565,10 @@ export default function AdvancedPdfEditor() {
                   }}
                 >
                   {selectedAnnoId === anno.id && activeTool === 'select' && (
-                    <div className="absolute -top-10 left-0 flex items-center gap-1 bg-gray-800 p-1.5 rounded shadow-xl z-50" onMouseDown={e => e.stopPropagation()}>
-                      <button onClick={() => modifyAnnotation(anno.id, 'grow')} className="px-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs font-bold">➕ Size</button>
-                      <button onClick={() => modifyAnnotation(anno.id, 'shrink')} className="px-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs font-bold">➖ Size</button>
-                      <button onClick={() => modifyAnnotation(anno.id, 'delete')} className="px-2 bg-red-600 hover:bg-red-500 text-white rounded text-xs font-bold">🗑️</button>
+                    <div className="absolute -top-12 left-0 flex items-center gap-1 bg-slate-800 p-1.5 rounded-lg shadow-xl z-50" onMouseDown={e => e.stopPropagation()}>
+                      <button onClick={() => modifyAnnotation(anno.id, 'grow')} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold">➕</button>
+                      <button onClick={() => modifyAnnotation(anno.id, 'shrink')} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold">➖</button>
+                      <button onClick={() => modifyAnnotation(anno.id, 'delete')} className="px-2 py-1 bg-red-500 hover:bg-red-400 text-white rounded text-xs font-bold">🗑️</button>
                     </div>
                   )}
 
@@ -563,32 +577,29 @@ export default function AdvancedPdfEditor() {
                        <polyline points={anno.paths.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke={anno.color} strokeWidth={anno.fontSize} strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
-                  
-                  {/* 🌟 NAYA: RENDER SHAPES */}
                   {anno.type === 'circle' && <div className="w-full h-full rounded-full absolute top-0 left-0" style={{ border: `${(anno.fontSize||14)/2}px solid ${anno.color}` }}></div>}
                   {anno.type === 'arrow' && anno.paths && (
                     <svg className="absolute overflow-visible" style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
                         <line x1={0} y1={0} x2={anno.paths[1].x - anno.paths[0].x} y2={anno.paths[1].y - anno.paths[0].y} stroke={anno.color} strokeWidth={(anno.fontSize||14)/2} />
                     </svg>
                   )}
-
                   {anno.type === 'text' && <span className="absolute top-0 leading-none whitespace-nowrap" style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
                   {anno.type === 'link' && <span className="underline absolute top-0 leading-none whitespace-nowrap" style={{ color: anno.color || 'blue', fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
-                  {anno.type === 'whiteout' && <div className={`opacity-100 w-full h-full ${isDarkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'}`}></div>}
+                  {anno.type === 'whiteout' && <div className="opacity-100 w-full h-full bg-white border border-slate-200"></div>}
                   {anno.type === 'highlight' && <div className="bg-yellow-300 opacity-50 mix-blend-multiply w-full h-full"></div>}
                   {anno.type === 'strikethrough' && <div className="w-full absolute top-1/2" style={{ height: '2px', backgroundColor: '#ef4444' }}></div>}
-                  {(anno.type === 'image' || anno.type === 'signature') && anno.imageUrl && <img src={anno.imageUrl} alt="preview" className={`w-full h-full object-fill pointer-events-none ${isDarkMode?'filter invert hue-rotate-180':''}`} />}
-                  {anno.type === 'smart-edit' && <span className={`px-1 w-full h-full inline-block overflow-hidden ${isDarkMode ? 'bg-black' : 'bg-white'}`} style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
+                  {(anno.type === 'image' || anno.type === 'signature') && anno.imageUrl && <img src={anno.imageUrl} alt="preview" className="w-full h-full object-fill pointer-events-none" />}
+                  {anno.type === 'smart-edit' && <span className="px-1 w-full h-full inline-block overflow-hidden bg-white text-black" style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
                 </div>
               ))}
 
               {activeInput && (
-                <div className="absolute z-50 flex items-start shadow-xl" style={{ left: activeInput.x, top: activeInput.y, width: activeInput.width, height: activeInput.height }}>
+                <div className="absolute z-50 flex items-start shadow-2xl" style={{ left: activeInput.x, top: activeInput.y, width: activeInput.width, height: activeInput.height }}>
                   <textarea
                     ref={inputRef} value={activeInput.text}
                     onChange={(e) => setActiveInput({ ...activeInput, text: e.target.value })}
                     onBlur={saveActiveInput}
-                    className={`border-2 border-indigo-500 bg-opacity-95 p-1 m-0 outline-none w-full h-full resize-none ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'}`}
+                    className="border-2 border-blue-500 p-1 m-0 outline-none w-full h-full resize-none shadow-inner bg-white text-slate-900"
                     style={{ fontSize: `${fontSize}px`, color: textColor }}
                     placeholder="Type..."
                   />
@@ -596,7 +607,7 @@ export default function AdvancedPdfEditor() {
               )}
             </div>
           )}
-        </div>
+        </main>
       </div>
     </div>
   );
