@@ -1,9 +1,11 @@
 // src/app/page.tsx
 import Link from "next/link";
-import { toolsRegistry } from "@/config/siteConfig";
+// Yahan humne aapke naye tools-registry.ts se import fix kiya hai
+import { TOOLS_REGISTRY } from "../config/tools-registry"; 
 
 export default function DashboardHome() {
-  const toolsList = Object.entries(toolsRegistry);
+  // Sirf unhi tools ko list mein laayein jo 'isActive: true' hain
+  const toolsList = Object.entries(TOOLS_REGISTRY).filter(([_, metadata]) => metadata.isActive);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
