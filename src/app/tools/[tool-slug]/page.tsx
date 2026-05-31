@@ -24,6 +24,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "photo-signature-joiner": dynamic(() => import('../../../tools/photo-signature-joiner'), { ssr: false }),
   "age-calculator": dynamic(() => import('../../../tools/age-calculator'), { ssr: false }),
   "signature-on-photo": dynamic(() => import('../../../tools/signature-on-photo'), { ssr: false }),
+  "image-resizer": dynamic(() => import('../../../tools/image-resizer'), { ssr: false }),
 };
 
 export default function ToolPage() {
