@@ -137,4 +137,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["remove bg", "background remover", "transparent image", "passport photo background"],
     isActive: true,
   },
+  "passport-psd-maker": {
+    name: "A4 Passport PSD Maker",
+    description: "A4 paper par 6x7 (42 photos) ka passport size format banayein aur seedha .PSD file download karein.",
+    category: "design",
+    keywords: ["passport size photo maker", "psd generator", "a4 photo format", "studio photo grid"],
+    isActive: true,
+  },
 };

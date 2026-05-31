@@ -26,6 +26,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "signature-on-photo": dynamic(() => import('../../../tools/signature-on-photo'), { ssr: false }),
   "image-resizer": dynamic(() => import('../../../tools/image-resizer'), { ssr: false }),
   "remove-background": dynamic(() => import('../../../tools/remove-background'), { ssr: false }),
+  "passport-psd-maker": dynamic(() => import('../../../tools/passport-psd-maker'), { ssr: false }),
 };
 
 export default function ToolPage() {
