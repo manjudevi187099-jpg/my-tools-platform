@@ -13,10 +13,12 @@ type Annotation = {
   cWidth: number; cHeight: number; 
   text?: string; imageUrl?: string; imageFile?: File;
   color?: string; fontSize?: number;
+  fontFamily?: string; bgColor?: string; checkboxStyle?: string; // 🌟 PRO ADDITIONS
   paths?: {x: number, y: number}[]; 
 };
 
 const hexToRgbPdf = (hex: string) => {
+  if (!hex) return rgb(0,0,0);
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
@@ -48,8 +50,12 @@ export default function ProfessionalPdfEditor() {
   const [activeTool, setActiveTool] = useState<ToolType>('select');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   
+  // 🌟 NAYA: PROFESSIONAL STYLING STATES
   const [fontSize, setFontSize] = useState(14); 
   const [textColor, setTextColor] = useState('#ef4444');
+  const [fontFamily, setFontFamily] = useState('Helvetica');
+  const [smartBgColor, setSmartBgColor] = useState('#ffffff');
+  const [checkboxStyle, setCheckboxStyle] = useState('check');
 
   const [pdfDimensions, setPdfDimensions] = useState<Record<number, {w: number, h: number}>>({});
   const canvasRefs = useRef<Record<number, HTMLCanvasElement | null>>({});
@@ -151,10 +157,9 @@ export default function ProfessionalPdfEditor() {
     setIsProcessing(false);
   };
 
-  // 🌟 ULTRA HD RENDER ENGINE 
   const renderAllPages = async (pdf: pdfjsLib.PDFDocumentProxy, rotations: Record<number, number>) => {
     const dims: Record<number, {w: number, h: number, pageObj: any, renderVp: any}> = {};
-    const RESOLUTION_MULTIPLIER = 3; // Ensures PDF stays crystal clear when zoomed up to 300%
+    const RESOLUTION_MULTIPLIER = 3; 
     
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -178,7 +183,6 @@ export default function ProfessionalPdfEditor() {
             const canvas = canvasRefs.current[i];
             const data = dims[i];
             if (canvas && data) {
-                // Set actual pixels 3x higher for HD clarity
                 canvas.width = data.renderVp.width;
                 canvas.height = data.renderVp.height;
                 const ctx = canvas.getContext('2d');
@@ -245,34 +249,6 @@ export default function ProfessionalPdfEditor() {
     renderAllPages(pdfDoc, newRotations);
   };
 
-  const extractPageText = async () => {
-    if (!pdfDoc) return '';
-    try {
-      const page = await pdfDoc.getPage(currentPage);
-      const textContent = await page.getTextContent();
-      return textContent.items.map((item: any) => item.str).join(' ');
-    } catch (e) { return ''; }
-  };
-
-  const copyTextToClipboard = async () => {
-    const text = await extractPageText();
-    if (text) { navigator.clipboard.writeText(text); alert('✅ Text copied!'); }
-  };
-
-  const toggleReadAloud = async () => {
-    if (isSpeaking) {
-      window.speechSynthesis.cancel(); setIsSpeaking(false);
-    } else {
-      const text = await extractPageText();
-      if (text) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.onend = () => setIsSpeaking(false);
-        window.speechSynthesis.speak(utterance);
-        setIsSpeaking(true);
-      } else { alert('No text found to read.'); }
-    }
-  };
-
   const togglePageDelete = () => {
     setDeletedPages(prev => prev.includes(currentPage) ? prev.filter(p => p !== currentPage) : [...prev, currentPage]);
   };
@@ -287,7 +263,7 @@ export default function ProfessionalPdfEditor() {
     const canvas = canvasRefs.current[pageNum];
     if (!canvas || !pdfDimensions[pageNum]) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.clientWidth / rect.width; // Mapped to CSS dimensions, not high-res internal dims
+    const scaleX = canvas.clientWidth / rect.width; 
     const scaleY = canvas.clientHeight / rect.height;
     return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   };
@@ -337,7 +313,10 @@ export default function ProfessionalPdfEditor() {
     if (boxWidth < 10 && activeTool !== 'arrow') boxWidth = activeTool === 'checkbox' ? 20 : 150;
     if (boxHeight < 10 && activeTool !== 'arrow') boxHeight = activeTool === 'checkbox' ? 20 : 25;
 
-    const baseAnno = { id: Date.now().toString(), page: pageNum, x: startX, y: startY, width: boxWidth, height: boxHeight, cWidth: dims.w, cHeight: dims.h, color: textColor, fontSize: fontSize };
+    const baseAnno: Annotation = { 
+      id: Date.now().toString(), page: pageNum, type: activeTool, x: startX, y: startY, width: boxWidth, height: boxHeight, 
+      cWidth: dims.w, cHeight: dims.h, color: textColor, fontSize: fontSize, fontFamily: fontFamily, bgColor: smartBgColor, checkboxStyle: checkboxStyle 
+    };
 
     if (activeTool === 'smart-edit' || activeTool === 'text' || activeTool === 'link') {
       setActiveInput({ page: pageNum, x: startX, y: startY, width: boxWidth, height: boxHeight, text: '' });
@@ -347,7 +326,7 @@ export default function ProfessionalPdfEditor() {
     } else if (activeTool === 'arrow') {
       setAnnotations([...annotations, { ...baseAnno, type: 'arrow', x: 0, y: 0, width: 0, height: 0, paths: [dragStart, dragCurrent] }]);
     } else {
-      setAnnotations([...annotations, { ...baseAnno, type: activeTool }]);
+      setAnnotations([...annotations, baseAnno]);
     }
     setDragStart(null); setDragCurrent(null); setActionPage(null);
   };
@@ -358,10 +337,15 @@ export default function ProfessionalPdfEditor() {
       setAnnotations([...annotations, { 
         id: Date.now().toString(), page: activeInput.page, type: activeTool, 
         x: activeInput.x, y: activeInput.y, width: activeInput.width, height: activeInput.height,
-        cWidth: dims.w, cHeight: dims.h, text: activeInput.text, color: textColor, fontSize: fontSize
+        cWidth: dims.w, cHeight: dims.h, text: activeInput.text, color: textColor, fontSize: fontSize, fontFamily: fontFamily, bgColor: smartBgColor
       }]);
     }
     setActiveInput(null); setActiveTool('select'); 
+  };
+
+  // 🌟 NAYA: LIVE UPDATE ANY SELECTED ELEMENT
+  const updateAnnotation = (id: string, updates: Partial<Annotation>) => {
+    setAnnotations(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
   };
 
   const modifyAnnotation = (id: string, action: 'delete' | 'grow' | 'shrink') => {
@@ -380,7 +364,16 @@ export default function ProfessionalPdfEditor() {
     try {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await PDFDocument.load(arrayBuffer, { password: pdfPassword || undefined });
-      const font = await pdf.embedFont(StandardFonts.Helvetica);
+      
+      const helveticaFont = await pdf.embedFont(StandardFonts.Helvetica);
+      const timesFont = await pdf.embedFont(StandardFonts.TimesRoman);
+      const courierFont = await pdf.embedFont(StandardFonts.Courier);
+
+      const getFont = (family?: string) => {
+         if (family === 'TimesRoman') return timesFont;
+         if (family === 'Courier') return courierFont;
+         return helveticaFont;
+      };
       
       if (metaTitle) pdf.setTitle(metaTitle);
       if (metaAuthor) pdf.setAuthor(metaAuthor);
@@ -396,6 +389,7 @@ export default function ProfessionalPdfEditor() {
         const pdfHeight = (anno.height / anno.cHeight) * height;
         const annoColor = anno.color ? hexToRgbPdf(anno.color) : rgb(0,0,0);
         const annoSize = anno.fontSize || 14;
+        const textFont = getFont(anno.fontFamily);
 
         if (anno.type === 'pen' && anno.paths) {
           for (let i = 0; i < anno.paths.length - 1; i++) {
@@ -414,25 +408,38 @@ export default function ProfessionalPdfEditor() {
             page.drawLine({ start: { x: endX, y: endY }, end: { x: endX - 15 * Math.cos(angle + Math.PI / 6), y: endY - 15 * Math.sin(angle + Math.PI / 6) }, thickness: annoSize / 3, color: annoColor });
         } else if (anno.type === 'circle') {
           page.drawEllipse({ x: pdfX + pdfWidth/2, y: pdfY - pdfHeight/2, xScale: pdfWidth/2, yScale: pdfHeight/2, borderColor: annoColor, borderWidth: annoSize/4, color: undefined });
-        } else if (anno.type === 'text') { page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font, color: annoColor });
+        } else if (anno.type === 'text') { page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font: textFont, color: annoColor });
         } else if (anno.type === 'link') {
-          page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font, color: annoColor });
-          page.drawLine({ start: { x: pdfX, y: pdfY - annoSize - 2 }, end: { x: pdfX + font.widthOfTextAtSize(anno.text || '', annoSize), y: pdfY - annoSize - 2 }, thickness: 1, color: annoColor });
-        } else if (anno.type === 'whiteout') { page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(1, 1, 1) });
+          page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font: textFont, color: annoColor });
+          page.drawLine({ start: { x: pdfX, y: pdfY - annoSize - 2 }, end: { x: pdfX + textFont.widthOfTextAtSize(anno.text || '', annoSize), y: pdfY - annoSize - 2 }, thickness: 1, color: annoColor });
+        } else if (anno.type === 'whiteout') { 
+          page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: hexToRgbPdf(anno.bgColor || '#ffffff') });
         } else if (anno.type === 'redact') { page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(0, 0, 0) });
         } else if (anno.type === 'highlight') { page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(1, 1, 0), opacity: 0.4 });
         } else if (anno.type === 'strikethrough') { page.drawLine({ start: { x: pdfX, y: pdfY - (pdfHeight/2) }, end: { x: pdfX + pdfWidth, y: pdfY - (pdfHeight/2) }, thickness: 1.5, color: rgb(1, 0, 0) });
         } else if (anno.type === 'checkbox') {
-          page.drawRectangle({ x: pdfX, y: pdfY - 15, width: 15 * (pdfWidth/20), height: 15 * (pdfHeight/20), borderColor: rgb(0, 0, 0), borderWidth: 1 });
-          page.drawLine({ start: { x: pdfX + 3, y: pdfY - 10 }, end: { x: pdfX + 7, y: pdfY - 14 }, thickness: 2, color: rgb(0, 0, 0) });
-          page.drawLine({ start: { x: pdfX + 7, y: pdfY - 14 }, end: { x: pdfX + 14, y: pdfY - 5 }, thickness: 2, color: rgb(0, 0, 0) });
+          // 🌟 NAYA: EXPORTING CHECKBOX STYLES
+          if (anno.checkboxStyle === 'fill') {
+             page.drawRectangle({ x: pdfX, y: pdfY - 15, width: 15 * (pdfWidth/20), height: 15 * (pdfHeight/20), color: annoColor });
+          } else {
+             page.drawRectangle({ x: pdfX, y: pdfY - 15, width: 15 * (pdfWidth/20), height: 15 * (pdfHeight/20), borderColor: annoColor, borderWidth: 1.5 });
+             if (anno.checkboxStyle === 'check') {
+                page.drawLine({ start: { x: pdfX + 3, y: pdfY - 10 }, end: { x: pdfX + 7, y: pdfY - 14 }, thickness: 2, color: annoColor });
+                page.drawLine({ start: { x: pdfX + 7, y: pdfY - 14 }, end: { x: pdfX + 14, y: pdfY - 5 }, thickness: 2, color: annoColor });
+             } else if (anno.checkboxStyle === 'cross') {
+                page.drawLine({ start: { x: pdfX + 2, y: pdfY - 13 }, end: { x: pdfX + 13, y: pdfY - 2 }, thickness: 2, color: annoColor });
+                page.drawLine({ start: { x: pdfX + 2, y: pdfY - 2 }, end: { x: pdfX + 13, y: pdfY - 13 }, thickness: 2, color: annoColor });
+             }
+          }
         } else if ((anno.type === 'image' || anno.type === 'signature') && anno.imageFile) {
           const imgBuffer = await anno.imageFile.arrayBuffer();
           let pdfImage = anno.imageFile.type === 'image/png' ? await pdf.embedPng(imgBuffer) : await pdf.embedJpg(imgBuffer);
           page.drawImage(pdfImage, { x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight });
         } else if (anno.type === 'smart-edit') {
-          page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(1, 1, 1) });
-          page.drawText(anno.text || '', { x: pdfX + 2, y: pdfY - annoSize, size: annoSize, font, color: annoColor });
+          // 🌟 NAYA: EXPORTING SMART-EDIT WITH BG COLOR
+          const bgRgb = anno.bgColor ? hexToRgbPdf(anno.bgColor) : rgb(1,1,1);
+          page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: bgRgb });
+          page.drawText(anno.text || '', { x: pdfX + 2, y: pdfY - annoSize, size: annoSize, font: textFont, color: annoColor });
         }
       }
 
@@ -475,8 +482,8 @@ export default function ProfessionalPdfEditor() {
             const p = pages[i];
             const { width } = p.getSize();
             const text = `Page ${i + 1} of ${pages.length}`;
-            const textWidth = font.widthOfTextAtSize(text, 10);
-            p.drawText(text, { x: (width / 2) - (textWidth / 2), y: 15, size: 10, font, color: rgb(0,0,0) });
+            const textWidth = helveticaFont.widthOfTextAtSize(text, 10);
+            p.drawText(text, { x: (width / 2) - (textWidth / 2), y: 15, size: 10, font: helveticaFont, color: rgb(0,0,0) });
          }
       }
 
@@ -515,15 +522,6 @@ export default function ProfessionalPdfEditor() {
         
         {file && (
           <div className="flex items-center gap-4">
-             <div className="flex gap-2">
-               <button onClick={copyTextToClipboard} className={`px-3 py-1.5 text-xs font-bold rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 hover:bg-slate-600' : 'border-slate-300 bg-white hover:bg-slate-50'}`}>📋 Copy Text</button>
-               <button onClick={toggleReadAloud} className={`px-3 py-1.5 text-xs font-bold rounded-md border transition ${isSpeaking ? 'bg-blue-500 text-white border-blue-600 animate-pulse' : (isDarkMode ? 'border-slate-600 bg-slate-700 text-green-400' : 'border-slate-300 bg-white text-green-600')}`}>
-                 {isSpeaking ? '⏹️ Stop' : '🔊 Read'}
-               </button>
-             </div>
-
-             <div className="w-px h-8 bg-slate-300 mx-2"></div>
-
              <div className="flex items-center gap-2">
                 <button onClick={() => changePage(-1)} disabled={currentPage === 1} className={`px-3 py-1.5 border rounded-md font-bold text-sm disabled:opacity-40 transition ${isDarkMode ? 'border-slate-600 hover:bg-slate-700' : 'bg-white hover:bg-blue-50 border-slate-300'}`}>◀ Prev</button>
                 <span className="font-bold text-sm px-2">Pg {currentPage} / {numPages}</span>
@@ -559,28 +557,57 @@ export default function ProfessionalPdfEditor() {
               <button onClick={clearCurrentPageEdits} disabled={!file} className={`w-full p-2.5 rounded-md text-left font-bold text-sm transition flex items-center gap-2 disabled:opacity-40 hover:bg-orange-50 text-orange-600`}>🧹 Clear Page Edits</button>
             </div>
 
+            {/* 🌟 NAYA: ENHANCED PRO STYLING CONTROLS */}
             {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen' || activeTool === 'arrow' || activeTool === 'circle' || activeTool === 'strikethrough') && (
               <div className={`mb-6 p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-blue-50 border-blue-200'}`}>
-                <div className="flex gap-3">
+                <label className="text-[10px] font-black text-blue-500 uppercase mb-3 block">🎨 PRO Styling</label>
+                <div className="flex gap-3 mb-2">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1 uppercase">Size/Thick</label>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Size/Thick</label>
                     <input type="number" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className={`w-14 p-1 border rounded text-xs ${isDarkMode?'bg-slate-800 border-slate-600':''}`} />
                   </div>
                   <div className="flex-1">
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1 uppercase">Color</label>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Main Color</label>
                     <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-full h-6 cursor-pointer rounded border-none" />
                   </div>
                 </div>
+
+                {/* Font Family Selection */}
+                {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link') && (
+                  <div className="mb-2">
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Font Style</label>
+                    <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} className={`w-full p-1 text-xs border rounded ${isDarkMode?'bg-slate-800 border-slate-600':''}`}>
+                       <option value="Helvetica">Modern (Helvetica)</option>
+                       <option value="TimesRoman">Formal (Times Roman)</option>
+                       <option value="Courier">Typewriter (Courier)</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Smart Edit Background Matching */}
+                {(activeTool === 'smart-edit' || activeTool === 'whiteout') && (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Match Paper Background</label>
+                    <input type="color" value={smartBgColor} onChange={(e) => setSmartBgColor(e.target.value)} className="w-full h-6 cursor-pointer rounded border-none" />
+                  </div>
+                )}
               </div>
             )}
 
-            <div className="space-y-1 mb-6">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Draw & Pro Shapes</label>
-              <button onClick={() => setActiveTool('arrow')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'arrow' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>➡️ Draw Arrow</button>
-              <button onClick={() => setActiveTool('circle')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'circle' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>⭕ Circle</button>
-              <button onClick={() => setActiveTool('pen')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'pen' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>✍️ Freehand Draw</button>
-              <button onClick={() => setActiveTool('highlight')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'highlight' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🖍️ Highlight</button>
-            </div>
+            {/* 🌟 NAYA: ENHANCED CHECKBOX CONTROLS */}
+            {activeTool === 'checkbox' && (
+               <div className={`mb-6 p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-blue-50 border-blue-200'}`}>
+                 <label className="text-[10px] font-black text-blue-500 uppercase mb-3 block">☑️ Checkbox Style</label>
+                 <select value={checkboxStyle} onChange={e => setCheckboxStyle(e.target.value)} className={`w-full p-2 text-xs border rounded ${isDarkMode?'bg-slate-800 border-slate-600':''}`}>
+                   <option value="check">✔ Checkmark (Tick)</option>
+                   <option value="cross">✖ Cross Mark</option>
+                   <option value="fill">■ Filled Square</option>
+                   <option value="empty">□ Empty Square</option>
+                 </select>
+                 <label className="text-[10px] font-bold text-slate-500 block mt-2 mb-1">Color</label>
+                 <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-full h-6 cursor-pointer rounded border-none" />
+               </div>
+            )}
 
             <div className="space-y-1 mb-6">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Edit Text & Mask</label>
@@ -593,8 +620,16 @@ export default function ProfessionalPdfEditor() {
             </div>
 
             <div className="space-y-1 mb-6">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Draw & Pro Shapes</label>
+              <button onClick={() => setActiveTool('arrow')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'arrow' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>➡️ Draw Arrow</button>
+              <button onClick={() => setActiveTool('circle')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'circle' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>⭕ Circle</button>
+              <button onClick={() => setActiveTool('pen')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'pen' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>✍️ Freehand Draw</button>
+              <button onClick={() => setActiveTool('highlight')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'highlight' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🖍️ Highlight</button>
+            </div>
+
+            <div className="space-y-1 mb-6">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Media & Forms</label>
-              <button onClick={() => setActiveTool('checkbox')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'checkbox' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>☑️ Add Checkmark</button>
+              <button onClick={() => setActiveTool('checkbox')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'checkbox' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>☑️ Add Checkbox</button>
               <button onClick={() => setActiveTool('image')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'image' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🖼️ Insert Image</button>
               <button onClick={() => setActiveTool('signature')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'signature' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>✒️ Signature</button>
               {(activeTool === 'image' || activeTool === 'signature') && (
@@ -624,11 +659,11 @@ export default function ProfessionalPdfEditor() {
           </div>
         </aside>
 
-        {/* 🌟 WORKSPACE (CANVAS AREA) - THE GOD TIER FIX */}
+        {/* 🌟 WORKSPACE */}
         <main 
           className={`flex-1 overflow-auto custom-scrollbar`} 
           style={{
-             textAlign: 'center', // Fix for Flexbox clipping
+             textAlign: 'center', 
              backgroundColor: isDarkMode ? '#020617' : '#f8fafc',
              backgroundImage: isDarkMode ? 'radial-gradient(#334155 1.5px, transparent 1px)' : 'radial-gradient(#cbd5e1 1.5px, transparent 1px)',
              backgroundSize: '24px 24px'
@@ -652,7 +687,6 @@ export default function ProfessionalPdfEditor() {
               </div>
             </div>
           ) : (
-            // 🌟 100% UNCLIPPABLE SCROLL WRAPPER
             <div className="inline-flex flex-col items-center gap-12 pt-10 pb-32 px-10 min-w-max mx-auto text-left">
               {visiblePages.map((pageNum) => {
                 const dims = pdfDimensions[pageNum];
@@ -709,8 +743,12 @@ export default function ProfessionalPdfEditor() {
                             setSelectedAnnoId(anno.id); setDraggingAnnoId(anno.id); setAnnoDragOffset({ x: x - anno.x, y: y - anno.y });
                           }}
                         >
+                          {/* 🌟 NAYA: LIVE COLOR CHANGER IN FLOATING POPUP MENU */}
                           {selectedAnnoId === anno.id && activeTool === 'select' && (
-                            <div className="absolute -top-12 left-0 flex items-center gap-1 bg-slate-800 p-1.5 rounded-lg shadow-xl z-50" onMouseDown={e => e.stopPropagation()}>
+                            <div className="absolute -top-12 left-0 flex items-center gap-2 bg-slate-800 p-1.5 rounded-lg shadow-xl z-50" onMouseDown={e => e.stopPropagation()}>
+                              {(anno.type === 'text' || anno.type === 'smart-edit' || anno.type === 'pen' || anno.type === 'arrow' || anno.type === 'circle' || anno.type === 'link' || anno.type === 'checkbox') && (
+                                 <input type="color" value={anno.color || '#000000'} onChange={(e) => updateAnnotation(anno.id, { color: e.target.value })} title="Change Color" className="w-6 h-6 rounded cursor-pointer border-none p-0" />
+                              )}
                               <button onClick={() => modifyAnnotation(anno.id, 'grow')} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold">➕</button>
                               <button onClick={() => modifyAnnotation(anno.id, 'shrink')} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold">➖</button>
                               <button onClick={() => modifyAnnotation(anno.id, 'delete')} className="px-2 py-1 bg-red-500 hover:bg-red-400 text-white rounded text-xs font-bold">🗑️</button>
@@ -728,15 +766,35 @@ export default function ProfessionalPdfEditor() {
                                 <line x1={0} y1={0} x2={anno.paths[1].x - anno.paths[0].x} y2={anno.paths[1].y - anno.paths[0].y} stroke={anno.color} strokeWidth={(anno.fontSize||14)/2} />
                             </svg>
                           )}
-                          {anno.type === 'text' && <span className="absolute top-0 leading-none whitespace-nowrap" style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
-                          {anno.type === 'link' && <span className="underline absolute top-0 leading-none whitespace-nowrap" style={{ color: anno.color || 'blue', fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
-                          {anno.type === 'whiteout' && <div className={`opacity-100 w-full h-full bg-white ${isDarkMode ? 'border-gray-800' : 'border-gray-200'} border`}></div>}
+                          {anno.type === 'text' && <span className="absolute top-0 leading-none whitespace-nowrap" style={{ color: anno.color, fontSize: `${anno.fontSize}px`, fontFamily: anno.fontFamily === 'TimesRoman' ? 'Times New Roman, serif' : anno.fontFamily === 'Courier' ? 'Courier New, monospace' : 'Arial, sans-serif' }}>{anno.text}</span>}
+                          {anno.type === 'link' && <span className="underline absolute top-0 leading-none whitespace-nowrap" style={{ color: anno.color || 'blue', fontSize: `${anno.fontSize}px`, fontFamily: anno.fontFamily === 'TimesRoman' ? 'Times New Roman, serif' : anno.fontFamily === 'Courier' ? 'Courier New, monospace' : 'Arial, sans-serif' }}>{anno.text}</span>}
+                          {anno.type === 'whiteout' && <div className={`opacity-100 w-full h-full border ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`} style={{ backgroundColor: anno.bgColor || '#ffffff' }}></div>}
                           {anno.type === 'redact' && <div className="opacity-100 w-full h-full bg-black border border-black"></div>}
                           {anno.type === 'highlight' && <div className="bg-yellow-300 opacity-50 mix-blend-multiply w-full h-full"></div>}
                           {anno.type === 'strikethrough' && <div className="w-full absolute top-1/2" style={{ height: '2px', backgroundColor: '#ef4444' }}></div>}
-                          {anno.type === 'checkbox' && <span className="text-black text-xl leading-none absolute -top-1">☑</span>}
+                          
+                          {/* 🌟 NAYA: DYNAMIC CHECKBOX PREVIEW */}
+                          {anno.type === 'checkbox' && (
+                            <div className="w-full h-full flex items-center justify-center">
+                              {anno.checkboxStyle === 'fill' && <div className="w-[75%] h-[75%] mt-[-5px]" style={{ backgroundColor: anno.color || '#000000' }}></div>}
+                              {anno.checkboxStyle === 'empty' && <div className="w-[75%] h-[75%] mt-[-5px] border-2" style={{ borderColor: anno.color || '#000000' }}></div>}
+                              {anno.checkboxStyle === 'check' && (
+                                <div className="w-[75%] h-[75%] mt-[-5px] border-2 flex items-center justify-center" style={{ borderColor: anno.color || '#000000', color: anno.color || '#000000' }}>
+                                   <span style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '-2px' }}>✓</span>
+                                </div>
+                              )}
+                              {anno.checkboxStyle === 'cross' && (
+                                <div className="w-[75%] h-[75%] mt-[-5px] border-2 flex items-center justify-center" style={{ borderColor: anno.color || '#000000', color: anno.color || '#000000' }}>
+                                   <span style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '-2px' }}>✕</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {(anno.type === 'image' || anno.type === 'signature') && anno.imageUrl && <img src={anno.imageUrl} alt="preview" className={`w-full h-full object-fill pointer-events-none ${isDarkMode?'filter invert hue-rotate-180':''}`} />}
-                          {anno.type === 'smart-edit' && <span className={`px-1 w-full h-full inline-block overflow-hidden ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`} style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
+                          {anno.type === 'smart-edit' && (
+                             <span className={`px-1 w-full h-full inline-block overflow-hidden`} style={{ color: anno.color, backgroundColor: anno.bgColor || '#ffffff', fontSize: `${anno.fontSize}px`, fontFamily: anno.fontFamily === 'TimesRoman' ? 'Times New Roman, serif' : anno.fontFamily === 'Courier' ? 'Courier New, monospace' : 'Arial, sans-serif' }}>{anno.text}</span>
+                          )}
                         </div>
                       ))}
 
@@ -746,8 +804,8 @@ export default function ProfessionalPdfEditor() {
                             ref={inputRef} value={activeInput.text}
                             onChange={(e) => setActiveInput({ ...activeInput, text: e.target.value })}
                             onBlur={saveActiveInput}
-                            className={`border-2 border-blue-500 p-1 m-0 outline-none w-full h-full resize-none shadow-inner ${isDarkMode ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'}`}
-                            style={{ fontSize: `${fontSize}px`, color: textColor }}
+                            className={`border-2 border-blue-500 p-1 m-0 outline-none w-full h-full resize-none shadow-inner`}
+                            style={{ fontSize: `${fontSize}px`, color: textColor, backgroundColor: activeTool === 'smart-edit' ? smartBgColor : 'transparent', fontFamily: fontFamily === 'TimesRoman' ? 'Times New Roman, serif' : fontFamily === 'Courier' ? 'Courier New, monospace' : 'Arial, sans-serif' }}
                             placeholder="Type..."
                           />
                         </div>
