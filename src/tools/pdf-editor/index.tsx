@@ -108,7 +108,6 @@ export default function ProfessionalPdfEditor() {
     }
   };
 
-  // 🌟 BUG FIX: LIVE BLANK PAGE WITH UINT8ARRAY
   const addBlankPageLive = async () => {
     if (!file || !pdfDoc) return;
     setIsProcessing(true);
@@ -173,7 +172,6 @@ export default function ProfessionalPdfEditor() {
 
   const undoLastAction = () => setAnnotations((prev) => prev.slice(0, -1));
 
-  // 🌟 BUG FIX: ROBUST COORDINATE MATH
   const getMouseCoords = (e: React.MouseEvent<HTMLDivElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -354,7 +352,6 @@ export default function ProfessionalPdfEditor() {
          } else { alert('Invalid range. Exporting entire document instead.'); }
       }
 
-      // 🌟 BUG FIX: UINT8ARRAY FOR FINAL BLOB
       const pdfBytes = await finalPdf.save();
       const blob = new Blob([new Uint8Array(pdfBytes as any)], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
@@ -447,7 +444,7 @@ export default function ProfessionalPdfEditor() {
             </div>
 
             {/* Styling Box */}
-            {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen' || activeTool === 'arrow' || activeTool === 'circle') && (
+            {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen' || activeTool === 'arrow' || activeTool === 'circle' || activeTool === 'strikethrough') && (
               <div className={`mb-6 p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-blue-50 border-blue-200'}`}>
                 <div className="flex gap-3">
                   <div>
@@ -471,21 +468,30 @@ export default function ProfessionalPdfEditor() {
               <button onClick={() => setActiveTool('highlight')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'highlight' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🖍️ Highlight</button>
             </div>
 
+            {/* 🔥 MISSING BUTTONS BROUGHT BACK HERE */}
             <div className="space-y-1 mb-6">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Edit Text & Mask</label>
               <button onClick={() => setActiveTool('text')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'text' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>📝 Add Text</button>
               <button onClick={() => setActiveTool('smart-edit')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'smart-edit' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>✏️ Replace Word</button>
               <button onClick={() => setActiveTool('whiteout')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'whiteout' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🧼 Whiteout</button>
+              <button onClick={() => setActiveTool('strikethrough')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'strikethrough' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}><s>S</s> Strikethrough</button>
               <button onClick={() => setActiveTool('link')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'link' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🔗 Add Link</button>
+            </div>
+
+            {/* Media & Forms */}
+            <div className="space-y-1 mb-6">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Media & Forms</label>
+              <button onClick={() => setActiveTool('checkbox')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'checkbox' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>☑️ Add Checkmark</button>
+              <button onClick={() => setActiveTool('image')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'image' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🖼️ Insert Image</button>
+              <button onClick={() => setActiveTool('signature')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'signature' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>✒️ Upload Signature</button>
+              {(activeTool === 'image' || activeTool === 'signature') && (
+                <input type="file" accept="image/png, image/jpeg" onChange={(e) => setImageInput(e.target.files?.[0] || null)} className="w-full mt-1 p-1 border rounded text-[10px]" />
+              )}
             </div>
 
             <div className="space-y-1 mb-8">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Advanced Config</label>
               <input type="text" value={globalWatermark} onChange={(e) => setGlobalWatermark(e.target.value)} placeholder="Global Watermark..." className={`w-full mb-2 p-2 text-xs border rounded-md ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-300'}`} />
-              <button onClick={() => setActiveTool('image')} className={`w-full p-2 rounded-md text-left font-medium text-sm transition ${activeTool === 'image' ? 'bg-blue-100 text-blue-700' : (isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100')}`}>🖼️ Insert Image</button>
-              {activeTool === 'image' && (
-                <input type="file" accept="image/png, image/jpeg" onChange={(e) => setImageInput(e.target.files?.[0] || null)} className="w-full mt-1 p-1 border rounded text-[10px]" />
-              )}
             </div>
 
             {/* Split & Export Section */}
@@ -535,7 +541,7 @@ export default function ProfessionalPdfEditor() {
                 </svg>
               )}
 
-              {/* 🌟 FIX: ARROW AND CIRCLE LIVE PREVIEW BUG */}
+              {/* 🌟 ARROW AND CIRCLE LIVE PREVIEW */}
               {isDragging && dragStart && dragCurrent && activeTool !== 'pen' && activeTool !== 'select' && (
                 <div className="absolute pointer-events-none z-40 top-0 left-0 w-full h-full">
                   {activeTool === 'arrow' && (
@@ -588,6 +594,7 @@ export default function ProfessionalPdfEditor() {
                   {anno.type === 'whiteout' && <div className="opacity-100 w-full h-full bg-white border border-slate-200"></div>}
                   {anno.type === 'highlight' && <div className="bg-yellow-300 opacity-50 mix-blend-multiply w-full h-full"></div>}
                   {anno.type === 'strikethrough' && <div className="w-full absolute top-1/2" style={{ height: '2px', backgroundColor: '#ef4444' }}></div>}
+                  {anno.type === 'checkbox' && <span className="text-black text-xl leading-none absolute -top-1">☑</span>}
                   {(anno.type === 'image' || anno.type === 'signature') && anno.imageUrl && <img src={anno.imageUrl} alt="preview" className="w-full h-full object-fill pointer-events-none" />}
                   {anno.type === 'smart-edit' && <span className="px-1 w-full h-full inline-block overflow-hidden bg-white text-black" style={{ color: anno.color, fontSize: `${anno.fontSize}px` }}>{anno.text}</span>}
                 </div>
