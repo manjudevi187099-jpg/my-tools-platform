@@ -1,46 +1,96 @@
-export type ToolCategory = 'Merge & Organize' | 'Convert To PDF' | 'Optimize & Repair' | 'Convert From PDF' | 'Edit & Format PDF' | 'PDF Security' | 'PDF Intelligence';
-
-export interface ToolMeta {
-  id: string;
+// 1. Interface Definition
+export interface ToolMetadata {
   name: string;
-  slug: string;
   description: string;
-  category: ToolCategory;
-  isActive: boolean;
+  category: "pdf" | "dev" | "utility" | "design";
+  keywords: string[];
+  isActive: boolean; // 🌟 NAYA: Isse control kar sakte ho ki kaunsa tool site pe dikhe
 }
 
-export const TOOLS_REGISTRY: ToolMeta[] = [
-  {
-    id: 'pdf-merger',
-    name: 'Merge PDF',
-    slug: 'pdf-merger',
-    description: 'Multiple PDFs ko ek me jodein securely.',
-    category: 'Merge & Organize',
+// 2. Registry (Record<string, ToolMetadata>)
+export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
+  "pdf-merger": {
+    name: "Professional PDF Merger",
+    description: "Multiple PDFs ko ek me jodein securely.",
+    category: "pdf",
+    keywords: ["pdf merger", "combine pdf", "join pdf tools"],
     isActive: true,
   },
-  {
-    id: 'image-to-pdf',
-    name: 'JPG to PDF',
-    slug: 'image-to-pdf',
-    description: 'Images (JPG, PNG) ko high-quality PDF me convert karein.',
-    category: 'Convert To PDF',
+  "image-to-pdf": {
+    name: "JPG to PDF",
+    description: "Images (JPG, PNG) ko high-quality PDF me convert karein.",
+    category: "pdf",
+    keywords: ["image to pdf", "jpg to pdf", "convert images"],
     isActive: true,
   },
-  {
-    id: 'split-pdf',
-    name: 'Split PDF',
-    slug: 'split-pdf',
-    description: 'Badi PDF ko alag-alag panno me todein aur extract karein.',
-    category: 'Merge & Organize',
-    isActive: true, // Naya tool yahan active kar diya hai
-  },
-// Naya Watermark Tool yahan add kiya hai
-  {
-    id: 'watermark-pdf',
-    name: 'Add PDF Watermark',
-    slug: 'watermark-pdf',
-    description: 'Apne documents ko secure karne ke liye text watermark add karein.',
-    category: 'PDF Security', // Fixed: 'PDF Tools' ki jagah valid category use ki
+  "split-pdf": {
+    name: "Split PDF Pro",
+    description: "Badi PDF ko alag-alag panno me todein aur extract karein.",
+    category: "pdf",
+    keywords: ["split pdf", "extract pages", "cut pdf"],
     isActive: true,
-  }
-];
+  },
+  "watermark-pdf": {
+    name: "Add PDF Watermark",
+    description: "Apne documents ko secure karne ke liye text watermark add karein.",
+    category: "pdf",
+    keywords: ["watermark pdf", "add text watermark", "secure pdf"],
+    isActive: true,
+  },
+  "pdf-editor": {
+    name: "Advanced PDF Editor",
+    description: "All-in-one visual editor. Add text, erase content, and highlight shapes directly.",
+    category: "pdf",
+    keywords: ["pdf editor", "whiteout pdf", "add text to pdf"],
+    isActive: true,
+  },
+  "pdf-to-word": {
+    name: "PDF to Word Converter",
+    description: "Extract text and paragraphs into an editable DOC file.",
+    category: "pdf",
+    keywords: ["pdf to word", "pdf to doc"],
+    isActive: true,
+  },
+  "compress-pdf": {
+    name: "PDF Compressor Engine",
+    description: "Reduce PDF file size quickly right in your browser.",
+    category: "pdf",
+    keywords: ["compress pdf", "reduce pdf size"],
+    isActive: true,
+  },
+  "unlock-pdf": {
+    name: "Unlock PDF",
+    description: "Remove passwords from your protected PDF files quickly.",
+    category: "pdf",
+    keywords: ["unlock pdf", "remove password"],
+    isActive: true,
+  },
+  "protect-pdf": {
+    name: "Protect PDF",
+    description: "Add a secure password to your PDF file.",
+    category: "pdf",
+    keywords: ["protect pdf", "encrypt pdf"],
+    isActive: true,
+  },
+  "invert-pdf": {
+    name: "Invert PDF Colors",
+    description: "Dark background wali PDF ko white background mein convert karein.",
+    category: "pdf",
+    keywords: ["invert pdf", "white background"],
+    isActive: true,
+  },
+  "remove-watermark": {
+    name: "Remove PDF Watermark",
+    description: "PDF se text watermark hatayein.",
+    category: "pdf",
+    keywords: ["remove watermark", "delete watermark"],
+    isActive: true,
+  },
+  "pdf-stamper": {
+    name: "PDF Stamper",
+    description: "Click and add custom stamps like VERIFIED or APPROVED.",
+    category: "pdf",
+    keywords: ["pdf stamper", "add stamp", "verified stamp"],
+    isActive: true,
+  },
+};
