@@ -3,25 +3,20 @@ import React, { useState, useRef } from 'react';
 import ReactCrop, { Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { writePsd } from 'ag-psd';
-import { jsPDF } from 'jspdf'; // 🌟 NAYA: Direct PDF Export
+import { jsPDF } from 'jspdf'; 
 
-type CardSide = 'Front' | 'Back';
 type DocType = 'Aadhaar' | 'PAN' | 'Voter ID' | 'DL' | 'RC' | 'APAAR' | 'Custom';
 
 interface SheetCard {
   id: string;
   docType: DocType;
-  side: CardSide;
   canvas: HTMLCanvasElement;
 }
 
 export default function SmartCardMaker() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  
-  // 🌟 ADVANCE: Default crop box set kiya
   const [crop, setCrop] = useState<Crop>({ unit: '%', width: 40, height: 40, x: 10, y: 10 });
   const [docType, setDocType] = useState<DocType>('Aadhaar');
-  const [cardSide, setCardSide] = useState<CardSide>('Front');
   
   const [sheetCards, setSheetCards] = useState<SheetCard[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -33,9 +28,6 @@ export default function SmartCardMaker() {
   const A4_H = 3508;
   const CARD_W = 1011; 
   const CARD_H = 638;
-
-  // 🌟 ADVANCE: Strict Card Aspect Ratio (85.6mm / 54mm)
-  const CARD_ASPECT_RATIO = 85.6 / 54; 
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,7 +53,6 @@ export default function SmartCardMaker() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Advanced: High Quality Image Smoothing for crisp text
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
@@ -70,6 +61,7 @@ export default function SmartCardMaker() {
     const sw = crop.width * scaleX;
     const sh = crop.height * scaleY;
 
+    // Draw cropped area and fit it to CR80 size
     ctx.drawImage(imageRef.current, sx, sy, sw, sh, 0, 0, CARD_W, CARD_H);
 
     // Border for easy cutting
@@ -80,40 +72,34 @@ export default function SmartCardMaker() {
     const newCard: SheetCard = {
       id: Math.random().toString(36).substr(2, 9),
       docType,
-      side: cardSide,
       canvas: canvas,
     };
 
     if (sheetCards.length >= 10) {
-      alert("A4 Sheet is full! Maximum 10 cards (5 Front + 5 Back) can fit on one page.");
+      alert("A4 Sheet is full! Maximum 10 cards can fit on one page.");
       return;
     }
 
     setSheetCards([...sheetCards, newCard]);
-    
-    // Auto-switch side so user can quickly crop the back from the SAME image
-    if (cardSide === 'Front') setCardSide('Back');
   };
 
   const removeCard = (id: string) => {
     setSheetCards(sheetCards.filter(c => c.id !== id));
   };
 
-  // 🌟 NAYA: DIRECT PDF GENERATOR (Print Ready)
   const generateAndDownloadPDF = () => {
     if (sheetCards.length === 0) return;
     setIsProcessing(true);
 
     try {
-      // Create A4 PDF (210mm x 297mm)
       const doc = new jsPDF('p', 'mm', 'a4');
       
-      const startX = 15; // Left margin
-      const startY = 15; // Top margin
+      const startX = 15; 
+      const startY = 15; 
       const cardWidthMm = 85.6;
       const cardHeightMm = 54.0;
-      const gapX = 10; // Space between 2 columns
-      const gapY = 5;  // Space between rows
+      const gapX = 10; 
+      const gapY = 5;  
 
       sheetCards.forEach((card, index) => {
         const col = index % 2; 
@@ -126,7 +112,6 @@ export default function SmartCardMaker() {
         
         doc.addImage(imgData, 'JPEG', x, y, cardWidthMm, cardHeightMm);
         
-        // Add cutting border in PDF
         doc.setDrawColor(0);
         doc.setLineWidth(0.2);
         doc.rect(x, y, cardWidthMm, cardHeightMm);
@@ -170,7 +155,7 @@ export default function SmartCardMaker() {
         const y = MARGIN_Y + (row * (CARD_H + GAP_Y));
 
         childrenLayers.push({
-          name: `${card.docType} - ${card.side}`,
+          name: `${card.docType} ${index + 1}`,
           canvas: card.canvas,
           left: x,
           top: y,
@@ -218,16 +203,15 @@ export default function SmartCardMaker() {
              <div className="border-4 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center relative hover:border-blue-500 transition-colors bg-slate-50 min-h-[400px]">
                <span className="text-6xl block mb-4">📄</span>
                <p className="font-bold text-slate-700 text-xl">Upload Document Scan</p>
-               <p className="text-sm text-slate-400 mt-2">Upload Front/Back page to start cropping</p>
+               <p className="text-sm text-slate-400 mt-2">Upload any document to start cropping</p>
                <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
              </div>
           ) : (
             <div className="bg-slate-100 rounded-xl overflow-hidden border border-slate-300 text-center flex items-center justify-center min-h-[400px] p-2 relative">
-              <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow z-10">
-                🔒 Aspect Ratio Locked (85.6 x 54)
+              <span className="absolute top-2 left-2 bg-emerald-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow z-10">
+                ✂️ Free Crop Enabled
               </span>
-              {/* 🌟 ADVANCE: aspect prop passed to lock the ratio */}
-              <ReactCrop crop={crop} onChange={c => setCrop(c)} aspect={CARD_ASPECT_RATIO}>
+              <ReactCrop crop={crop} onChange={c => setCrop(c)}>
                 <img 
                   ref={imageRef} 
                   src={imageSrc} 
@@ -239,26 +223,17 @@ export default function SmartCardMaker() {
             </div>
           )}
 
-          <div className="mt-6 grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Document Type</label>
-              <select value={docType} onChange={(e) => setDocType(e.target.value as DocType)} className="w-full p-3 border rounded-xl font-bold bg-slate-50 focus:border-blue-500 outline-none">
-                <option value="Aadhaar">Aadhaar Format</option>
-                <option value="PAN">PAN Card</option>
-                <option value="Voter ID">Voter ID</option>
-                <option value="DL">Driving License (DL)</option>
-                <option value="RC">RC Book</option>
-                <option value="APAAR">APAAR Card</option>
-                <option value="Custom">Custom Card</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Side</label>
-              <select value={cardSide} onChange={(e) => setCardSide(e.target.value as CardSide)} className="w-full p-3 border rounded-xl font-bold bg-slate-50 focus:border-blue-500 outline-none">
-                <option value="Front">Front Side</option>
-                <option value="Back">Back Side</option>
-              </select>
-            </div>
+          <div className="mt-6">
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Document Type</label>
+            <select value={docType} onChange={(e) => setDocType(e.target.value as DocType)} className="w-full p-3 border rounded-xl font-bold bg-slate-50 focus:border-blue-500 outline-none">
+              <option value="Aadhaar">Aadhaar Format</option>
+              <option value="PAN">PAN Card</option>
+              <option value="Voter ID">Voter ID</option>
+              <option value="DL">Driving License (DL)</option>
+              <option value="RC">RC Book</option>
+              <option value="APAAR">APAAR Card</option>
+              <option value="Custom">Custom Card</option>
+            </select>
           </div>
 
           <button 
@@ -287,9 +262,9 @@ export default function SmartCardMaker() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                {sheetCards.map((card) => (
+                {sheetCards.map((card, index) => (
                   <div key={card.id} className="relative group bg-slate-50 border border-slate-200 rounded p-2 shadow-sm text-center">
-                    <span className="block text-[10px] font-bold text-slate-500 mb-1">{card.docType} - {card.side}</span>
+                    <span className="block text-[10px] font-bold text-slate-500 mb-1">{card.docType} {index + 1}</span>
                     <img src={card.canvas.toDataURL()} alt="Card Preview" className="w-full h-auto object-cover rounded-sm border border-slate-300" />
                     
                     <button 
@@ -309,7 +284,6 @@ export default function SmartCardMaker() {
                Automatically scales to exact CR80 format (85.6 × 54 mm). Ready for direct A4 printing.
              </p>
              
-             {/* 🌟 ADVANCE: Multiple Download Options */}
              <div className="flex gap-3">
                 <button 
                   onClick={generateAndDownloadPSD}
