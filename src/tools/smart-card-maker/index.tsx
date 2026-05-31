@@ -6,17 +6,27 @@ import { writePsd } from 'ag-psd';
 import { jsPDF } from 'jspdf'; 
 
 type DocType = 'Aadhaar' | 'PAN' | 'Voter ID' | 'DL' | 'RC' | 'APAAR' | 'Custom';
+type PrintFormat = 'Single' | 'JointH' | 'JointV';
 
 interface SheetCard {
   id: string;
   docType: DocType;
+  printFormat: PrintFormat;
   canvas: HTMLCanvasElement;
 }
+
+// 🌟 SMART SIZES (CR80 Standard) at 300 DPI
+const CARD_FORMATS = {
+  Single: { name: 'Single Card (Front OR Back)', pxW: 1011, pxH: 638, mmW: 85.6, mmH: 54.0 },
+  JointH: { name: 'Joint Card - Horizontal (Front + Back)', pxW: 2022, pxH: 638, mmW: 171.2, mmH: 54.0 },
+  JointV: { name: 'Joint Card - Vertical (Front + Back)', pxW: 1011, pxH: 1276, mmW: 85.6, mmH: 108.0 },
+};
 
 export default function SmartCardMaker() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState<Crop>({ unit: '%', width: 40, height: 40, x: 10, y: 10 });
   const [docType, setDocType] = useState<DocType>('Aadhaar');
+  const [printFormat, setPrintFormat] = useState<PrintFormat>('JointH'); // Default set to Joint (Horizontal)
   
   const [sheetCards, setSheetCards] = useState<SheetCard[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -26,8 +36,6 @@ export default function SmartCardMaker() {
   // A4 Size (PSD) at 300 DPI
   const A4_W = 2480;
   const A4_H = 3508;
-  const CARD_W = 1011; 
-  const CARD_H = 638;
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,12 +51,15 @@ export default function SmartCardMaker() {
         return;
     }
 
+    const fmt = CARD_FORMATS[printFormat];
+    
     const canvas = document.createElement('canvas');
     const scaleX = imageRef.current.naturalWidth / imageRef.current.width;
     const scaleY = imageRef.current.naturalHeight / imageRef.current.height;
     
-    canvas.width = CARD_W;
-    canvas.height = CARD_H;
+    // Dynamic width & height based on user format selection
+    canvas.width = fmt.pxW;
+    canvas.height = fmt.pxH;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -61,22 +72,23 @@ export default function SmartCardMaker() {
     const sw = crop.width * scaleX;
     const sh = crop.height * scaleY;
 
-    // Draw cropped area and fit it to CR80 size
-    ctx.drawImage(imageRef.current, sx, sy, sw, sh, 0, 0, CARD_W, CARD_H);
+    // Draw and stretch perfectly to the selected exact size
+    ctx.drawImage(imageRef.current, sx, sy, sw, sh, 0, 0, fmt.pxW, fmt.pxH);
 
-    // Border for easy cutting
+    // Cutting Border
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 4;
-    ctx.strokeRect(0, 0, CARD_W, CARD_H);
+    ctx.strokeRect(0, 0, fmt.pxW, fmt.pxH);
 
     const newCard: SheetCard = {
       id: Math.random().toString(36).substr(2, 9),
       docType,
+      printFormat,
       canvas: canvas,
     };
 
     if (sheetCards.length >= 10) {
-      alert("A4 Sheet is full! Maximum 10 cards can fit on one page.");
+      alert("A4 Sheet limit reached!");
       return;
     }
 
@@ -87,6 +99,7 @@ export default function SmartCardMaker() {
     setSheetCards(sheetCards.filter(c => c.id !== id));
   };
 
+  // 🌟 SMART LAYOUT ENGINE FOR PDF
   const generateAndDownloadPDF = () => {
     if (sheetCards.length === 0) return;
     setIsProcessing(true);
@@ -94,27 +107,30 @@ export default function SmartCardMaker() {
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
       
-      const startX = 15; 
-      const startY = 15; 
-      const cardWidthMm = 85.6;
-      const cardHeightMm = 54.0;
-      const gapX = 10; 
-      const gapY = 5;  
+      let currX = 15; 
+      let currY = 15; 
+      let rowMaxH = 0;
 
-      sheetCards.forEach((card, index) => {
-        const col = index % 2; 
-        const row = Math.floor(index / 2);
+      sheetCards.forEach((card) => {
+        const fmt = CARD_FORMATS[card.printFormat];
 
-        const x = startX + col * (cardWidthMm + gapX);
-        const y = startY + row * (cardHeightMm + gapY);
+        // Agar line mein jagah nahi hai, toh nayi line (row) mein jao
+        if (currX + fmt.mmW > 210 - 15) {
+          currX = 15;
+          currY += rowMaxH + 5; // 5mm vertical gap
+          rowMaxH = 0;
+        }
 
         const imgData = card.canvas.toDataURL('image/jpeg', 1.0);
+        doc.addImage(imgData, 'JPEG', currX, currY, fmt.mmW, fmt.mmH);
         
-        doc.addImage(imgData, 'JPEG', x, y, cardWidthMm, cardHeightMm);
-        
+        // Print Border
         doc.setDrawColor(0);
         doc.setLineWidth(0.2);
-        doc.rect(x, y, cardWidthMm, cardHeightMm);
+        doc.rect(currX, currY, fmt.mmW, fmt.mmH);
+
+        rowMaxH = Math.max(rowMaxH, fmt.mmH);
+        currX += fmt.mmW + 10; // 10mm horizontal gap
       });
 
       doc.save(`Smart_Cards_A4_Print_${sheetCards.length}_Items.pdf`);
@@ -127,6 +143,7 @@ export default function SmartCardMaker() {
     }
   };
 
+  // 🌟 SMART LAYOUT ENGINE FOR PSD
   const generateAndDownloadPSD = async () => {
     if (sheetCards.length === 0) return;
     setIsProcessing(true);
@@ -143,23 +160,29 @@ export default function SmartCardMaker() {
       }
       childrenLayers.push({ name: 'White A4 Paper', canvas: bgCanvas });
 
-      const MARGIN_X = 150; 
-      const MARGIN_Y = 150; 
-      const GAP_X = A4_W - (MARGIN_X * 2) - (CARD_W * 2); 
-      const GAP_Y = 50; 
+      let currX = 150; 
+      let currY = 150; 
+      let rowMaxH = 0;
 
       sheetCards.forEach((card, index) => {
-        const col = index % 2; 
-        const row = Math.floor(index / 2);
-        const x = MARGIN_X + (col * (CARD_W + GAP_X));
-        const y = MARGIN_Y + (row * (CARD_H + GAP_Y));
+        const fmt = CARD_FORMATS[card.printFormat];
+
+        // Agar sheet ki width cross ho rahi hai, next line pe shift karo
+        if (currX + fmt.pxW > A4_W - 150) {
+          currX = 150;
+          currY += rowMaxH + 50; 
+          rowMaxH = 0;
+        }
 
         childrenLayers.push({
-          name: `${card.docType} ${index + 1}`,
+          name: `${card.docType} ${index + 1} (${card.printFormat})`,
           canvas: card.canvas,
-          left: x,
-          top: y,
+          left: currX,
+          top: currY,
         });
+
+        rowMaxH = Math.max(rowMaxH, fmt.pxH);
+        currX += fmt.pxW + 100;
       });
 
       const psd = { width: A4_W, height: A4_H, children: childrenLayers };
@@ -183,7 +206,7 @@ export default function SmartCardMaker() {
     <div className="max-w-7xl mx-auto p-4 md:p-6 min-h-screen">
       <div className="text-center mb-8">
         <h2 className="text-4xl font-black text-slate-800 tracking-tight">Pro Smart Card Maker</h2>
-        <p className="text-slate-500 mt-2 text-lg">Crop ID cards and arrange them perfectly on an A4 sheet. Direct PDF printing support.</p>
+        <p className="text-slate-500 mt-2 text-lg">Crop Single or Joint ID cards and arrange them perfectly on an A4 sheet. Direct PDF support.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -223,17 +246,28 @@ export default function SmartCardMaker() {
             </div>
           )}
 
-          <div className="mt-6">
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Document Type</label>
-            <select value={docType} onChange={(e) => setDocType(e.target.value as DocType)} className="w-full p-3 border rounded-xl font-bold bg-slate-50 focus:border-blue-500 outline-none">
-              <option value="Aadhaar">Aadhaar Format</option>
-              <option value="PAN">PAN Card</option>
-              <option value="Voter ID">Voter ID</option>
-              <option value="DL">Driving License (DL)</option>
-              <option value="RC">RC Book</option>
-              <option value="APAAR">APAAR Card</option>
-              <option value="Custom">Custom Card</option>
-            </select>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Document Type</label>
+              <select value={docType} onChange={(e) => setDocType(e.target.value as DocType)} className="w-full p-3 border rounded-xl font-bold bg-slate-50 focus:border-blue-500 outline-none">
+                <option value="Aadhaar">Aadhaar Format</option>
+                <option value="PAN">PAN Card</option>
+                <option value="Voter ID">Voter ID</option>
+                <option value="DL">Driving License (DL)</option>
+                <option value="RC">RC Book</option>
+                <option value="APAAR">APAAR Card</option>
+                <option value="Custom">Custom Card</option>
+              </select>
+            </div>
+            {/* 🌟 NAYA OPTION: Card Format Selection */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Print Layout Size</label>
+              <select value={printFormat} onChange={(e) => setPrintFormat(e.target.value as PrintFormat)} className="w-full p-3 border rounded-xl font-bold bg-slate-50 focus:border-blue-500 outline-none text-blue-800">
+                <option value="Single">{CARD_FORMATS.Single.name}</option>
+                <option value="JointH">{CARD_FORMATS.JointH.name}</option>
+                <option value="JointV">{CARD_FORMATS.JointV.name}</option>
+              </select>
+            </div>
           </div>
 
           <button 
@@ -263,9 +297,10 @@ export default function SmartCardMaker() {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {sheetCards.map((card, index) => (
-                  <div key={card.id} className="relative group bg-slate-50 border border-slate-200 rounded p-2 shadow-sm text-center">
-                    <span className="block text-[10px] font-bold text-slate-500 mb-1">{card.docType} {index + 1}</span>
-                    <img src={card.canvas.toDataURL()} alt="Card Preview" className="w-full h-auto object-cover rounded-sm border border-slate-300" />
+                  // JointH (Horizontal) card will automatically take full width in preview
+                  <div key={card.id} className={`relative group bg-slate-50 border border-slate-200 rounded p-2 shadow-sm text-center ${card.printFormat === 'JointH' ? 'col-span-2' : 'col-span-1'}`}>
+                    <span className="block text-[10px] font-bold text-slate-500 mb-1">{card.docType} {index + 1} ({card.printFormat})</span>
+                    <img src={card.canvas.toDataURL()} alt="Card Preview" className="w-full h-auto object-contain rounded-sm border border-slate-300 max-h-32 mx-auto" />
                     
                     <button 
                       onClick={() => removeCard(card.id)}
@@ -281,7 +316,7 @@ export default function SmartCardMaker() {
 
           <div className="mt-6 border-t pt-4">
              <p className="text-xs text-slate-500 font-medium text-center mb-3">
-               Automatically scales to exact CR80 format (85.6 × 54 mm). Ready for direct A4 printing.
+               Automatically sets exact Standard/Joint sizes. Ready for direct A4 printing.
              </p>
              
              <div className="flex gap-3">
