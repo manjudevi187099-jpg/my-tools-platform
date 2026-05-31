@@ -107,5 +107,13 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
   category: "utility",
   keywords: ["join photo signature", "merge image", "exam form photo"],
   isActive: true,
-}
+},
+
+"age-calculator": {
+    name: "Age Calculator",
+    description: "Forms ke liye Date of Birth se exact age (Years, Months, Days) calculate karein.",
+    category: "utility",
+    keywords: ["age calculator", "calculate age", "dob calculator", "form age"],
+    isActive: true,
+  },
 };
