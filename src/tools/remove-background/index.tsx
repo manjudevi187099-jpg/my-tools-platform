@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useRef } from 'react';
-import imglyRemoveBackground from '@imgly/background-removal';
+// 🌟 FIX: Curly brackets {} laga diye hain import mein (Named Export)
+import { removeBackground } from '@imgly/background-removal';
 
 export default function RemoveBackground() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -33,8 +34,8 @@ export default function RemoveBackground() {
     setProgress('Loading AI Model... (Takes 10-20 secs on first run)');
 
     try {
-      // 🌟 FIX: TypeScript errors resolved here by casting and adding types
-      const imageBlob = await (imglyRemoveBackground as any)(originalImage, {
+      // 🌟 FIX: Yahan function ka naam theek kar diya hai
+      const imageBlob = await (removeBackground as any)(originalImage, {
         progress: (key: string, current: number, total: number) => {
           setProgress(`Processing: ${Math.round((current / total) * 100)}%`);
         }
