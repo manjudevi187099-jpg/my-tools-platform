@@ -1,6 +1,5 @@
 'use client';
-import React, { useState, useRef } from 'react';
-// 🌟 FIX: Curly brackets {} laga diye hain import mein (Named Export)
+import React, { useState } from 'react';
 import { removeBackground } from '@imgly/background-removal';
 
 export default function RemoveBackground() {
@@ -28,24 +27,64 @@ export default function RemoveBackground() {
     }
   };
 
+  // 🌟 NAYA SMART PRE-PROCESSOR: Ye image ko AI mein bhejney se pehle optimize karega taaki 10x fast chale
+  const optimizeImageForAI = (dataUrl: string, maxSize = 800): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        
+        // Agar photo bahut badi hai, toh usko limit mein layein
+        if (w > maxSize || h > maxSize) {
+          const ratio = Math.min(maxSize / w, maxSize / h);
+          w = w * ratio;
+          h = h * ratio;
+        } else {
+          resolve(dataUrl); // Agar choti hai toh waise hi bhej do
+          return;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, w, h);
+        
+        // JPEG format mein bhejo taaki process fast ho
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
+      };
+      img.src = dataUrl;
+    });
+  };
+
   const removeBg = async () => {
     if (!originalImage) return;
     setIsProcessing(true);
-    setProgress('Loading AI Model... (Takes 10-20 secs on first run)');
+    setProgress('Optimizing Image...');
 
     try {
-      // 🌟 FIX: Yahan function ka naam theek kar diya hai
-      const imageBlob = await (removeBackground as any)(originalImage, {
+      // 1. Pehle image ko fast processing ke liye chhota karein
+      const fastImageUrl = await optimizeImageForAI(originalImage);
+
+      setProgress('Waking up AI...');
+
+      const config = {
+        publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.5.5/dist/",
+        model: 'small', // Small model for ultra-fast processing
         progress: (key: string, current: number, total: number) => {
-          setProgress(`Processing: ${Math.round((current / total) * 100)}%`);
+          const percent = Math.round((current / total) * 100);
+          setProgress(`Removing BG: ${percent}%`);
         }
-      });
-      
+      };
+
+      // 2. Optimized image ko AI mein dalein
+      const imageBlob = await (removeBackground as any)(fastImageUrl, config);
       const url = URL.createObjectURL(imageBlob);
       setProcessedImage(url);
     } catch (error) {
       console.error(error);
-      alert("Background removal failed. Please try a different image.");
+      alert("Background removal failed. Please check internet connection.");
     } finally {
       setIsProcessing(false);
       setProgress('');
@@ -67,14 +106,20 @@ export default function RemoveBackground() {
         if (selectedColor !== 'transparent') {
           ctx.fillStyle = selectedColor;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-        
-        ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0);
 
-        const link = document.createElement('a');
-        link.download = `Bg_Removed_${selectedColor === 'transparent' ? 'PNG' : 'Colored'}.png`;
-        link.href = canvas.toDataURL('image/png', 1.0);
-        link.click();
+          const link = document.createElement('a');
+          link.download = `HD_Bg_Colored.jpg`;
+          link.href = canvas.toDataURL('image/jpeg', 1.0);
+          link.click();
+        } else {
+          ctx.drawImage(img, 0, 0);
+
+          const link = document.createElement('a');
+          link.download = `HD_Transparent.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }
       }
     };
     img.src = processedImage;
@@ -124,8 +169,8 @@ export default function RemoveBackground() {
                   disabled={isProcessing}
                   className="mt-6 bg-blue-600 text-white font-black py-3 px-8 rounded-xl shadow-lg hover:bg-blue-700 transition-all disabled:opacity-70 flex flex-col items-center"
                 >
-                  {isProcessing ? 'Processing AI...' : '🪄 Remove Background'}
-                  {progress && <span className="text-xs font-normal mt-1 text-blue-200">{progress}</span>}
+                  {isProcessing ? 'Removing...' : '🪄 Remove Background'}
+                  {progress && <span className="text-xs font-medium mt-1 text-blue-200 block text-center max-w-[200px] leading-tight">{progress}</span>}
                 </button>
               )}
             </div>
@@ -134,7 +179,7 @@ export default function RemoveBackground() {
 
         <div className="w-full md:w-[400px] p-8 flex flex-col bg-white">
           <h2 className="text-3xl font-black text-slate-900 leading-tight">Remove Image Background</h2>
-          <p className="text-slate-500 text-sm mt-1 mb-8">100% Automatically and Free</p>
+          <p className="text-slate-500 text-sm mt-1 mb-6">100% Automatically and Free</p>
 
           <div className="flex-1">
             <h3 className="font-bold text-slate-700 mb-3 text-sm">Background color</h3>
@@ -176,14 +221,19 @@ export default function RemoveBackground() {
                 );
               })}
             </div>
+            
+            <p className="text-xs text-slate-400 mt-4 font-medium text-center">
+              * Transparent will download as HD PNG.<br/>
+              * Colored will download as HD JPG.
+            </p>
           </div>
 
           <button 
             onClick={downloadImage}
             disabled={!processedImage}
-            className={`w-full mt-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${!processedImage ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#0f172a] text-white hover:bg-blue-600 shadow-xl hover:-translate-y-1'}`}
+            className={`w-full mt-6 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${!processedImage ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#0f172a] text-white hover:bg-blue-600 shadow-xl hover:-translate-y-1'}`}
           >
-            Download Image 📥
+            Download HD Image 📥
           </button>
 
         </div>
