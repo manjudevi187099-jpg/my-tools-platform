@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, rgb, StandardFonts, degrees } from '@cantoo/pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -26,7 +26,7 @@ const hexToRgbPdf = (hex: string) => {
 export default function ProfessionalPdfEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
-  const [pdfPassword, setPdfPassword] = useState<string>(''); // 🌟 NAYA: Password State
+  const [pdfPassword, setPdfPassword] = useState<string>('');
   
   const [currentPage, setCurrentPage] = useState(1);
   const [numPages, setNumPages] = useState(1);
@@ -69,7 +69,6 @@ export default function ProfessionalPdfEditor() {
     await loadNewFile(selectedFile);
   };
 
-  // 🌟 FIX: SMART LOADING WITH PASSWORD PROTECTION SUPPORT
   const loadNewFile = async (newFile: File, pwd = '') => {
     setIsProcessing(true);
     try {
@@ -89,7 +88,7 @@ export default function ProfessionalPdfEditor() {
       await renderPage(pdf, 1, 0);
     } catch (err: any) {
       if (err.name === 'PasswordException') {
-        const userPwd = prompt("🔒 This PDF is Password Protected (e.g. Aadhaar). Enter password to open:");
+        const userPwd = prompt("🔒 This PDF is Password Protected. Enter password to open:");
         if (userPwd) loadNewFile(newFile, userPwd);
       } else {
         alert("Error loading PDF: " + err.message);
@@ -99,16 +98,18 @@ export default function ProfessionalPdfEditor() {
     }
   };
 
-  // 🌟 FIX: DYNAMIC SCALING FOR WEIRD PDF SIZES
+  // 🌟 FIX 1: SMART SCALING FOR CUSTOM DIMENSION PDFS
   const renderPage = async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number, rotation: number = 0) => {
     try {
       const page = await pdf.getPage(pageNum);
       const unscaledViewport = page.getViewport({ scale: 1, rotation });
       
-      // Auto-scale huge PDFs to fit standard view (prevents Aadhaar explosion bug)
-      const targetBaseWidth = 850;
-      let baseScale = unscaledViewport.width > 0 ? targetBaseWidth / unscaledViewport.width : 1.5;
-      baseScale = Math.max(0.5, Math.min(baseScale, 2.5)); // Keep it reasonable
+      // Smart detection for Landscape (Govt IDs) vs Portrait
+      const isLandscape = unscaledViewport.width > unscaledViewport.height;
+      const targetBaseWidth = isLandscape ? 800 : 650; 
+      
+      let baseScale = targetBaseWidth / unscaledViewport.width;
+      baseScale = Math.max(0.4, Math.min(baseScale, 2.0)); // Prevent it from exploding or shrinking too much
       
       const viewport = page.getViewport({ scale: baseScale, rotation }); 
       setPdfDimensions({ w: viewport.width, h: viewport.height });
@@ -136,7 +137,6 @@ export default function ProfessionalPdfEditor() {
     }
   };
 
-  // 🌟 FIX: ROBUST BLANK PAGE INJECTION
   const addBlankPageLive = async () => {
     if (!file || !pdfDoc) return;
     setIsProcessing(true);
@@ -145,12 +145,11 @@ export default function ProfessionalPdfEditor() {
       const doc = await PDFDocument.load(arrayBuffer, { password: pdfPassword || undefined });
       doc.addPage([595.28, 841.89]); 
       const pdfBytes = await doc.save();
-      
       const newBlob = new Blob([new Uint8Array(pdfBytes as any)], { type: 'application/pdf' });
       const newFile = new File([newBlob], file.name, { type: 'application/pdf' });
       
       setFile(newFile);
-      setPdfPassword(''); // Once saved, pdf-lib strips the password
+      setPdfPassword('');
       
       const newPdfjs = await pdfjsLib.getDocument({ data: pdfBytes.slice(0) }).promise;
       setPdfDoc(newPdfjs);
@@ -204,7 +203,6 @@ export default function ProfessionalPdfEditor() {
 
   const undoLastAction = () => setAnnotations((prev) => prev.slice(0, -1));
 
-  // 🌟 FIX: FLAWLESS COORDINATE MATH
   const getMouseCoords = (e: React.MouseEvent<HTMLDivElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -300,7 +298,6 @@ export default function ProfessionalPdfEditor() {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      // Ensure password is provided to pdf-lib as well
       const pdf = await PDFDocument.load(arrayBuffer, { password: pdfPassword || undefined });
       const font = await pdf.embedFont(StandardFonts.Helvetica);
       
@@ -404,13 +401,14 @@ export default function ProfessionalPdfEditor() {
   const isPageDeleted = deletedPages.includes(currentPage);
 
   // 🌟 THEME CLASSES
-  const themeBg = isDarkMode ? 'bg-slate-900' : 'bg-slate-50';
+  const themeBg = isDarkMode ? 'bg-slate-900' : 'bg-slate-100';
   const themeText = isDarkMode ? 'text-slate-200' : 'text-slate-800';
   const panelBg = isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
   const canvasBg = isDarkMode ? 'bg-slate-950' : 'bg-slate-200';
 
   return (
-    <div className={`flex flex-col min-h-[85vh] h-full w-full font-sans overflow-hidden transition-colors duration-300 rounded-lg shadow-sm border ${themeBg} ${themeText}`}>
+    // 🌟 FIX 2: BOXED LAYOUT FOR LAPTOPS (No More Stretching)
+    <div className={`max-w-[1300px] mx-auto my-6 flex flex-col h-[86vh] font-sans overflow-hidden transition-colors duration-300 rounded-2xl shadow-2xl border ${themeBg} ${themeText}`}>
       
       {/* 🌟 TOP NAVBAR */}
       <header className={`h-16 border-b flex items-center justify-between px-6 z-20 ${panelBg}`}>
@@ -512,17 +510,16 @@ export default function ProfessionalPdfEditor() {
                <label className="text-[10px] font-bold text-slate-500 block mb-1 uppercase">✂️ Export Range (e.g. 1-3)</label>
                <input type="text" value={exportRange} onChange={(e) => setExportRange(e.target.value)} placeholder="All Pages" className={`w-full p-2 border rounded text-xs mb-3 ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white'}`} />
                <button onClick={saveAndDownload} disabled={isProcessing || !file} className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-bold shadow-md transition-all text-sm">
-                 {isProcessing ? 'Applying Magic...' : '✨ Export PDF'}
+                 {isProcessing ? 'Applying Magic...' : '✨ Export Final PDF'}
                </button>
             </div>
 
           </div>
         </aside>
 
-        {/* 🌟 WORKSPACE (CANVAS AREA) FIX: Strict Dimension Bound Wrapper */}
-        <main className={`flex-1 overflow-auto relative ${canvasBg} flex justify-center items-start pt-8 pb-20 custom-scrollbar`}>
+        {/* 🌟 WORKSPACE (CANVAS AREA) FIX 3: BOUNDED SCROLLING WRAPPER */}
+        <main className={`flex-1 overflow-auto relative ${canvasBg} custom-scrollbar`}>
           
-          {/* Zoom Overlay Control */}
           {file && (
              <div className={`fixed bottom-8 right-8 z-50 flex items-center gap-1 px-3 py-2 rounded-full border shadow-2xl ${isDarkMode ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'}`}>
                 <button onClick={() => setZoom(z => Math.max(0.3, z - 0.1))} className="font-bold text-xl px-2 hover:text-blue-500">➖</button>
@@ -532,21 +529,14 @@ export default function ProfessionalPdfEditor() {
           )}
 
           {!file ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4 mt-20">
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
                <span className="text-5xl">📄</span>
                <p className="text-lg font-bold">Upload a Document to start editing</p>
             </div>
           ) : (
-            // 🌟 THE FIX: This wrapper scales dynamically and pushes scrollbars perfectly
-            <div 
-              className="relative transition-all duration-200"
-              style={{
-                width: pdfDimensions ? `${pdfDimensions.w * zoom}px` : '100%',
-                height: pdfDimensions ? `${pdfDimensions.h * zoom}px` : '100%',
-              }}
-            >
+            <div className="min-h-full w-full flex justify-center items-start p-8">
               <div 
-                className={`absolute top-0 left-0 shadow-2xl origin-top-left bg-white
+                className={`relative shadow-2xl origin-top-left transition-transform duration-200 bg-white
                   ${activeTool === 'select' ? 'cursor-default' : activeTool === 'none' ? '' : 'cursor-crosshair'}
                 `}
                 style={{ 
@@ -568,7 +558,6 @@ export default function ProfessionalPdfEditor() {
                    </div>
                 )}
 
-                {/* PDF CANVAS */}
                 <canvas ref={canvasRef} className="pointer-events-none block" style={{ width: '100%', height: '100%' }} />
                 
                 {currentPath.length > 0 && (
@@ -577,7 +566,6 @@ export default function ProfessionalPdfEditor() {
                   </svg>
                 )}
 
-                {/* 🌟 ARROW AND CIRCLE LIVE PREVIEW */}
                 {isDragging && dragStart && dragCurrent && activeTool !== 'pen' && activeTool !== 'select' && (
                   <div className="absolute pointer-events-none z-40 top-0 left-0 w-full h-full">
                     {activeTool === 'arrow' && (
