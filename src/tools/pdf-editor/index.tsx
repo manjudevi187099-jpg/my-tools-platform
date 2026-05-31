@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { PDFDocument, rgb, StandardFonts } from '@cantoo/pdf-lib';
+import { PDFDocument, rgb, StandardFonts, degrees } from '@cantoo/pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -31,10 +31,13 @@ export default function AdvancedPdfEditor() {
   const [numPages, setNumPages] = useState(1);
   const [zoom, setZoom] = useState(1);
 
-  // NAYA: Page Management & Element Selection States
+  // 🌟 ULTRA PRO STATES
   const [deletedPages, setDeletedPages] = useState<number[]>([]);
-  const [selectedAnnoId, setSelectedAnnoId] = useState<string | null>(null);
+  const [pageRotations, setPageRotations] = useState<Record<number, number>>({});
+  const [globalWatermark, setGlobalWatermark] = useState('');
+  const [addedBlankPages, setAddedBlankPages] = useState(0);
 
+  const [selectedAnnoId, setSelectedAnnoId] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<ToolType>('select');
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   
@@ -63,6 +66,9 @@ export default function AdvancedPdfEditor() {
     setFile(selectedFile);
     setAnnotations([]); 
     setDeletedPages([]);
+    setPageRotations({});
+    setGlobalWatermark('');
+    setAddedBlankPages(0);
     setActiveInput(null);
     setSelectedAnnoId(null);
     setZoom(1); 
@@ -72,12 +78,12 @@ export default function AdvancedPdfEditor() {
     setPdfDoc(pdf);
     setNumPages(pdf.numPages);
     setCurrentPage(1);
-    renderPage(pdf, 1);
+    renderPage(pdf, 1, 0);
   };
 
-  const renderPage = async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number) => {
+  const renderPage = async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number, rotation: number = 0) => {
     const page = await pdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 1.5 }); 
+    const viewport = page.getViewport({ scale: 1.5, rotation }); 
     setPdfDimensions({ w: viewport.width, h: viewport.height });
 
     const canvas = canvasRef.current;
@@ -94,13 +100,21 @@ export default function AdvancedPdfEditor() {
     const newPage = currentPage + offset;
     if (newPage >= 1 && newPage <= numPages) {
       setCurrentPage(newPage);
-      renderPage(pdfDoc, newPage);
+      renderPage(pdfDoc, newPage, pageRotations[newPage] || 0);
       setActiveInput(null);
       setSelectedAnnoId(null);
     }
   };
 
-  // NAYA: Page Text Extraction
+  // 🌟 NAYA: ROTATE PAGE FUNCTION
+  const rotateCurrentPage = () => {
+    if (!pdfDoc) return;
+    const currentRot = pageRotations[currentPage] || 0;
+    const newRot = (currentRot + 90) % 360;
+    setPageRotations(prev => ({ ...prev, [currentPage]: newRot }));
+    renderPage(pdfDoc, currentPage, newRot);
+  };
+
   const extractPageText = async () => {
     if (!pdfDoc) return;
     try {
@@ -108,13 +122,12 @@ export default function AdvancedPdfEditor() {
       const textContent = await page.getTextContent();
       const text = textContent.items.map((item: any) => item.str).join(' ');
       navigator.clipboard.writeText(text);
-      alert('✅ Page text copied to clipboard successfully!');
+      alert('✅ Text copied to clipboard!');
     } catch (e) {
       alert('Error extracting text.');
     }
   };
 
-  // NAYA: Toggle Page Deletion
   const togglePageDelete = () => {
     if (deletedPages.includes(currentPage)) {
       setDeletedPages(prev => prev.filter(p => p !== currentPage));
@@ -129,25 +142,20 @@ export default function AdvancedPdfEditor() {
   const getMouseCoords = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return { x: 0, y: 0 };
-    return {
-      x: (e.clientX - rect.left) / zoom,
-      y: (e.clientY - rect.top) / zoom
-    };
+    return { x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom };
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'none' || activeTool === 'select') {
-      if (activeTool === 'select' && !draggingAnnoId) setSelectedAnnoId(null); // Clicked on empty canvas
+      if (activeTool === 'select' && !draggingAnnoId) setSelectedAnnoId(null); 
       return; 
     }
     const { x, y } = getMouseCoords(e);
-    
     if (activeTool === 'pen') {
       setCurrentPath([{ x, y }]);
       setIsDragging(true);
       return;
     }
-
     setDragStart({ x, y });
     setDragCurrent({ x, y });
     setIsDragging(true);
@@ -155,16 +163,11 @@ export default function AdvancedPdfEditor() {
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const { x, y } = getMouseCoords(e);
-
     if (draggingAnnoId && annoDragOffset) {
-      setAnnotations(prev => prev.map(a => 
-        a.id === draggingAnnoId ? { ...a, x: x - annoDragOffset.x, y: y - annoDragOffset.y } : a
-      ));
+      setAnnotations(prev => prev.map(a => a.id === draggingAnnoId ? { ...a, x: x - annoDragOffset.x, y: y - annoDragOffset.y } : a));
       return;
     }
-
     if (!isDragging) return;
-
     if (activeTool === 'pen') {
       setCurrentPath((prev) => [...prev, { x, y }]);
       return;
@@ -173,12 +176,7 @@ export default function AdvancedPdfEditor() {
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (draggingAnnoId) {
-      setDraggingAnnoId(null);
-      setAnnoDragOffset(null);
-      return;
-    }
-
+    if (draggingAnnoId) { setDraggingAnnoId(null); setAnnoDragOffset(null); return; }
     if (!isDragging || !pdfDimensions) return;
     setIsDragging(false);
 
@@ -186,8 +184,7 @@ export default function AdvancedPdfEditor() {
       if (currentPath.length > 1) {
         setAnnotations([...annotations, {
           id: Date.now().toString(), page: currentPage, type: 'pen',
-          x: 0, y: 0, width: 0, height: 0,
-          cWidth: pdfDimensions.w, cHeight: pdfDimensions.h,
+          x: 0, y: 0, width: 0, height: 0, cWidth: pdfDimensions.w, cHeight: pdfDimensions.h,
           paths: currentPath, color: textColor, fontSize: fontSize 
         }]);
       }
@@ -196,7 +193,6 @@ export default function AdvancedPdfEditor() {
     }
 
     if (!dragStart || !dragCurrent) return;
-
     const startX = Math.min(dragStart.x, dragCurrent.x);
     const startY = Math.min(dragStart.y, dragCurrent.y);
     let boxWidth = Math.abs(dragCurrent.x - dragStart.x);
@@ -206,8 +202,7 @@ export default function AdvancedPdfEditor() {
     if (boxHeight < 10) boxHeight = activeTool === 'checkbox' ? 20 : 25;
 
     const baseAnno = {
-      id: Date.now().toString(), page: currentPage,
-      x: startX, y: startY, width: boxWidth, height: boxHeight,
+      id: Date.now().toString(), page: currentPage, x: startX, y: startY, width: boxWidth, height: boxHeight,
       cWidth: pdfDimensions.w, cHeight: pdfDimensions.h
     };
 
@@ -219,9 +214,7 @@ export default function AdvancedPdfEditor() {
     } else {
       setAnnotations([...annotations, { ...baseAnno, type: activeTool }]);
     }
-
-    setDragStart(null);
-    setDragCurrent(null);
+    setDragStart(null); setDragCurrent(null);
   };
 
   const saveActiveInput = () => {
@@ -229,29 +222,19 @@ export default function AdvancedPdfEditor() {
       setAnnotations([...annotations, { 
         id: Date.now().toString(), page: currentPage, type: activeTool, 
         x: activeInput.x, y: activeInput.y, width: activeInput.width, height: activeInput.height,
-        cWidth: pdfDimensions.w, cHeight: pdfDimensions.h,
-        text: activeInput.text, color: textColor, fontSize: fontSize
+        cWidth: pdfDimensions.w, cHeight: pdfDimensions.h, text: activeInput.text, color: textColor, fontSize: fontSize
       }]);
     }
-    setActiveInput(null);
-    setActiveTool('select'); 
+    setActiveInput(null); setActiveTool('select'); 
   };
 
-  // NAYA: Resize & Delete Specific Annotations
   const modifyAnnotation = (id: string, action: 'delete' | 'grow' | 'shrink') => {
     if (action === 'delete') {
       setAnnotations(prev => prev.filter(a => a.id !== id));
       setSelectedAnnoId(null);
     } else {
       const scale = action === 'grow' ? 1.1 : 0.9;
-      setAnnotations(prev => prev.map(a => 
-        a.id === id ? { 
-          ...a, 
-          width: a.width * scale, 
-          height: a.height * scale, 
-          fontSize: a.fontSize ? a.fontSize * scale : undefined 
-        } : a
-      ));
+      setAnnotations(prev => prev.map(a => a.id === id ? { ...a, width: a.width * scale, height: a.height * scale, fontSize: a.fontSize ? a.fontSize * scale : undefined } : a));
     }
   };
 
@@ -265,8 +248,7 @@ export default function AdvancedPdfEditor() {
       const font = await pdf.embedFont(StandardFonts.Helvetica);
       
       for (const anno of annotations) {
-        if (deletedPages.includes(anno.page)) continue; // Skip drawing on deleted pages
-
+        if (deletedPages.includes(anno.page)) continue; 
         const page = pdf.getPages()[anno.page - 1]; 
         const { width, height } = page.getSize();
         
@@ -274,33 +256,26 @@ export default function AdvancedPdfEditor() {
         const pdfY = height - ((anno.y / anno.cHeight) * height);
         const pdfWidth = (anno.width / anno.cWidth) * width;
         const pdfHeight = (anno.height / anno.cHeight) * height;
-
         const annoColor = anno.color ? hexToRgbPdf(anno.color) : rgb(0,0,0);
         const annoSize = anno.fontSize || 14;
 
         if (anno.type === 'pen' && anno.paths) {
           for (let i = 0; i < anno.paths.length - 1; i++) {
-            const p1 = anno.paths[i];
-            const p2 = anno.paths[i+1];
+            const p1 = anno.paths[i]; const p2 = anno.paths[i+1];
             page.drawLine({
               start: { x: ((p1.x + anno.x) / anno.cWidth) * width, y: height - (((p1.y + anno.y) / anno.cHeight) * height) },
               end: { x: ((p2.x + anno.x) / anno.cWidth) * width, y: height - (((p2.y + anno.y) / anno.cHeight) * height) },
-              thickness: annoSize / 3, 
-              color: annoColor
+              thickness: annoSize / 3, color: annoColor
             });
           }
-        } else if (anno.type === 'text') {
-          page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font, color: annoColor });
+        } else if (anno.type === 'text') { page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font, color: annoColor });
         } else if (anno.type === 'link') {
           page.drawText(anno.text || '', { x: pdfX, y: pdfY - annoSize, size: annoSize, font, color: annoColor });
           const textWidth = font.widthOfTextAtSize(anno.text || '', annoSize);
           page.drawLine({ start: { x: pdfX, y: pdfY - annoSize - 2 }, end: { x: pdfX + textWidth, y: pdfY - annoSize - 2 }, thickness: 1, color: annoColor });
-        } else if (anno.type === 'whiteout') {
-          page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(1, 1, 1) });
-        } else if (anno.type === 'highlight') {
-          page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(1, 1, 0), opacity: 0.4 });
-        } else if (anno.type === 'strikethrough') {
-          page.drawLine({ start: { x: pdfX, y: pdfY - (pdfHeight/2) }, end: { x: pdfX + pdfWidth, y: pdfY - (pdfHeight/2) }, thickness: 1.5, color: rgb(1, 0, 0) });
+        } else if (anno.type === 'whiteout') { page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(1, 1, 1) });
+        } else if (anno.type === 'highlight') { page.drawRectangle({ x: pdfX, y: pdfY - pdfHeight, width: pdfWidth, height: pdfHeight, color: rgb(1, 1, 0), opacity: 0.4 });
+        } else if (anno.type === 'strikethrough') { page.drawLine({ start: { x: pdfX, y: pdfY - (pdfHeight/2) }, end: { x: pdfX + pdfWidth, y: pdfY - (pdfHeight/2) }, thickness: 1.5, color: rgb(1, 0, 0) });
         } else if (anno.type === 'checkbox') {
           page.drawRectangle({ x: pdfX, y: pdfY - 15, width: 15 * (pdfWidth/20), height: 15 * (pdfHeight/20), borderColor: rgb(0, 0, 0), borderWidth: 1 });
           page.drawLine({ start: { x: pdfX + 3, y: pdfY - 10 }, end: { x: pdfX + 7, y: pdfY - 14 }, thickness: 2, color: rgb(0, 0, 0) });
@@ -315,8 +290,34 @@ export default function AdvancedPdfEditor() {
         }
       }
 
-      // NAYA: Remove deleted pages from the final PDF
-      const sortedDeletedPages = [...deletedPages].sort((a, b) => b - a); // Reverse order to prevent index shifting issues
+      // 🌟 APPLY ROTATIONS
+      for (const [pageNum, rot] of Object.entries(pageRotations)) {
+        if (rot !== 0 && !deletedPages.includes(Number(pageNum))) {
+          const p = pdf.getPages()[Number(pageNum) - 1];
+          if (p) p.setRotation(degrees(p.getRotation().angle + rot));
+        }
+      }
+
+      // 🌟 APPLY GLOBAL WATERMARK
+      if (globalWatermark.trim() !== '') {
+        const watermarkFont = await pdf.embedFont(StandardFonts.HelveticaBold);
+        for (let i = 0; i < pdf.getPageCount(); i++) {
+          if (deletedPages.includes(i + 1)) continue;
+          const p = pdf.getPages()[i];
+          const { width, height } = p.getSize();
+          p.drawText(globalWatermark, {
+            x: width / 4, y: height / 3, size: 60, font: watermarkFont, color: rgb(0.5, 0.5, 0.5), opacity: 0.3, rotate: degrees(45)
+          });
+        }
+      }
+
+      // 🌟 ADD BLANK PAGES
+      for (let i = 0; i < addedBlankPages; i++) {
+        pdf.addPage([595.28, 841.89]); // A4 Size
+      }
+
+      // 🌟 REMOVE DELETED PAGES
+      const sortedDeletedPages = [...deletedPages].sort((a, b) => b - a);
       for (const pageNum of sortedDeletedPages) {
         pdf.removePage(pageNum - 1);
       }
@@ -326,7 +327,7 @@ export default function AdvancedPdfEditor() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'God-Level-Edited-Document.pdf';
+      a.download = 'God-Tier-Edited.pdf';
       a.click();
     } catch (err) {
       console.error(err);
@@ -343,14 +344,16 @@ export default function AdvancedPdfEditor() {
     <div className="max-w-[1400px] mx-auto p-4 flex flex-col md:flex-row gap-6 bg-gray-50 min-h-screen">
       
       {/* SIDEBAR TOOLBAR */}
-      <div className="w-full md:w-80 bg-white p-5 rounded-2xl shadow-xl border border-gray-200 h-[90vh] overflow-y-auto custom-scrollbar flex flex-col">
-        <h2 className="text-2xl font-bold mb-4 text-blue-700 sticky top-0 bg-white z-10 pb-2 border-b">Pro PDF Editor</h2>
+      <div className="w-full md:w-[340px] bg-white p-5 rounded-2xl shadow-xl border border-gray-200 h-[90vh] overflow-y-auto custom-scrollbar flex flex-col">
+        <h2 className="text-2xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 sticky top-0 bg-white z-10 pb-2 border-b">
+          GOD-TIER EDITOR
+        </h2>
         
-        <input type="file" accept="application/pdf" onChange={handleFileChange} className="mb-4 w-full text-sm border p-2 rounded" />
+        <input type="file" accept="application/pdf" onChange={handleFileChange} className="mb-4 w-full text-sm border p-2 rounded bg-gray-50" />
 
         <div className="flex gap-2 mb-4">
-          <button onClick={undoLastAction} disabled={annotations.length === 0} className="flex-1 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded font-medium text-sm transition disabled:opacity-50">↩️ Undo</button>
-          <button onClick={clearCurrentPage} disabled={currentPageAnnotations.length === 0} className="flex-1 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded font-medium text-sm transition disabled:opacity-50">🗑️ Clear</button>
+          <button onClick={undoLastAction} disabled={annotations.length === 0} className="flex-1 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded font-bold text-sm transition disabled:opacity-50">↩️ Undo</button>
+          <button onClick={clearCurrentPage} disabled={currentPageAnnotations.length === 0} className="flex-1 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded font-bold text-sm transition disabled:opacity-50">🗑️ Clear</button>
         </div>
 
         <div className="mb-4">
@@ -359,18 +362,33 @@ export default function AdvancedPdfEditor() {
            </button>
         </div>
 
+        {/* 🌟 NAYA: ULTRA PRO FEATURES (Watermark & Blank Pages) */}
+        <div className="mb-5 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl shadow-inner">
+          <h3 className="text-xs font-black text-purple-800 uppercase mb-3 flex items-center gap-1">✨ Ultra Pro Features</h3>
+          
+          <div className="mb-3">
+            <label className="text-xs text-purple-700 font-bold block mb-1">©️ Global Watermark:</label>
+            <input type="text" value={globalWatermark} onChange={(e) => setGlobalWatermark(e.target.value)} placeholder="e.g. CONFIDENTIAL" className="w-full p-2 border border-purple-200 rounded text-sm bg-white" />
+          </div>
+
+          <div>
+            <label className="text-xs text-purple-700 font-bold block mb-1">📄 Add Extra Blank Pages:</label>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setAddedBlankPages(Math.max(0, addedBlankPages - 1))} className="px-3 py-1 bg-white border rounded hover:bg-gray-100 font-bold text-purple-700">-</button>
+              <span className="font-bold text-sm text-purple-900 w-8 text-center">{addedBlankPages}</span>
+              <button onClick={() => setAddedBlankPages(addedBlankPages + 1)} className="px-3 py-1 bg-white border rounded hover:bg-gray-100 font-bold text-purple-700">+</button>
+            </div>
+            <p className="text-[10px] text-purple-500 mt-1">Pages will be added at the end of PDF.</p>
+          </div>
+        </div>
+
+        {/* STYLING & TOOLS */}
         {(activeTool === 'text' || activeTool === 'smart-edit' || activeTool === 'link' || activeTool === 'pen') && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded">
             <h3 className="text-xs font-bold text-blue-800 uppercase mb-2">{activeTool === 'pen' ? 'Pen Styling' : 'Text Styling'}</h3>
             <div className="flex gap-3 items-center">
-              <div>
-                <label className="text-xs text-gray-600 block mb-1">{activeTool === 'pen' ? 'Thickness:' : 'Size:'}</label>
-                <input type="number" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className="w-16 p-1 border rounded text-sm" min="2" max="72" />
-              </div>
-              <div className="flex-1">
-                <label className="text-xs text-gray-600 block mb-1">Color:</label>
-                <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-full h-8 cursor-pointer rounded" />
-              </div>
+              <div><label className="text-xs text-gray-600 block mb-1">Size:</label><input type="number" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className="w-16 p-1 border rounded text-sm" min="2" max="72" /></div>
+              <div className="flex-1"><label className="text-xs text-gray-600 block mb-1">Color:</label><input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-full h-8 cursor-pointer rounded" /></div>
             </div>
           </div>
         )}
@@ -384,7 +402,6 @@ export default function AdvancedPdfEditor() {
               <button onClick={() => setActiveTool('text')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'text' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>📝 Add Text</button>
             </div>
           </div>
-
           <div>
             <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Mask & Annotate</h3>
             <div className="space-y-2">
@@ -393,54 +410,49 @@ export default function AdvancedPdfEditor() {
               <button onClick={() => setActiveTool('strikethrough')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'strikethrough' ? 'bg-orange-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}><s>S</s> Strikethrough</button>
             </div>
           </div>
-
           <div>
-            <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Insert Media</h3>
+            <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Insert Media & Links</h3>
             <div className="space-y-2">
               <button onClick={() => setActiveTool('link')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'link' ? 'bg-blue-400 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>🔗 Add Link</button>
               <button onClick={() => setActiveTool('image')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'image' ? 'bg-green-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>🖼️ Add Image</button>
-              <button onClick={() => setActiveTool('signature')} className={`w-full p-2.5 rounded text-left font-medium text-sm transition ${activeTool === 'signature' ? 'bg-teal-500 text-white shadow' : 'bg-gray-100 hover:bg-gray-200'}`}>✒️ Upload Signature</button>
-              {(activeTool === 'image' || activeTool === 'signature') && (
-                <input type="file" accept="image/png, image/jpeg" onChange={(e) => setImageInput(e.target.files?.[0] || null)} className="w-full p-2 border rounded text-xs" />
-              )}
+              {(activeTool === 'image' || activeTool === 'signature') && (<input type="file" accept="image/png, image/jpeg" onChange={(e) => setImageInput(e.target.files?.[0] || null)} className="w-full p-2 border rounded text-xs" />)}
             </div>
           </div>
         </div>
 
         <div className="flex-1"></div>
-
-        <button onClick={saveAndDownload} disabled={isProcessing || !file} className="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-md sticky bottom-0 z-10 mt-4">
-          {isProcessing ? 'Saving PDF...' : '💾 Save & Download'}
+        <button onClick={saveAndDownload} disabled={isProcessing || !file} className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-black shadow-lg sticky bottom-0 z-10 mt-4 text-lg">
+          {isProcessing ? 'Applying Magic...' : '✨ Export PDF'}
         </button>
       </div>
 
       {/* MAIN PREVIEW AREA */}
       <div className="w-full md:flex-1 bg-white p-4 rounded-2xl shadow-xl border border-gray-200 flex flex-col h-[90vh]">
         
-        {/* NAYA: ADVANCED TOP TOOLBAR */}
         {file && (
           <div className="flex flex-wrap justify-between items-center bg-gray-100 p-3 rounded-lg mb-4 shadow-sm border border-gray-200 gap-4">
-            {/* Zoom & Page Extract */}
+            
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-gray-300">
                 <button onClick={() => setZoom(z => Math.max(0.5, z - 0.2))} className="font-bold px-2 hover:bg-gray-100 text-blue-600">➖</button>
                 <span className="font-bold text-gray-700 text-xs min-w-[40px] text-center">{Math.round(zoom * 100)}%</span>
                 <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} className="font-bold px-2 hover:bg-gray-100 text-blue-600">➕</button>
               </div>
-              <button onClick={extractPageText} className="text-xs bg-white border border-gray-300 px-3 py-1.5 rounded font-bold hover:bg-blue-50 text-blue-700 shadow-sm">
-                📋 Copy Text
-              </button>
+              <button onClick={extractPageText} className="text-xs bg-white border border-gray-300 px-3 py-1.5 rounded font-bold hover:bg-blue-50 text-blue-700 shadow-sm">📋 Copy Text</button>
             </div>
 
-            {/* Pagination & Delete Page */}
             <div className="flex items-center gap-2">
               <button onClick={() => changePage(-1)} disabled={currentPage === 1} className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 font-bold text-xs">◀ Prev</button>
               <span className="font-bold text-gray-700 text-sm px-2">Pg {currentPage} / {numPages}</span>
               <button onClick={() => changePage(1)} disabled={currentPage === numPages} className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 font-bold text-xs">Next ▶</button>
               
-              {/* PAGE DELETE BUTTON */}
-              <button onClick={togglePageDelete} className={`ml-2 px-3 py-1.5 rounded font-bold text-xs border shadow-sm transition ${isPageDeleted ? 'bg-green-100 text-green-700 border-green-300' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}>
-                {isPageDeleted ? '↩️ Restore Page' : '🗑️ Delete Page'}
+              {/* 🌟 NAYA: ROTATE BUTTON */}
+              <button onClick={rotateCurrentPage} className="ml-2 px-3 py-1.5 rounded font-bold text-xs border shadow-sm bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100">
+                🔄 Rotate
+              </button>
+
+              <button onClick={togglePageDelete} className={`ml-1 px-3 py-1.5 rounded font-bold text-xs border shadow-sm transition ${isPageDeleted ? 'bg-green-100 text-green-700 border-green-300' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}>
+                {isPageDeleted ? '↩️ Restore' : '🗑️ Delete'}
               </button>
             </div>
           </div>
@@ -449,7 +461,10 @@ export default function AdvancedPdfEditor() {
         {/* CANVAS EDITOR AREA */}
         <div className="overflow-auto flex flex-1 relative select-none bg-gray-300 rounded custom-scrollbar justify-center items-start">
           {!file ? (
-            <div className="flex items-center justify-center h-full text-gray-500 font-medium w-full">Upload a PDF to start editing...</div>
+            <div className="flex flex-col items-center justify-center h-full text-gray-500 font-medium w-full gap-4">
+               <span className="text-6xl">🚀</span>
+               <p className="text-xl font-bold text-gray-600">Upload a PDF to Unleash God-Tier Editing</p>
+            </div>
           ) : (
             <div 
               className={`relative inline-block m-8 shadow-2xl bg-white origin-top-left transition-transform duration-200 
@@ -458,11 +473,19 @@ export default function AdvancedPdfEditor() {
               style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
               onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
             >
-              {/* DELETED PAGE OVERLAY */}
               {isPageDeleted && (
                 <div className="absolute inset-0 bg-red-900 bg-opacity-70 z-50 flex items-center justify-center pointer-events-none">
-                  <h1 className="text-white text-4xl font-black tracking-widest transform rotate-[-30deg] border-4 border-white p-4">PAGE DELETED</h1>
+                  <h1 className="text-white text-4xl font-black tracking-widest transform rotate-[-30deg] border-4 border-white p-4">DELETED</h1>
                 </div>
+              )}
+
+              {/* 🌟 LIVE GLOBAL WATERMARK PREVIEW */}
+              {globalWatermark && !isPageDeleted && (
+                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden opacity-20">
+                    <h1 className="text-gray-500 font-black tracking-widest transform -rotate-45 whitespace-nowrap" style={{ fontSize: '100px' }}>
+                      {globalWatermark}
+                    </h1>
+                 </div>
               )}
 
               <canvas ref={canvasRef} className="pointer-events-none" />
@@ -482,29 +505,23 @@ export default function AdvancedPdfEditor() {
               {currentPageAnnotations.map((anno) => (
                 <div 
                   key={anno.id} 
-                  className={`absolute z-30 ${activeTool === 'select' ? 'pointer-events-auto cursor-move' : 'pointer-events-none'}`} 
+                  className={`absolute z-30 ${activeTool === 'select' ? 'pointer-events-auto cursor-move hover:ring-2 hover:ring-indigo-400' : 'pointer-events-none'}`} 
                   style={{ left: anno.x, top: anno.y, width: anno.width, height: anno.height }}
                   onMouseDown={(e) => {
                     if (activeTool !== 'select') return;
                     e.stopPropagation(); 
                     const { x, y } = getMouseCoords(e as any);
-                    setSelectedAnnoId(anno.id); // Mark as selected
+                    setSelectedAnnoId(anno.id); 
                     setDraggingAnnoId(anno.id);
                     setAnnoDragOffset({ x: x - anno.x, y: y - anno.y });
                   }}
                 >
-                  {/* NAYA: FLOATING TOOLBAR FOR SELECTED ELEMENT */}
                   {selectedAnnoId === anno.id && activeTool === 'select' && (
                     <div className="absolute -top-10 left-0 flex items-center gap-1 bg-gray-800 p-1.5 rounded shadow-xl z-50" onMouseDown={e => e.stopPropagation()}>
                       <button onClick={() => modifyAnnotation(anno.id, 'grow')} className="px-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs font-bold">➕ Size</button>
                       <button onClick={() => modifyAnnotation(anno.id, 'shrink')} className="px-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs font-bold">➖ Size</button>
                       <button onClick={() => modifyAnnotation(anno.id, 'delete')} className="px-2 bg-red-600 hover:bg-red-500 text-white rounded text-xs font-bold">🗑️</button>
                     </div>
-                  )}
-
-                  {/* ELEMENT OUTLINE WHEN SELECTED */}
-                  {selectedAnnoId === anno.id && activeTool === 'select' && (
-                     <div className="absolute inset-0 border-2 border-blue-500 border-dashed pointer-events-none"></div>
                   )}
 
                   {anno.type === 'pen' && anno.paths && (
