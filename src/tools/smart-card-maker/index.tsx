@@ -1,9 +1,15 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactCrop, { Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { writePsd } from 'ag-psd';
 import { jsPDF } from 'jspdf'; 
+import * as pdfjsLib from 'pdfjs-dist';
+
+// 🌟 SETUP PDF.JS WORKER (To run PDF processing fast in browser)
+if (typeof window !== 'undefined' && !(pdfjsLib as any).GlobalWorkerOptions.workerSrc) {
+  (pdfjsLib as any).GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+}
 
 type DocType = 'Aadhaar' | 'PAN' | 'Voter ID' | 'DL' | 'RC' | 'APAAR' | 'Custom';
 type PrintFormat = 'Single' | 'JointH' | 'JointV';
@@ -15,7 +21,6 @@ interface SheetCard {
   canvas: HTMLCanvasElement;
 }
 
-// 🌟 SMART SIZES (CR80 Standard) at 300 DPI
 const CARD_FORMATS = {
   Single: { name: 'Single Card (Front OR Back)', pxW: 1011, pxH: 638, mmW: 85.6, mmH: 54.0 },
   JointH: { name: 'Joint Card - Horizontal (Front + Back)', pxW: 2022, pxH: 638, mmW: 171.2, mmH: 54.0 },
@@ -31,17 +36,81 @@ export default function SmartCardMaker() {
   const [sheetCards, setSheetCards] = useState<SheetCard[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   
+  // 🌟 NAYE PDF STATES 🌟
+  const [isPdfLocked, setIsPdfLocked] = useState(false);
+  const [pendingPdfFile, setPendingPdfFile] = useState<File | null>(null);
+  const [pdfPassword, setPdfPassword] = useState('');
+
   const imageRef = useRef<HTMLImageElement | null>(null);
 
-  // A4 Size (PSD) at 300 DPI
   const A4_W = 2480;
   const A4_H = 3508;
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 🌟 NAYA FUNCTION: PDF KO IMAGE MEIN BADALNE KE LIYE
+  const processDocument = async (file: File, password?: string) => {
+    setIsProcessing(true);
+    
+    // Agar normal image (JPG/PNG) hai toh sidha load karo
+    if (!file.type.includes('pdf')) {
+      setImageSrc(URL.createObjectURL(file));
+      setIsProcessing(false);
+      return;
+    }
+
+    // Agar PDF hai, toh padhna shuru karo
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({
+        data: arrayBuffer,
+        password: password || undefined
+      });
+
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(1); // Page 1 load karo (Aadhaar/PAN isi pe hote hain)
+
+      // Scale 3 se PDF ekdum HD quality mein render hoga
+      const viewport = page.getViewport({ scale: 3.0 }); 
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) throw new Error("Canvas context failed");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+      // PDF ko Image banakar Crop tool ko de do
+      setImageSrc(canvas.toDataURL('image/jpeg', 1.0));
+      
+      // Reset lock states if successful
+      setIsPdfLocked(false);
+      setPendingPdfFile(null);
+      setPdfPassword('');
+
+    } catch (error: any) {
+      if (error.name === 'PasswordException') {
+        // Agar password laga hai, toh lock state true kardo
+        setIsPdfLocked(true);
+        setPendingPdfFile(file);
+      } else {
+        console.error("Load Error:", error);
+        alert("File load fail ho gayi. Ya toh file corrupt hai ya format galat hai.");
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setImageSrc(url);
+      processDocument(file);
+    }
+  };
+
+  const handlePasswordSubmit = () => {
+    if (pendingPdfFile && pdfPassword) {
+      processDocument(pendingPdfFile, pdfPassword);
     }
   };
 
@@ -95,7 +164,6 @@ export default function SmartCardMaker() {
     setSheetCards(sheetCards.filter(c => c.id !== id));
   };
 
-  // 🌟 NAYA: PERFECT CENTER PDF LAYOUT ENGINE
   const generateAndDownloadPDF = () => {
     if (sheetCards.length === 0) return;
     setIsProcessing(true);
@@ -124,11 +192,11 @@ export default function SmartCardMaker() {
                currY += rowMaxH + PDF_GAP_Y;
                rowMaxH = 0;
            }
-           drawX = (PDF_W - fmt.mmW) / 2; // Perfectly Center JointH
+           drawX = (PDF_W - fmt.mmW) / 2; 
            drawY = currY;
            
            rowMaxH = Math.max(rowMaxH, fmt.mmH);
-           currX = PDF_W; // Force newline for next item
+           currX = PDF_W; 
         } else {
            if (currX + fmt.mmW > PDF_W - 10) {
                currX = PDF_MARGIN_X_SINGLE;
@@ -160,7 +228,6 @@ export default function SmartCardMaker() {
     }
   };
 
-  // 🌟 NAYA: PERFECT CENTER PSD LAYOUT ENGINE
   const generateAndDownloadPSD = async () => {
     if (sheetCards.length === 0) return;
     setIsProcessing(true);
@@ -175,13 +242,12 @@ export default function SmartCardMaker() {
         bgCtx.fillStyle = '#ffffff';
         bgCtx.fillRect(0, 0, A4_W, A4_H);
       }
-      // Fixed: White paper layer perfectly aligned at 0,0
       childrenLayers.push({ name: 'White A4 Paper', canvas: bgCanvas, left: 0, top: 0 });
 
-      const MARGIN_X_SINGLE = 189; // Perfectly centers 2 single cards
+      const MARGIN_X_SINGLE = 189; 
       const GAP_X = 80; 
-      const MARGIN_Y = 80;  // Optimized Top Margin to fit 5 Rows safely
-      const GAP_Y = 45; // Space between rows
+      const MARGIN_Y = 80;  
+      const GAP_Y = 45; 
 
       let currX = MARGIN_X_SINGLE; 
       let currY = MARGIN_Y; 
@@ -193,20 +259,17 @@ export default function SmartCardMaker() {
         let drawY = currY;
 
         if (card.printFormat === 'JointH') {
-           // Agar pehle se line me koi single card hai, toh ise nayi line me dalo
            if (currX > MARGIN_X_SINGLE) {
                currX = MARGIN_X_SINGLE;
                currY += rowMaxH + GAP_Y;
                rowMaxH = 0;
            }
-           // JointH Card ko A4 ke ekdum Center me set karo
            drawX = (A4_W - fmt.pxW) / 2; 
            drawY = currY;
            
            rowMaxH = Math.max(rowMaxH, fmt.pxH);
-           currX = A4_W; // Force next card to a new line
+           currX = A4_W; 
         } else {
-           // Single or JointV Card
            if (currX + fmt.pxW > A4_W - 150) {
                currX = MARGIN_X_SINGLE;
                currY += rowMaxH + GAP_Y;
@@ -248,7 +311,7 @@ export default function SmartCardMaker() {
     <div className="max-w-7xl mx-auto p-4 md:p-6 min-h-screen">
       <div className="text-center mb-8">
         <h2 className="text-4xl font-black text-slate-800 tracking-tight">Pro Smart Card Maker</h2>
-        <p className="text-slate-500 mt-2 text-lg">Crop Single or Joint ID cards and arrange them perfectly on an A4 sheet. Direct PDF support.</p>
+        <p className="text-slate-500 mt-2 text-lg">Crop Single or Joint ID cards (PDF/JPG) and arrange them perfectly on an A4 sheet.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -264,12 +327,40 @@ export default function SmartCardMaker() {
             )}
           </div>
 
-          {!imageSrc ? (
+          {/* 🌟 PASSWORD PROMPT BOX 🌟 */}
+          {isPdfLocked ? (
+            <div className="border-4 border-slate-200 bg-red-50 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[400px]">
+              <span className="text-5xl mb-4">🔒</span>
+              <h4 className="font-black text-red-700 text-2xl mb-2">Password Required</h4>
+              <p className="text-slate-600 mb-6 text-center font-medium">Ye PDF password se lock hai (Jaise e-Aadhaar). <br/> Kripya password daalein:</p>
+              
+              <div className="flex w-full max-w-sm gap-2">
+                <input
+                  type="password"
+                  value={pdfPassword}
+                  onChange={e => setPdfPassword(e.target.value)}
+                  placeholder="Enter Password"
+                  className="flex-1 p-3 border-2 border-red-200 rounded-xl outline-none focus:border-red-500 font-bold text-lg"
+                />
+                <button
+                  onClick={handlePasswordSubmit}
+                  disabled={isProcessing}
+                  className="bg-red-600 text-white px-6 py-3 rounded-xl font-black hover:bg-red-700 disabled:opacity-50"
+                >
+                  {isProcessing ? '...' : 'Unlock'}
+                </button>
+              </div>
+              <button onClick={() => { setIsPdfLocked(false); setPendingPdfFile(null); }} className="mt-6 text-sm font-bold text-slate-500 hover:text-slate-800 underline">
+                Cancel
+              </button>
+            </div>
+          ) : !imageSrc ? (
              <div className="border-4 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center relative hover:border-blue-500 transition-colors bg-slate-50 min-h-[400px]">
                <span className="text-6xl block mb-4">📄</span>
                <p className="font-bold text-slate-700 text-xl">Upload Document Scan</p>
-               <p className="text-sm text-slate-400 mt-2">Upload any document to start cropping</p>
-               <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+               <p className="text-sm text-slate-400 mt-2 font-bold">PDF, JPG, PNG supported</p>
+               {/* 🌟 CRITICAL FIX: accept me application/pdf add kiya */}
+               <input type="file" accept="image/*, application/pdf" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
              </div>
           ) : (
             <div className="bg-slate-100 rounded-xl overflow-hidden border border-slate-300 text-center flex items-center justify-center min-h-[400px] p-2 relative">
@@ -313,7 +404,7 @@ export default function SmartCardMaker() {
 
           <button 
             onClick={addCardToSheet}
-            disabled={!imageSrc}
+            disabled={!imageSrc || isProcessing}
             className={`w-full mt-6 py-4 rounded-xl font-black text-xl shadow-lg transition-transform ${!imageSrc ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-[1.02]'}`}
           >
             ✂️ Crop & Add To Sheet
