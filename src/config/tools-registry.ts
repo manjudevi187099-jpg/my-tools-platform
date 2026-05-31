@@ -122,5 +122,12 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["signature on photo", "overlay signature", "watermark signature", "self attest"],
     isActive: true,
-  }
+  },
+  "image-resizer": {
+    name: "Photo & Signature Resizer",
+    description: "Forms ke hisaab se image ko exact PX, CM, MM ya INCH dimensions mein resize karein.",
+    category: "utility",
+    keywords: ["image resizer", "photo resizer", "signature resizer", "resize to cm", "resize pixels"],
+    isActive: true,
+  },
 };
