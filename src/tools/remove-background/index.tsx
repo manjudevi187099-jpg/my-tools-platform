@@ -18,6 +18,13 @@ export default function RemoveBackground() {
     '#9e9e9e', '#607d8b', '#000000'
   ];
 
+  const resetTool = () => {
+    setOriginalImage(null);
+    setProcessedImage(null);
+    setProgress('');
+    setSelectedColor('transparent');
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -27,22 +34,19 @@ export default function RemoveBackground() {
     }
   };
 
-  // 🌟 NAYA SMART PRE-PROCESSOR: Ye image ko AI mein bhejney se pehle optimize karega taaki 10x fast chale
-  const optimizeImageForAI = (dataUrl: string, maxSize = 800): Promise<string> => {
-    return new Promise((resolve) => {
+  // Speed ke liye AI ko chhoti image denge
+  const optimizeImageForAI = (imageUrl: string, maxSize = 800): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
+      img.crossOrigin = "Anonymous";
       img.onload = () => {
         let w = img.width;
         let h = img.height;
         
-        // Agar photo bahut badi hai, toh usko limit mein layein
         if (w > maxSize || h > maxSize) {
           const ratio = Math.min(maxSize / w, maxSize / h);
           w = w * ratio;
           h = h * ratio;
-        } else {
-          resolve(dataUrl); // Agar choti hai toh waise hi bhej do
-          return;
         }
 
         const canvas = document.createElement('canvas');
@@ -51,78 +55,104 @@ export default function RemoveBackground() {
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, w, h);
         
-        // JPEG format mein bhejo taaki process fast ho
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error("Optimization failed"));
+        }, 'image/jpeg', 0.9);
       };
-      img.src = dataUrl;
+      img.onerror = () => reject(new Error("Image Load Error"));
+      img.src = imageUrl;
     });
   };
 
   const removeBg = async () => {
     if (!originalImage) return;
     setIsProcessing(true);
-    setProgress('Optimizing Image...');
+    setProgress('Optimizing for Speed...');
 
     try {
-      // 1. Pehle image ko fast processing ke liye chhota karein
-      const fastImageUrl = await optimizeImageForAI(originalImage);
-
+      const optimizedBlob = await optimizeImageForAI(originalImage);
       setProgress('Waking up AI...');
 
       const config = {
-        publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.5.5/dist/",
-        model: 'small', // Small model for ultra-fast processing
+        model: 'small', 
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Removing BG: ${percent}%`);
         }
       };
 
-      // 2. Optimized image ko AI mein dalein
-      const imageBlob = await (removeBackground as any)(fastImageUrl, config);
+      const imageBlob = await (removeBackground as any)(optimizedBlob, config);
       const url = URL.createObjectURL(imageBlob);
       setProcessedImage(url);
     } catch (error) {
-      console.error(error);
-      alert("Background removal failed. Please check internet connection.");
+      console.error("AI Error:", error);
+      alert("Error: Background removal failed.");
     } finally {
       setIsProcessing(false);
       setProgress('');
     }
   };
 
+  // 🌟 TRUE HD & PNG DOWNLOAD LOGIC 🌟
   const downloadImage = () => {
-    if (!processedImage) return;
+    if (!processedImage || !originalImage) return;
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const img = new Image();
     
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
+    // Original image load karenge taaki exact HD size mil sake
+    const origImg = new Image();
+    origImg.onload = () => {
+      // Dimensions ekdum Original HD hongi
+      canvas.width = origImg.naturalWidth || origImg.width;
+      canvas.height = origImg.naturalHeight || origImg.height;
 
-      if (ctx) {
+      const aiImg = new Image();
+      aiImg.onload = () => {
+        if (!ctx) return;
+
+        // 1. Ek temporary canvas banayenge HD Masking ke liye
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tCtx = tempCanvas.getContext('2d');
+        
+        if (tCtx) {
+          // Pehle original HD photo draw karenge
+          tCtx.drawImage(origImg, 0, 0, tempCanvas.width, tempCanvas.height);
+          // Fir AI ke result se mask banayenge (Isse HD pixels safe rahenge aur background transparent ho jayega)
+          tCtx.globalCompositeOperation = 'destination-in';
+          tCtx.drawImage(aiImg, 0, 0, tempCanvas.width, tempCanvas.height);
+        }
+
+        // 2. Ab check karenge user ne Color manga hai ya Transparent
         if (selectedColor !== 'transparent') {
+          // Background Color fill karenge
           ctx.fillStyle = selectedColor;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
+          // HD mask wali photo chipkayenge
+          ctx.drawImage(tempCanvas, 0, 0);
 
+          // Download as HD JPG
           const link = document.createElement('a');
           link.download = `HD_Bg_Colored.jpg`;
           link.href = canvas.toDataURL('image/jpeg', 1.0);
           link.click();
         } else {
-          ctx.drawImage(img, 0, 0);
+          // Transparent hi rakhna hai
+          ctx.drawImage(tempCanvas, 0, 0);
 
+          // 🌟 STRICTLY DOWNLOAD AS HD PNG 🌟
           const link = document.createElement('a');
           link.download = `HD_Transparent.png`;
-          link.href = canvas.toDataURL('image/png');
+          link.href = canvas.toDataURL('image/png'); 
           link.click();
         }
-      }
+      };
+      aiImg.src = processedImage;
     };
-    img.src = processedImage;
+    origImg.src = originalImage;
   };
 
   return (
@@ -167,10 +197,10 @@ export default function RemoveBackground() {
                 <button 
                   onClick={removeBg} 
                   disabled={isProcessing}
-                  className="mt-6 bg-blue-600 text-white font-black py-3 px-8 rounded-xl shadow-lg hover:bg-blue-700 transition-all disabled:opacity-70 flex flex-col items-center"
+                  className="mt-6 bg-blue-600 text-white font-black py-3 px-8 rounded-xl shadow-lg hover:bg-blue-700 transition-all disabled:opacity-70 flex flex-col items-center w-full"
                 >
                   {isProcessing ? 'Removing...' : '🪄 Remove Background'}
-                  {progress && <span className="text-xs font-medium mt-1 text-blue-200 block text-center max-w-[200px] leading-tight">{progress}</span>}
+                  {progress && <span className="text-xs font-medium mt-1 text-blue-200 block text-center leading-tight">{progress}</span>}
                 </button>
               )}
             </div>
@@ -188,53 +218,40 @@ export default function RemoveBackground() {
               {colorPalette.map((color, index) => {
                 if (color === 'transparent') {
                   return (
-                    <button 
-                      key={index} 
-                      onClick={() => setSelectedColor('transparent')}
-                      className={`h-12 w-12 rounded-lg border-2 flex items-center justify-center bg-white ${selectedColor === 'transparent' ? 'border-blue-600 shadow-md scale-110' : 'border-slate-200 hover:border-slate-400'}`}
-                    >
+                    <button key={index} onClick={() => setSelectedColor('transparent')} className={`h-12 w-12 rounded-lg border-2 flex items-center justify-center bg-white ${selectedColor === 'transparent' ? 'border-blue-600 shadow-md scale-110' : 'border-slate-200 hover:border-slate-400'}`}>
                       <span className="text-slate-300 text-xl block transform -rotate-45">⊘</span>
                     </button>
                   );
                 }
-                
                 if (color === 'custom') {
                   return (
                     <div key={index} className={`h-12 w-12 rounded-lg border-2 relative overflow-hidden ${selectedColor !== 'transparent' && !colorPalette.includes(selectedColor) ? 'border-blue-600 shadow-md scale-110' : 'border-slate-200 hover:border-slate-400'}`}>
-                       <input 
-                         type="color" 
-                         onChange={(e) => setSelectedColor(e.target.value)}
-                         className="absolute inset-0 w-[200%] h-[200%] -top-1/2 -left-1/2 cursor-pointer"
-                       />
+                       <input type="color" onChange={(e) => setSelectedColor(e.target.value)} className="absolute inset-0 w-[200%] h-[200%] -top-1/2 -left-1/2 cursor-pointer" />
                        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' }}></div>
                     </div>
                   );
                 }
-
                 return (
-                  <button 
-                    key={index}
-                    onClick={() => setSelectedColor(color)}
-                    style={{ backgroundColor: color }}
-                    className={`h-12 w-12 rounded-lg border-2 shadow-sm transition-transform ${selectedColor === color ? 'border-blue-600 scale-110 shadow-md ring-2 ring-blue-200' : 'border-transparent hover:scale-105'}`}
-                  />
+                  <button key={index} onClick={() => setSelectedColor(color)} style={{ backgroundColor: color }} className={`h-12 w-12 rounded-lg border-2 shadow-sm transition-transform ${selectedColor === color ? 'border-blue-600 scale-110 shadow-md ring-2 ring-blue-200' : 'border-transparent hover:scale-105'}`} />
                 );
               })}
             </div>
             
             <p className="text-xs text-slate-400 mt-4 font-medium text-center">
-              * Transparent will download as HD PNG.<br/>
-              * Colored will download as HD JPG.
+              ✅ If Transparent: HD .PNG will download.<br/>
+              ✅ If Colored: HD .JPG will download.
             </p>
           </div>
 
-          <button 
-            onClick={downloadImage}
-            disabled={!processedImage}
-            className={`w-full mt-6 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${!processedImage ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#0f172a] text-white hover:bg-blue-600 shadow-xl hover:-translate-y-1'}`}
-          >
+          <button onClick={downloadImage} disabled={!processedImage} className={`w-full mt-6 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${!processedImage ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#0f172a] text-white hover:bg-blue-600 shadow-xl hover:-translate-y-1'}`}>
             Download HD Image 📥
           </button>
+
+          {originalImage && (
+            <button onClick={resetTool} disabled={isProcessing} className="mt-4 text-red-500 hover:text-red-700 font-bold text-sm text-center w-full transition-colors flex items-center justify-center gap-1 disabled:opacity-50">
+              <span>🗑️</span> Clear & Upload New Photo
+            </button>
+          )}
 
         </div>
       </div>
