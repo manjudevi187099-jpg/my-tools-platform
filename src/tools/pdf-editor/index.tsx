@@ -111,7 +111,7 @@ export default function ProfessionalPdfEditor() {
       await renderAllPages(pdf, {});
     } catch (err: any) {
       if (err.name === 'PasswordException') {
-        const userPwd = prompt("🔒 This PDF is Password Protected (e.g. Aadhaar). Enter password to open:");
+        const userPwd = prompt("🔒 This PDF is Password Protected. Enter password to open:");
         if (userPwd) loadNewFile(newFile, userPwd);
       } else {
         alert("Error loading PDF: " + err.message);
@@ -151,18 +151,25 @@ export default function ProfessionalPdfEditor() {
     setIsProcessing(false);
   };
 
+  // 🌟 ULTRA HD RENDER ENGINE 
   const renderAllPages = async (pdf: pdfjsLib.PDFDocumentProxy, rotations: Record<number, number>) => {
-    const dims: Record<number, {w: number, h: number, pageObj: any, vp: any}> = {};
+    const dims: Record<number, {w: number, h: number, pageObj: any, renderVp: any}> = {};
+    const RESOLUTION_MULTIPLIER = 3; // Ensures PDF stays crystal clear when zoomed up to 300%
+    
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const rot = rotations[i] || 0;
         const unscaled = page.getViewport({ scale: 1, rotation: rot });
         const isLandscape = unscaled.width > unscaled.height;
         const targetW = isLandscape ? 850 : 700; 
+        
         let baseScale = targetW / unscaled.width;
         baseScale = Math.max(0.4, Math.min(baseScale, 2.5)); 
-        const vp = page.getViewport({ scale: baseScale, rotation: rot }); 
-        dims[i] = { w: vp.width, h: vp.height, pageObj: page, vp };
+        
+        const cssVp = page.getViewport({ scale: baseScale, rotation: rot }); 
+        const renderVp = page.getViewport({ scale: baseScale * RESOLUTION_MULTIPLIER, rotation: rot }); 
+        
+        dims[i] = { w: cssVp.width, h: cssVp.height, pageObj: page, renderVp };
     }
     setPdfDimensions(dims);
 
@@ -171,10 +178,11 @@ export default function ProfessionalPdfEditor() {
             const canvas = canvasRefs.current[i];
             const data = dims[i];
             if (canvas && data) {
-                canvas.width = data.w;
-                canvas.height = data.h;
+                // Set actual pixels 3x higher for HD clarity
+                canvas.width = data.renderVp.width;
+                canvas.height = data.renderVp.height;
                 const ctx = canvas.getContext('2d');
-                if (ctx) await data.pageObj.render({ canvasContext: ctx, viewport: data.vp }).promise;
+                if (ctx) await data.pageObj.render({ canvasContext: ctx, viewport: data.renderVp }).promise;
             }
         }
     }, 150);
@@ -279,8 +287,8 @@ export default function ProfessionalPdfEditor() {
     const canvas = canvasRefs.current[pageNum];
     if (!canvas || !pdfDimensions[pageNum]) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const scaleX = canvas.clientWidth / rect.width; // Mapped to CSS dimensions, not high-res internal dims
+    const scaleY = canvas.clientHeight / rect.height;
     return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   };
 
@@ -616,27 +624,27 @@ export default function ProfessionalPdfEditor() {
           </div>
         </aside>
 
-        {/* 🌟 WORKSPACE (CANVAS AREA) - THE GOD-TIER SCROLL FIX */}
+        {/* 🌟 WORKSPACE (CANVAS AREA) - THE GOD TIER FIX */}
         <main 
-          className="flex-1 overflow-auto relative custom-scrollbar" 
-          onScroll={handleScroll}
+          className={`flex-1 overflow-auto custom-scrollbar`} 
           style={{
+             textAlign: 'center', // Fix for Flexbox clipping
              backgroundColor: isDarkMode ? '#020617' : '#f8fafc',
              backgroundImage: isDarkMode ? 'radial-gradient(#334155 1.5px, transparent 1px)' : 'radial-gradient(#cbd5e1 1.5px, transparent 1px)',
              backgroundSize: '24px 24px'
           }}
+          onScroll={handleScroll}
         >
-          
           {file && (
              <div className={`fixed bottom-10 right-10 z-50 flex items-center gap-1 px-3 py-2 rounded-full border shadow-2xl ${isDarkMode ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'}`}>
                 <button onClick={() => setZoom(z => Math.max(0.3, z - 0.1))} className="font-bold text-xl px-2 hover:text-blue-500">➖</button>
                 <span className="font-bold text-sm min-w-[50px] text-center select-none">{Math.round(zoom * 100)}%</span>
-                <button onClick={() => setZoom(z => Math.min(4, z + 0.1))} className="font-bold text-xl px-2 hover:text-blue-500">➕</button>
+                <button onClick={() => setZoom(z => Math.min(5, z + 0.2))} className="font-bold text-xl px-2 hover:text-blue-500">➕</button>
              </div>
           )}
 
           {!file ? (
-            <div className="flex w-full h-full items-center justify-center p-8">
+            <div className="inline-flex w-full h-full items-center justify-center p-8">
               <div className="flex flex-col items-center justify-center w-full max-w-[650px] aspect-[1/1.414] bg-white shadow-2xl rounded-sm border border-slate-200">
                  <span className="text-6xl mb-4 opacity-70">📄</span>
                  <p className="text-2xl font-black text-slate-300 tracking-wider">A4 WORKSPACE</p>
@@ -644,8 +652,8 @@ export default function ProfessionalPdfEditor() {
               </div>
             </div>
           ) : (
-            // 🌟 THE FIX: "w-max min-w-full" forces the container to expand properly for scrollbars
-            <div className="w-max min-w-full min-h-full flex flex-col items-center gap-12 pt-10 pb-32 px-10">
+            // 🌟 100% UNCLIPPABLE SCROLL WRAPPER
+            <div className="inline-flex flex-col items-center gap-12 pt-10 pb-32 px-10 min-w-max mx-auto text-left">
               {visiblePages.map((pageNum) => {
                 const dims = pdfDimensions[pageNum];
                 if (!dims) return null;
@@ -654,7 +662,7 @@ export default function ProfessionalPdfEditor() {
                   <div 
                     key={pageNum} 
                     id={`pdf-page-${pageNum}`}
-                    className="relative transition-all duration-200 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)] bg-white shrink-0 ring-1 ring-slate-200"
+                    className="relative transition-all duration-200 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.3)] bg-white shrink-0 ring-1 ring-slate-200 mx-auto"
                     style={{ width: `${dims.w * zoom}px`, height: `${dims.h * zoom}px` }}
                   >
                     <div 
