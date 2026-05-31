@@ -130,4 +130,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["image resizer", "photo resizer", "signature resizer", "resize to cm", "resize pixels"],
     isActive: true,
   },
+  "remove-background": {
+    name: "AI Background Remover",
+    description: "AI ki madad se image ka background hatayein aur passport size photo ke liye naya color lagayein.",
+    category: "design",
+    keywords: ["remove bg", "background remover", "transparent image", "passport photo background"],
+    isActive: true,
+  },
 };
