@@ -193,4 +193,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
     isActive: true,
   },
+  "invoice-maker": {
+    name: "Pro Invoice Maker",
+    description: "Generate professional business invoices with auto-calculated taxes, discounts, and HD PDF export.",
+    category: "business",
+    keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
+    isActive: true,
+  },
 };
