@@ -2,91 +2,118 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 type Language = 'en' | 'hi';
-type Mode = 'time' | 'lesson';
-type Duration = 60 | 180 | 300;
-type LessonType = 'basics' | 'intermediate' | 'advanced' | 'words' | 'quotes' | 'paragraph';
-type Theme = 'light' | 'dark' | 'midnight';
+type View = 'dashboard' | 'typing';
+type Category = 'beginner' | 'intermediate' | 'advanced' | 'timetest';
+type Theme = 'light' | 'dark';
 
-// --- DATA BANKS (SYLLABUS & PRACTICE) ---
+interface Lesson {
+  id: string;
+  title: string;
+  text: string;
+}
 
-// 1. ENGLISH SYLLABUS
-const BASICS_EN = [
-  "asdf jkl; asdf jkl; a s d f j k l ;",
-  "dad sad fall glass flask dash slash all ask",
-  "glad had sad salad dad flag half glad flash",
-  "ask dad glad sad flash fall glass all ask"
-];
-const INTER_EN = [
-  "qwer poiu zxcv m,./ quick brown fox jumps",
-  "lazy dog pack my box with five dozen liquor jugs",
-  "typing speed test checks your actual typing speed",
-  "mastering the full keyboard requires daily practice"
-];
-const ADV_EN = [
-  "Email me at: pro_typist99@example.com! Price: $45.99.",
-  "Call 1-800-555-1234 (Toll-Free) or visit 192.168.0.1.",
-  "The equation is: (A + B) * 100 = 50% of the revenue!",
-  "Username: John_Doe_88! Password: Super#Secure$99."
-];
+interface Section {
+  title: string;
+  lessons: Lesson[];
+}
 
-const WORD_BANK_EN = ['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me', 'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take', 'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other', 'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us', 'system', 'computer', 'software', 'typing', 'speed', 'test', 'practice', 'skill', 'fast', 'keyboard'];
-const QUOTES_EN = [
-  "The only way to do great work is to love what you do. If you haven't found it yet, keep looking. Don't settle.",
-  "Success is not final, failure is not fatal: it is the courage to continue that counts in the long run.",
-  "Life is what happens when you're busy making other plans. So make sure you are living it to the fullest."
-];
-const PARAGRAPHS_EN = [
-  "The Quick Brown Fox Jumps Over The Lazy Dog. This pangram contains every letter of the English alphabet at least once. It is commonly used to test typewriters, computer keyboards, and to display fonts. Practicing with this sentence helps improve your typing speed and muscle memory across the entire keyboard layout.",
-  "Global warming is the long-term heating of Earth's climate system observed since the pre-industrial period. This is primarily due to human activities, primarily fossil fuel burning, which increases heat-trapping greenhouse gas levels in Earth's atmosphere."
-];
+// --- CURRICULUM DATA (ENGLISH) ---
+const EN_CURRICULUM: Record<string, Section[]> = {
+  beginner: [
+    {
+      title: "Getting Started",
+      lessons: [
+        { id: 'en_b1', title: '1. J, F, and Space', text: 'j j f f j f j f j j f f j f space j f j' },
+        { id: 'en_b2', title: '2. U, R, and K Keys', text: 'j u j f r f k j k u r k u r k j f r k' },
+        { id: 'en_b3', title: '3. D, E, and I Keys', text: 'd e i d e i f d k i k i e d i e k d' },
+        { id: 'en_b4', title: '4. C, G, and N Keys', text: 'c g n c g n d c f g k n g c n g c d' },
+        { id: 'en_b5', title: '5. Beginner Review 1', text: 'j u g e c i n r f d k space c r i n g e' }
+      ]
+    },
+    {
+      title: "Reaching Out",
+      lessons: [
+        { id: 'en_b6', title: '6. T, S, and L Keys', text: 't s l t s l f t d s k l s t l s t l' },
+        { id: 'en_b7', title: '7. O, B, and A Keys', text: 'o b a o b a l o f b d a b o a b o a' },
+        { id: 'en_b8', title: '8. V, H, and M Keys', text: 'v h m v h m f v j h k m h v m h v m' },
+        { id: 'en_b9', title: '9. Period and Comma', text: '. , . , l . k , l . k , . , . , l k' }
+      ]
+    }
+  ],
+  intermediate: [
+    {
+      title: "Capital Letters & Common Words",
+      lessons: [
+        { id: 'en_i1', title: '1. Shift Key (Left & Right)', text: 'The Quick Brown Fox Jumps Over The Lazy Dog' },
+        { id: 'en_i2', title: '2. Common Words 1', text: 'the be to of and a in that have it for not' },
+        { id: 'en_i3', title: '3. Common Words 2', text: 'on with he as you do at this but his by from' }
+      ]
+    }
+  ],
+  advanced: [
+    {
+      title: "Numbers & Symbols",
+      lessons: [
+        { id: 'en_a1', title: '1. Numbers Row', text: '1 2 3 4 5 6 7 8 9 0 1 5 9 2 8 4 7 3 6' },
+        { id: 'en_a2', title: '2. Basic Symbols', text: '@ # $ % & * ( ) ! ? @ # $ % & * ( ) ! ?' },
+        { id: 'en_a3', title: '3. Coding Symbols', text: '< > { } [ ] / \\ | = + - _ < > { } [ ]' }
+      ]
+    }
+  ]
+};
 
-// 2. HINDI SYLLABUS
-const BASICS_HI = [
-  "अब कब सब नर घर चल जल फल मन तन धन",
-  "आम नाम काम दाम राम राजा बाजा छाता माता",
-  "कल चल जल फल नल मन तन धन पवन नयन",
-  "खाना जाना आना लाना पाना छाता बाजा राजा"
-];
-const INTER_HI = [
-  "किताब चिड़िया गिलास मीठा पानी दिन रात सुबह शाम",
-  "दुकान मकान कविता कहानी भारत हमारा देश है",
-  "समय बहुत कीमती है हमें इसका सदुपयोग करना चाहिए",
-  "मुझे हिंदी टाइपिंग सीखना बहुत अच्छा लगता है"
-];
-const ADV_HI = [
-  "विद्यालय विज्ञान प्रज्वलित आशीर्वाद श्रद्धांजलि उज्ज्वल",
-  "द्वंद्व स्वच्छता कार्यक्रम अंतर्राष्ट्रीय प्रौद्योगिकी",
-  "कृत्रिम बुद्धिमत्ता (AI) ने तकनीकी क्षेत्र में क्रांति ला दी है।",
-  "आर्थिक दृष्टिकोण से यह वर्ष 2024 अत्यधिक महत्वपूर्ण रहा।"
-];
+// --- CURRICULUM DATA (HINDI) ---
+const HI_CURRICULUM: Record<string, Section[]> = {
+  beginner: [
+    {
+      title: "मूल अक्षर (Basic Letters)",
+      lessons: [
+        { id: 'hi_b1', title: '1. होम रो (Home Row)', text: 'क म र त क म र त क र म त र म त क' },
+        { id: 'hi_b2', title: '2. ऊपर की रो (Top Row)', text: 'च ट त प च ट त प प त ट च प त च ट' },
+        { id: 'hi_b3', title: '3. बिना मात्रा के शब्द', text: 'कल चल जल फल नल मन तन धन पवन नयन' }
+      ]
+    }
+  ],
+  intermediate: [
+    {
+      title: "मात्राएँ और वाक्य",
+      lessons: [
+        { id: 'hi_i1', title: '1. आ और ई की मात्रा', text: 'आम नाम काम दाम चिड़िया गिलास मीठा पानी' },
+        { id: 'hi_i2', title: '2. छोटे वाक्य', text: 'भारत हमारा देश है समय बहुत कीमती है' }
+      ]
+    }
+  ],
+  advanced: [
+    {
+      title: "कठिन शब्द और पैराग्राफ",
+      lessons: [
+        { id: 'hi_a1', title: '1. आधे अक्षर', text: 'विद्यालय विज्ञान प्रज्वलित आशीर्वाद श्रद्धांजलि उज्ज्वल' },
+        { id: 'hi_a2', title: '2. पैराग्राफ अभ्यास', text: 'हिंदी भारत की सबसे अधिक बोली जाने वाली भाषा है और यह देवनागरी लिपि में लिखी जाती है।' }
+      ]
+    }
+  ]
+};
 
-const WORD_BANK_HI = ['और', 'है', 'कि', 'में', 'का', 'को', 'से', 'एक', 'यह', 'पर', 'नहीं', 'लिए', 'हो', 'कर', 'अपने', 'तो', 'साथ', 'क्या', 'भी', 'था', 'जो', 'गया', 'ही', 'हम', 'हैं', 'करते', 'कुछ', 'करना', 'जैसे', 'होता', 'कोई', 'आप', 'भारत', 'समय', 'काम', 'अब', 'बात', 'उन', 'तथा', 'दिन', 'तक', 'कारण', 'बहुत', 'तरह', 'लोग', 'जब', 'कहा', 'जाता', 'अधिक', 'अन्य', 'बार', 'सरकार', 'जीवन', 'नाम', 'बाद', 'देश', 'पहले', 'दिया', 'वाले', 'गए', 'हुए', 'किया', 'जा', 'दो', 'रहा', 'इन', 'उसके', 'रूप', 'नीचे', 'आ', 'मुख्य', 'वाली', 'बीच', 'आई', 'उनसे', 'कई', 'कम', 'मानव', 'स्थान', 'ऐसा', 'रख', 'वहाँ', 'आज', 'फिर', 'गई', 'देख', 'पास', 'कभी', 'यहाँ', 'तकनीक', 'सकते'];
-const QUOTES_HI = [
-  "सफलता अंतिम नहीं है, विफलता घातक नहीं है: यह जारी रखने का साहस है जो मायने रखता है।",
-  "यदि आप वही करते हैं जो आप हमेशा करते आए हैं, तो आपको वही मिलेगा जो आपको हमेशा से मिलता आया है।"
-];
-const PARAGRAPHS_HI = [
-  "हिंदी भारत की सबसे अधिक बोली जाने वाली भाषा है और यह देवनागरी लिपि में लिखी जाती है। यह न केवल हमारी संस्कृति का अभिन्न अंग है, बल्कि देश भर में करोड़ों लोगों के संवाद का मुख्य माध्यम भी है। हिंदी टाइपिंग का अभ्यास करने से न केवल आपकी गति बढ़ती है, बल्कि सरकारी नौकरी की परीक्षाओं में भी यह एक अनिवार्य कौशल माना जाता है।",
-  "कंप्यूटर आज के युग की सबसे बड़ी जरूरत बन गया है। शिक्षा, चिकित्सा, व्यापार और मनोरंजन सहित हर क्षेत्र में कंप्यूटर का उपयोग हो रहा है। इंटरनेट के माध्यम से दुनिया के किसी भी कोने में बैठे व्यक्ति से संपर्क किया जा सकता है।"
-];
-
+const RANDOM_WORDS_EN = ['computer', 'software', 'typing', 'speed', 'test', 'practice', 'skill', 'fast', 'keyboard', 'internet', 'technology', 'network', 'system', 'data', 'coding'];
 
 export default function TypingSpeedTest() {
+  const [view, setView] = useState<View>('dashboard');
   const [language, setLanguage] = useState<Language>('en');
-  const [mode, setMode] = useState<Mode>('time');
-  const [duration, setDuration] = useState<Duration>(60);
-  const [lessonType, setLessonType] = useState<LessonType>('words');
+  const [activeCategory, setActiveCategory] = useState<Category>('beginner');
+  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  
   const [theme, setTheme] = useState<Theme>('light');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   
-  const [timer, setTimer] = useState<number>(60); 
+  // Typing Engine States
+  const [timer, setTimer] = useState<number>(0); 
+  const [timeLimit, setTimeLimit] = useState<number>(60); // For Time Test Mode
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isFinished, setIsFinished] = useState<boolean>(false);
   
   const [targetText, setTargetText] = useState<string>('');
   const [userInput, setUserInput] = useState<string>('');
-  
-  const [capsLockActive, setCapsLockActive] = useState<boolean>(false);
   const [wpmHistory, setWpmHistory] = useState<number[]>([]);
   
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -125,84 +152,80 @@ export default function TypingSpeedTest() {
     }
   };
 
-  const generateText = () => {
-    const dbWords = language === 'en' ? WORD_BANK_EN : WORD_BANK_HI;
-    const dbQuotes = language === 'en' ? QUOTES_EN : QUOTES_HI;
-    const dbParas = language === 'en' ? PARAGRAPHS_EN : PARAGRAPHS_HI;
-
-    if (mode === 'lesson') {
-      if (lessonType === 'quotes') return dbQuotes[Math.floor(Math.random() * dbQuotes.length)];
-      if (lessonType === 'paragraph') return dbParas[Math.floor(Math.random() * dbParas.length)];
-      
-      // Zero to Advance Syllabus Generation
-      let syllabusArray: string[] = [];
-      if (lessonType === 'basics') syllabusArray = language === 'en' ? BASICS_EN : BASICS_HI;
-      if (lessonType === 'intermediate') syllabusArray = language === 'en' ? INTER_EN : INTER_HI;
-      if (lessonType === 'advanced') syllabusArray = language === 'en' ? ADV_EN : ADV_HI;
-      
-      if (syllabusArray.length > 0) {
-        let lessonText = [];
-        for(let i = 0; i < 3; i++) {
-          lessonText.push(syllabusArray[Math.floor(Math.random() * syllabusArray.length)]);
-        }
-        return lessonText.join(' ');
-      }
-    }
-
-    // Default Random Words
-    let textArray = [];
-    for (let i = 0; i < 150; i++) {
-      textArray.push(dbWords[Math.floor(Math.random() * dbWords.length)]);
-    }
-    return textArray.join(' ');
+  const startLesson = (lesson: Lesson) => {
+    setCurrentLesson(lesson);
+    setTargetText(lesson.text);
+    setUserInput('');
+    setTimer(0);
+    setIsActive(false);
+    setIsFinished(false);
+    setWpmHistory([]);
+    setView('typing');
+    setTimeout(() => {
+      if (inputRef.current) inputRef.current.focus();
+    }, 100);
   };
 
-  useEffect(() => {
-    resetTest();
-  }, [language, mode, duration, lessonType]);
+  const startTimeTest = (mins: number) => {
+    let textArray = [];
+    for (let i = 0; i < 200; i++) {
+      textArray.push(RANDOM_WORDS_EN[Math.floor(Math.random() * RANDOM_WORDS_EN.length)]);
+    }
+    const txt = textArray.join(' ');
+    
+    setCurrentLesson({ id: `time_${mins}`, title: `${mins} Minute Test`, text: txt });
+    setTargetText(txt);
+    setUserInput('');
+    setTimeLimit(mins * 60);
+    setTimer(mins * 60);
+    setIsActive(false);
+    setIsFinished(false);
+    setWpmHistory([]);
+    setView('typing');
+    setTimeout(() => {
+      if (inputRef.current) inputRef.current.focus();
+    }, 100);
+  };
 
+  // Timer Effect
   useEffect(() => {
     let interval: any = null;
-    
     if (isActive && !isFinished) {
       interval = setInterval(() => {
         setTimer((prevTime) => {
+          
+          // Record WPM History
           setWpmHistory(prev => {
-             const timeElapsedMins = (mode === 'time' ? (duration - (prevTime - 1)) : (prevTime + 1)) / 60;
+             const timeElapsedMins = (activeCategory === 'timetest' ? (timeLimit - (prevTime - 1)) : (prevTime + 1)) / 60;
              const correctChars = userInput.split('').filter((c, i) => c === targetText[i]).length;
              const currentWpm = timeElapsedMins > 0 ? Math.round((correctChars / 5) / timeElapsedMins) : 0;
              return [...prev, currentWpm];
           });
 
-          if (mode === 'time') {
+          if (activeCategory === 'timetest') {
             if (prevTime <= 1) {
-              setIsFinished(true);
-              setIsActive(false);
+              finishTest();
               return 0;
             }
             return prevTime - 1;
           } else {
-            return prevTime + 1;
+            return prevTime + 1; // Count up for lessons
           }
         });
       }, 1000);
     }
-    
     return () => clearInterval(interval);
-  }, [isActive, isFinished, mode, userInput, targetText, duration]);
+  }, [isActive, isFinished, activeCategory, userInput, targetText, timeLimit]);
 
-  const resetTest = () => {
-    setTargetText(generateText());
-    setUserInput('');
-    setTimer(mode === 'time' ? duration : 0);
+  const finishTest = () => {
+    setIsFinished(true);
     setIsActive(false);
-    setIsFinished(false);
-    setWpmHistory([]);
-    if (inputRef.current) inputRef.current.focus();
+    if (currentLesson && activeCategory !== 'timetest' && !completedLessons.includes(currentLesson.id)) {
+      setCompletedLessons([...completedLessons, currentLesson.id]);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    setCapsLockActive(e.getModifierState('CapsLock'));
     if (e.key.length === 1 || e.key === 'Backspace') {
       playClickSound();
     }
@@ -221,43 +244,29 @@ export default function TypingSpeedTest() {
     
     if (value.length <= targetText.length) {
       setUserInput(value);
-      if (mode === 'lesson' && value.length === targetText.length) {
-        setIsFinished(true);
-        setIsActive(false);
+      
+      // Auto-finish lesson when text is fully typed
+      if (activeCategory !== 'timetest' && value.length === targetText.length) {
+        finishTest();
       }
     }
-  };
-
-  const focusInput = () => {
-    if (inputRef.current && !isFinished) inputRef.current.focus();
   };
 
   const stats = useMemo(() => {
     let correctChars = 0;
     let incorrectChars = 0;
-
     for (let i = 0; i < userInput.length; i++) {
       if (userInput[i] === targetText[i]) correctChars++;
       else incorrectChars++;
     }
-
-    const timeElapsedInSeconds = mode === 'time' ? (duration - timer) : timer;
+    const timeElapsedInSeconds = activeCategory === 'timetest' ? (timeLimit - timer) : timer;
     const timeElapsedInMinutes = timeElapsedInSeconds / 60;
     
     const netWpm = timeElapsedInMinutes > 0 ? Math.round((correctChars / 5) / timeElapsedInMinutes) : 0;
-    const rawWpm = timeElapsedInMinutes > 0 ? Math.round((userInput.length / 5) / timeElapsedInMinutes) : 0;
     const accuracy = userInput.length > 0 ? Math.round((correctChars / userInput.length) * 100) : 100;
     
-    let consistency = 100;
-    if (wpmHistory.length > 5) {
-       const avg = wpmHistory.reduce((a,b) => a+b, 0) / wpmHistory.length;
-       const variance = wpmHistory.reduce((a,b) => a + Math.pow(b - avg, 2), 0) / wpmHistory.length;
-       const stdDev = Math.sqrt(variance);
-       consistency = Math.max(0, Math.round(100 - (stdDev / (avg || 1)) * 100));
-    }
-
-    return { netWpm, rawWpm, accuracy, consistency, correctChars, incorrectChars, timeTaken: timeElapsedInSeconds };
-  }, [userInput, targetText, timer, duration, mode, wpmHistory]);
+    return { netWpm, accuracy, correctChars, incorrectChars, timeTaken: timeElapsedInSeconds };
+  }, [userInput, targetText, timer, timeLimit, activeCategory]);
 
   const renderText = () => {
     return targetText.split('').map((char, index) => {
@@ -274,12 +283,10 @@ export default function TypingSpeedTest() {
       }
 
       const isCursor = index === userInput.length;
-      const cursorColor = theme === 'light' ? 'border-blue-600' : 'border-blue-400';
-      
       return (
         <span 
           key={index} 
-          className={`${colorClass} ${bgClass} ${isCursor ? `border-l-[3px] ${cursorColor} animate-pulse shadow-sm` : ''} text-[26px] md:text-3xl leading-relaxed tracking-wide ${language === 'hi' ? 'font-sans' : 'font-mono'}`}
+          className={`${colorClass} ${bgClass} ${isCursor ? `border-l-[3px] border-blue-500 animate-pulse` : ''} text-[26px] md:text-3xl leading-relaxed tracking-wide font-mono`}
         >
           {char}
         </span>
@@ -293,112 +300,52 @@ export default function TypingSpeedTest() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const themeClasses = {
-    light: 'bg-slate-50 text-slate-800',
-    dark: 'bg-[#121212] text-slate-200',
-    midnight: 'bg-[#0f172a] text-slate-200'
-  };
+  // Calculate Progress
+  const activeCurriculum = language === 'en' ? EN_CURRICULUM : HI_CURRICULUM;
+  const currentSections = activeCategory !== 'timetest' ? activeCurriculum[activeCategory] : [];
   
-  const cardClasses = {
-    light: 'bg-white border-slate-200',
-    dark: 'bg-[#1e1e1e] border-[#333]',
-    midnight: 'bg-[#1e293b] border-slate-700'
-  };
+  let totalLessonsInCategory = 0;
+  let completedInCategory = 0;
+  
+  if (activeCategory !== 'timetest') {
+    currentSections.forEach(sec => {
+      sec.lessons.forEach(l => {
+        totalLessonsInCategory++;
+        if (completedLessons.includes(l.id)) completedInCategory++;
+      });
+    });
+  }
+  const progressPercent = totalLessonsInCategory > 0 ? Math.round((completedInCategory / totalLessonsInCategory) * 100) : 0;
 
-  return (
-    <div className={`min-h-screen transition-colors duration-500 ${themeClasses[theme]} p-4 md:p-6`}>
-      <div className="max-w-7xl mx-auto">
-        
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <div>
-            <h2 className="text-3xl font-black tracking-tight flex items-center gap-2">
-              ⌨️ ProType Academy
-            </h2>
-            <p className={`text-sm mt-1 font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Zero to Advanced Govt Exam Typing Course</p>
-          </div>
-          
-          <div className="flex gap-2">
-            <button onClick={() => setSoundEnabled(!soundEnabled)} className={`p-2 rounded-lg text-sm font-bold border transition-colors ${soundEnabled ? 'border-emerald-500 text-emerald-500' : 'border-slate-500 text-slate-500'}`}>
-              {soundEnabled ? '🔊 Sound ON' : '🔇 Sound OFF'}
+  // --- RENDERING ---
+
+  if (view === 'typing') {
+    return (
+      <div className={`min-h-screen ${theme === 'light' ? 'bg-slate-50 text-slate-800' : 'bg-[#121212] text-slate-200'} p-4 md:p-6 transition-colors duration-300`}>
+        <div className="max-w-5xl mx-auto">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <button 
+              onClick={() => setView('dashboard')}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-bold bg-blue-50 px-4 py-2 rounded-lg"
+            >
+              ⬅ Back to Lessons
             </button>
-            <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)} className={`p-2 rounded-lg text-sm font-bold border outline-none ${cardClasses[theme]}`}>
-              <option value="light">☀️ Light Theme</option>
-              <option value="dark">🌙 Dark Theme</option>
-              <option value="midnight">🌌 Midnight</option>
-            </select>
-          </div>
-        </div>
-
-        <div className={`rounded-3xl shadow-2xl border p-6 md:p-8 relative overflow-hidden transition-colors duration-500 ${cardClasses[theme]}`}>
-          
-          <div className="flex flex-col xl:flex-row justify-between items-center mb-8 gap-6">
-            
-            <div className="flex flex-col lg:flex-row gap-4 items-center justify-center">
-              
-              <div className={`flex p-1 rounded-xl ${theme === 'light' ? 'bg-slate-100' : 'bg-black/20'}`}>
-                <button onClick={() => setLanguage('en')} className={`px-4 py-2 rounded-lg font-bold transition-all ${language === 'en' ? 'bg-blue-600 text-white shadow' : 'text-slate-500 hover:text-slate-400'}`}>EN</button>
-                <button onClick={() => setLanguage('hi')} className={`px-4 py-2 rounded-lg font-bold transition-all ${language === 'hi' ? 'bg-blue-600 text-white shadow' : 'text-slate-500 hover:text-slate-400'}`}>HI</button>
-              </div>
-              
-              <div className="h-8 w-px bg-slate-500/30 hidden lg:block"></div>
-
-              <div className={`flex p-1 rounded-xl ${theme === 'light' ? 'bg-slate-100' : 'bg-black/20'}`}>
-                <button onClick={() => setMode('time')} className={`px-4 py-2 rounded-lg font-bold transition-all ${mode === 'time' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-400'}`}>⏱️ Time</button>
-                <button onClick={() => { setMode('lesson'); setLessonType('basics'); }} className={`px-4 py-2 rounded-lg font-bold transition-all ${mode === 'lesson' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-400'}`}>📚 Course</button>
-              </div>
-
-              <div className="h-8 w-px bg-slate-500/30 hidden lg:block"></div>
-
-              {mode === 'time' ? (
-                <div className={`flex p-1 rounded-xl border ${theme === 'light' ? 'bg-blue-50 border-blue-100' : 'bg-blue-900/20 border-blue-800'}`}>
-                  {[60, 180, 300].map((t) => (
-                    <button key={t} onClick={() => setDuration(t as Duration)} className={`px-4 py-2 rounded-lg font-bold transition-all ${duration === t ? 'bg-blue-600 text-white shadow' : 'text-blue-500 hover:bg-blue-500/10'}`}>
-                      {t / 60} Min
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col md:flex-row gap-2">
-                  <div className={`flex p-1 rounded-xl border ${theme === 'light' ? 'bg-amber-50 border-amber-100' : 'bg-amber-900/20 border-amber-800'}`}>
-                    {['basics', 'intermediate', 'advanced'].map((l) => (
-                      <button key={l} onClick={() => setLessonType(l as LessonType)} className={`px-3 py-2 rounded-lg text-sm font-bold capitalize transition-all ${lessonType === l ? 'bg-amber-500 text-white shadow' : 'text-amber-600 hover:bg-amber-500/10'}`}>
-                        {l === 'basics' ? '👶 Lvl 1' : l === 'intermediate' ? '🚶 Lvl 2' : '🏃 Lvl 3'}
-                      </button>
-                    ))}
-                  </div>
-                  <div className={`flex p-1 rounded-xl border ${theme === 'light' ? 'bg-purple-50 border-purple-100' : 'bg-purple-900/20 border-purple-800'}`}>
-                    {['words', 'quotes', 'paragraph'].map((l) => (
-                      <button key={l} onClick={() => setLessonType(l as LessonType)} className={`px-3 py-2 rounded-lg text-sm font-bold capitalize transition-all ${lessonType === l ? 'bg-purple-600 text-white shadow' : 'text-purple-500 hover:bg-purple-500/10'}`}>
-                        {l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className={`flex gap-8 px-6 py-3 rounded-2xl border mt-4 xl:mt-0 ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-black/20 border-slate-700'}`}>
-              <div className="text-center">
-                <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{mode === 'time' ? 'Time Left' : 'Elapsed'}</span>
-                <span className={`text-4xl font-black ${mode === 'time' && timer <= 10 ? 'text-red-500 animate-pulse' : ''}`}>{formatTime(timer)}</span>
-              </div>
-              <div className="w-px bg-slate-500/30"></div>
-              <div className="text-center">
-                <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Live WPM</span>
-                <span className="text-4xl font-black text-blue-500">{stats.netWpm}</span>
-              </div>
+            <h2 className="text-xl font-black text-slate-400">{currentLesson?.title}</h2>
+            <div className="flex gap-4 items-center">
+              <span className={`text-2xl font-black ${activeCategory === 'timetest' && timer <= 10 ? 'text-red-500 animate-pulse' : ''}`}>
+                ⏱️ {formatTime(timer)}
+              </span>
+              <span className="text-2xl font-black text-blue-500">
+                ⚡ {stats.netWpm} WPM
+              </span>
             </div>
           </div>
 
-          {capsLockActive && (
-            <div className="absolute top-[120px] left-1/2 transform -translate-x-1/2 z-20 bg-red-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg animate-bounce">
-              ⚠️ Caps Lock is ON
-            </div>
-          )}
-
+          {/* Typing Area */}
           <div 
-            onClick={focusInput}
-            className={`relative border-2 rounded-2xl p-6 h-[260px] overflow-y-auto cursor-text transition-colors shadow-inner ${theme === 'light' ? 'bg-white border-slate-200 hover:border-blue-400' : 'bg-[#121212]/50 border-slate-700 hover:border-blue-500'}`}
+            onClick={() => { if (inputRef.current && !isFinished) inputRef.current.focus(); }}
+            className={`relative border-2 rounded-2xl p-6 h-[300px] overflow-y-auto cursor-text transition-colors shadow-inner ${theme === 'light' ? 'bg-white border-slate-200 hover:border-blue-400' : 'bg-[#1e1e1e] border-slate-700 hover:border-blue-500'}`}
           >
             <textarea
               ref={inputRef}
@@ -407,83 +354,185 @@ export default function TypingSpeedTest() {
               onKeyDown={handleKeyDown}
               className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-text resize-none"
               autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
               spellCheck="false"
               disabled={isFinished}
             />
-            
             <div className="z-0 select-none break-words whitespace-pre-wrap font-medium">
               {renderText()}
             </div>
           </div>
 
-          <div className="mt-8 flex justify-center">
-            <button 
-              onClick={resetTest}
-              className={`flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-lg shadow-lg transition-transform hover:-translate-y-1 ${theme === 'light' ? 'bg-slate-800 hover:bg-slate-900 text-white' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}
-            >
-              <span>🔄</span> Restart Test
+          {/* Results Modal */}
+          {isFinished && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-900/90 backdrop-blur-sm animate-in zoom-in duration-300">
+              <div className="bg-white rounded-3xl p-8 max-w-2xl w-full text-center shadow-2xl">
+                <h3 className="text-4xl font-black text-slate-800 mb-2">⭐ Lesson Complete!</h3>
+                <p className="text-slate-500 mb-8 font-medium">Excellent work on "{currentLesson?.title}"</p>
+
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                  <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                    <span className="block text-sm font-bold text-blue-500 uppercase mb-2">Speed</span>
+                    <span className="text-6xl font-black text-blue-700">{stats.netWpm} <span className="text-2xl">WPM</span></span>
+                  </div>
+                  <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
+                    <span className="block text-sm font-bold text-emerald-500 uppercase mb-2">Accuracy</span>
+                    <span className="text-6xl font-black text-emerald-700">{stats.accuracy}%</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-center gap-4">
+                  <button 
+                    onClick={() => {
+                      setUserInput('');
+                      setTimer(activeCategory === 'timetest' ? timeLimit : 0);
+                      setIsFinished(false);
+                      setIsActive(false);
+                      setWpmHistory([]);
+                      setTimeout(() => inputRef.current?.focus(), 100);
+                    }}
+                    className="bg-slate-200 hover:bg-slate-300 text-slate-800 px-8 py-4 rounded-xl font-bold text-lg transition-colors"
+                  >
+                    🔄 Try Again
+                  </button>
+                  <button 
+                    onClick={() => setView('dashboard')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl transition-transform hover:-translate-y-1"
+                  >
+                    Continue to Next Lesson ➡️
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // --- DASHBOARD VIEW (Typing.com UI Clone) ---
+  return (
+    <div className={`min-h-screen ${theme === 'light' ? 'bg-[#f0f4f8]' : 'bg-[#121212]'} font-sans pb-10 transition-colors duration-300`}>
+      
+      {/* Top Navbar */}
+      <div className={`${theme === 'light' ? 'bg-[#1ba1e2]' : 'bg-[#1e1e1e] border-b border-slate-700'} text-white py-4 px-6 shadow-md`}>
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <h1 className="text-3xl font-black tracking-tighter">typing<span className="text-white/70">.pro</span></h1>
+          
+          <div className="flex gap-4 items-center">
+            <button onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm font-bold transition-colors">
+              {language === 'en' ? '🇺🇸 English' : '🇮🇳 Hindi'}
+            </button>
+            <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors">
+              {theme === 'light' ? '🌙' : '☀️'}
             </button>
           </div>
+        </div>
+      </div>
 
-          {isFinished && (
-            <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center p-6 animate-in zoom-in-95 duration-300 ${theme === 'light' ? 'bg-white/95' : 'bg-[#1e1e1e]/95'} backdrop-blur-md`}>
-              <h3 className="text-4xl font-black mb-2">Test Complete! 🎯</h3>
-              <p className="text-slate-500 mb-8 font-medium">Advanced Performance Analytics</p>
+      <div className="max-w-7xl mx-auto mt-8 px-4 grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        {/* LEFT SIDEBAR */}
+        <div className="lg:col-span-1 space-y-8">
+          
+          <div>
+            <h3 className={`text-sm font-bold uppercase tracking-wider mb-3 ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Learn to Type</h3>
+            <div className="flex flex-col gap-2">
+              {['beginner', 'intermediate', 'advanced'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat as Category)}
+                  className={`flex justify-between items-center p-4 rounded-xl font-bold text-lg transition-all ${activeCategory === cat ? 'bg-[#1ba1e2] text-white shadow-md transform scale-105' : (theme === 'light' ? 'bg-white text-slate-600 hover:bg-slate-50' : 'bg-[#1e1e1e] text-slate-300 hover:bg-[#2a2a2a]')}`}
+                >
+                  <span className="capitalize">{cat}</span>
+                  <span className={`w-6 h-6 rounded flex items-center justify-center text-xs ${activeCategory === cat ? 'bg-white/20' : 'bg-slate-200 text-slate-400'}`}>▶</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6 w-full max-w-4xl">
-                <div className={`p-6 rounded-2xl border text-center shadow-sm ${theme === 'light' ? 'bg-blue-50 border-blue-100' : 'bg-blue-900/20 border-blue-800'}`}>
-                  <span className="block text-xs font-bold text-blue-500 uppercase mb-1">Net WPM</span>
-                  <span className="text-5xl font-black text-blue-600">{stats.netWpm}</span>
-                  <span className="block text-xs text-blue-400 mt-1 font-medium">Raw: {stats.rawWpm}</span>
-                </div>
-                
-                <div className={`p-6 rounded-2xl border text-center shadow-sm ${theme === 'light' ? 'bg-emerald-50 border-emerald-100' : 'bg-emerald-900/20 border-emerald-800'}`}>
-                  <span className="block text-xs font-bold text-emerald-500 uppercase mb-2">Accuracy</span>
-                  <span className="text-5xl font-black text-emerald-600">{stats.accuracy}%</span>
-                </div>
-                
-                <div className={`p-6 rounded-2xl border text-center shadow-sm ${theme === 'light' ? 'bg-purple-50 border-purple-100' : 'bg-purple-900/20 border-purple-800'}`}>
-                  <span className="block text-xs font-bold text-purple-500 uppercase mb-2">Consistency</span>
-                  <span className="text-5xl font-black text-purple-600">{stats.consistency}%</span>
-                </div>
-                
-                <div className={`p-6 rounded-2xl border text-center shadow-sm ${theme === 'light' ? 'bg-red-50 border-red-100' : 'bg-red-900/20 border-red-800'}`}>
-                  <span className="block text-xs font-bold text-red-500 uppercase mb-1">Keystrokes</span>
-                  <span className="text-3xl font-black text-red-500 mt-2">
-                    <span className="text-emerald-500">{stats.correctChars}</span> | {stats.incorrectChars}
-                  </span>
-                  <span className="block text-xs text-red-400 mt-1 font-medium">Correct | Errors</span>
+          <div>
+            <h3 className={`text-sm font-bold uppercase tracking-wider mb-3 ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Typing Practice</h3>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setActiveCategory('timetest')}
+                className={`flex justify-between items-center p-4 rounded-xl font-bold text-lg transition-all ${activeCategory === 'timetest' ? 'bg-[#1ba1e2] text-white shadow-md transform scale-105' : (theme === 'light' ? 'bg-white text-slate-600 hover:bg-slate-50' : 'bg-[#1e1e1e] text-slate-300 hover:bg-[#2a2a2a]')}`}
+              >
+                <span>Time Test</span>
+                <span className={`w-6 h-6 rounded flex items-center justify-center text-xs ${activeCategory === 'timetest' ? 'bg-white/20' : 'bg-slate-200 text-slate-400'}`}>⏱️</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        {/* MAIN CONTENT AREA */}
+        <div className="lg:col-span-3">
+          
+          {activeCategory !== 'timetest' ? (
+            <div className={`rounded-xl overflow-hidden shadow-lg ${theme === 'light' ? 'bg-[#2a9bdc]' : 'bg-[#1e1e1e] border border-slate-700'}`}>
+              
+              {/* Progress Bar Header */}
+              <div className="p-6 border-b border-white/20">
+                <div className="w-full bg-black/20 h-8 rounded-md overflow-hidden relative">
+                  <div className="h-full bg-emerald-400 transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
+                  <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm text-shadow">
+                    {progressPercent}% Complete
+                  </div>
                 </div>
               </div>
 
-              {wpmHistory.length > 0 && (
-                <div className={`w-full max-w-4xl p-4 rounded-xl border mb-8 flex items-end justify-between h-32 gap-1 ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-black/20 border-slate-800'}`}>
-                  {wpmHistory.map((wpm, i) => {
-                    const maxWpm = Math.max(...wpmHistory, 50); 
-                    const heightPercent = Math.max(5, (wpm / maxWpm) * 100);
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-                        <div className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-black text-white text-[10px] px-2 py-1 rounded rounded-b-none transition-opacity z-10 whitespace-nowrap">
-                          {wpm} wpm
-                        </div>
-                        <div 
-                          className="w-full bg-blue-500/80 rounded-t-sm hover:bg-blue-400 transition-all duration-300"
-                          style={{ height: `${heightPercent}%` }}
-                        ></div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              {/* Lesson Sections */}
+              <div className="p-6 space-y-8">
+                {currentSections.map((section, sIdx) => (
+                  <div key={sIdx}>
+                    <h2 className="text-white text-2xl font-black mb-4">{section.title}</h2>
+                    <div className="space-y-2">
+                      {section.lessons.map((lesson) => {
+                        const isCompleted = completedLessons.includes(lesson.id);
+                        return (
+                          <div key={lesson.id} className={`flex justify-between items-center p-4 rounded-lg transition-transform hover:scale-[1.01] ${theme === 'light' ? 'bg-white' : 'bg-[#2a2a2a]'}`}>
+                            <div className="flex items-center gap-4">
+                              {isCompleted ? (
+                                <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm">✓</span>
+                              ) : (
+                                <span className="w-8 h-8 rounded-full border-2 border-slate-300 text-slate-400 flex items-center justify-center font-bold text-sm"></span>
+                              )}
+                              <span className={`font-bold text-lg ${theme === 'light' ? 'text-slate-700' : 'text-slate-200'}`}>{lesson.title}</span>
+                            </div>
+                            <button 
+                              onClick={() => startLesson(lesson)}
+                              className={`flex items-center gap-2 px-6 py-2 rounded font-bold transition-colors ${isCompleted ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' : 'bg-amber-400 text-amber-900 hover:bg-amber-500 shadow-sm'}`}
+                            >
+                              ▶ Start
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-              <button 
-                onClick={resetTest}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-xl font-black text-xl shadow-xl transition-transform hover:-translate-y-1"
-              >
-                Start New Test 🚀
-              </button>
+            </div>
+          ) : (
+            
+            /* TIME TEST DASHBOARD */
+            <div className={`rounded-xl shadow-lg p-8 ${theme === 'light' ? 'bg-white' : 'bg-[#1e1e1e] border border-slate-700'}`}>
+               <h2 className={`text-3xl font-black mb-2 ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>Time Trials</h2>
+               <p className={`${theme === 'light' ? 'text-slate-500' : 'text-slate-400'} mb-8`}>Test your typing speed with random dictionary words. Ideal for typing exam preparation.</p>
+
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 {[1, 3, 5].map(mins => (
+                   <div key={mins} className={`border-2 rounded-2xl p-6 text-center transition-colors hover:border-blue-500 ${theme === 'light' ? 'border-slate-200' : 'border-slate-700 bg-[#2a2a2a]'}`}>
+                     <div className="text-5xl mb-4">⏱️</div>
+                     <h3 className={`text-2xl font-black mb-2 ${theme === 'light' ? 'text-slate-700' : 'text-slate-200'}`}>{mins} Minute</h3>
+                     <p className={`text-sm mb-6 ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Short bursts of random words to check your WPM.</p>
+                     <button onClick={() => startTimeTest(mins)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition-transform hover:-translate-y-1">
+                       Start Test
+                     </button>
+                   </div>
+                 ))}
+               </div>
             </div>
           )}
 
