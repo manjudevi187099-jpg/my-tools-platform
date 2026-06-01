@@ -28,6 +28,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "remove-background": dynamic(() => import('../../../tools/remove-background'), { ssr: false }),
   "passport-psd-maker": dynamic(() => import('../../../tools/passport-psd-maker'), { ssr: false }),
   "smart-card-maker": dynamic(() => import('../../../tools/smart-card-maker'), { ssr: false }),
+  "omr-sheet-maker": dynamic(() => import('../../../tools/omr-sheet-maker'), { ssr: false }),
 };
 
 export default function ToolPage() {

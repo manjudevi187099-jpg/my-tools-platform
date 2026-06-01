@@ -151,4 +151,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["id card maker", "aadhaar print", "pan card print", "a4 smart card", "cr80 print format"],
     isActive: true,
   },
+  "omr-sheet-maker": {
+    name: "A4 OMR Sheet Generator",
+    description: "Coaching aur Mock Tests ke liye 50, 100, 150 ya 200 questions wali print-ready OMR sheet PDF download karein.",
+    category: "utility",
+    keywords: ["omr maker", "omr sheet generator", "mock test sheet", "print omr a4", "bubble sheet"],
+    isActive: true,
+  },
 };
