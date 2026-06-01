@@ -8,18 +8,19 @@ export default function OMRSheetMaker() {
   const [instituteName, setInstituteName] = useState('YOUR INSTITUTE NAME');
   const [examName, setExamName] = useState('MOCK TEST OMR SHEET');
   const [qCount, setQCount] = useState<QuestionCount>(100);
-  const [omrColor, setOmrColor] = useState('#000000'); // Black or Red/Pink is standard
+  const [omrColor, setOmrColor] = useState('#000000'); 
   
   const [isProcessing, setIsProcessing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  
+  // Array of refs to hold multiple canvases for multiple pages
+  const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
 
-  // A4 Size in Pixels (300 DPI)
   const A4_W = 2480;
   const A4_H = 3508;
 
-  const drawOMR = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const totalPages = Math.ceil(qCount / 100);
+
+  const drawOMRPage = (canvas: HTMLCanvasElement, pageIndex: number) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -27,154 +28,161 @@ export default function OMRSheetMaker() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, A4_W, A4_H);
 
-    // Set Color Theme
     ctx.strokeStyle = omrColor;
     ctx.fillStyle = omrColor;
 
-    // 1. Draw Scanner Timing Marks (Real OMR Look)
+    // 1. Draw Scanner Timing Marks
     const drawTimingMarks = () => {
-      ctx.fillStyle = '#000000'; // Timing marks are always black
+      ctx.fillStyle = '#000000'; 
       for (let i = 100; i < A4_H - 100; i += 120) {
-        ctx.fillRect(50, i, 40, 20); // Left edge marks
-        ctx.fillRect(A4_W - 90, i, 40, 20); // Right edge marks
+        ctx.fillRect(50, i, 40, 20); 
+        ctx.fillRect(A4_W - 90, i, 40, 20); 
       }
-      ctx.fillStyle = omrColor; // Reset to theme color
+      ctx.fillStyle = omrColor; 
     };
     drawTimingMarks();
 
-    // 2. Main Border Box
+    // 2. Main Border
     ctx.lineWidth = 6;
     ctx.strokeRect(150, 100, A4_W - 300, A4_H - 200);
 
-    // 3. Header Section (Institute & Exam Name)
+    // Page Indicator for multi-page sheets
+    if (totalPages > 1) {
+      ctx.textAlign = 'right';
+      ctx.font = 'bold 30px Arial';
+      ctx.fillText(`PAGE ${pageIndex + 1} OF ${totalPages}`, A4_W - 170, 150);
+    }
+
+    // 3. Header Section
     ctx.textAlign = 'center';
     ctx.font = 'bold 70px Arial';
     ctx.fillText(instituteName.toUpperCase(), A4_W / 2, 220);
     
-    ctx.font = 'bold 50px Arial';
-    ctx.fillText(examName.toUpperCase(), A4_W / 2, 300);
+    ctx.font = 'bold 45px Arial';
+    ctx.fillText(examName.toUpperCase(), A4_W / 2, 290);
 
-    // Divider Line
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(150, 350);
-    ctx.lineTo(A4_W - 150, 350);
+    ctx.moveTo(150, 330);
+    ctx.lineTo(A4_W - 150, 330);
     ctx.stroke();
 
-    // 4. Student Info Section (Name, Date, Roll No boxes)
+    // 4. Student Info Section (Printed on all pages for safety)
     ctx.textAlign = 'left';
     ctx.font = 'bold 35px Arial';
     
-    // Name Box
-    ctx.fillText("STUDENT NAME:", 200, 420);
-    ctx.strokeRect(200, 440, 1100, 70);
+    ctx.fillText("STUDENT NAME:", 200, 400);
+    ctx.strokeRect(200, 420, 1100, 70);
 
-    // Batch/Class
-    ctx.fillText("BATCH / CLASS:", 200, 570);
-    ctx.strokeRect(200, 590, 500, 70);
+    ctx.fillText("BATCH / CLASS:", 200, 540);
+    ctx.strokeRect(200, 560, 500, 70);
 
-    // Date
-    ctx.fillText("DATE OF EXAM:", 800, 570);
-    ctx.strokeRect(800, 590, 500, 70);
+    ctx.fillText("DATE OF EXAM:", 800, 540);
+    ctx.strokeRect(800, 560, 500, 70);
 
-    // Roll No Box (A bit larger for clarity)
-    ctx.fillText("ROLL NUMBER:", 1400, 420);
-    ctx.strokeRect(1400, 440, 700, 80);
-    // Draw cells for Roll Number
+    ctx.fillText("ROLL NUMBER:", 1400, 400);
+    ctx.strokeRect(1400, 420, 700, 80);
     for(let i=1; i<10; i++) {
         ctx.beginPath();
-        ctx.moveTo(1400 + (i*70), 440);
-        ctx.lineTo(1400 + (i*70), 520);
+        ctx.moveTo(1400 + (i*70), 420);
+        ctx.lineTo(1400 + (i*70), 500);
         ctx.stroke();
     }
 
-    // Instructions
     ctx.font = '30px Arial';
-    ctx.fillText("INSTRUCTIONS:", 1400, 570);
+    ctx.fillText("INSTRUCTIONS:", 1400, 550);
     ctx.font = '25px Arial';
-    ctx.fillText("1. Use Black/Blue Ball Point Pen only.", 1400, 610);
-    ctx.fillText("2. Darken the circle completely.", 1400, 650);
-    ctx.fillText("3. Do not use whitener or eraser.", 1400, 690);
+    ctx.fillText("1. Use Black/Blue Ball Point Pen only.", 1400, 590);
+    ctx.fillText("2. Darken the circle completely.", 1400, 630);
+    ctx.fillText("3. Do not use whitener or eraser.", 1400, 670);
 
-    // Divider Line Before Questions
     ctx.beginPath();
-    ctx.moveTo(150, 750);
-    ctx.lineTo(A4_W - 150, 750);
+    ctx.moveTo(150, 720);
+    ctx.lineTo(A4_W - 150, 720);
     ctx.stroke();
 
-    // 5. Questions Grid Logic
-    const qPerColumn = 25; 
-    const numCols = Math.ceil(qCount / qPerColumn);
-    
-    // Calculate layout based on columns
-    const gridStartX = 200;
-    const gridStartY = 830;
-    const colWidth = (A4_W - 400) / numCols;
+    // 🌟 5. SMART 100-MAX GRID LOGIC 🌟
+    const startQ = pageIndex * 100;
+    const pageQCount = Math.min(100, qCount - startQ); // Ek page par max 100 aayenge
+
+    const qPerColumn = 25;
+    const numCols = pageQCount > 50 ? 4 : 2; // Agar 50 hain toh 2 line, warna 4 line
     const rowHeight = 85;
+    const bubbleRadius = 22;
+    const fontSize = 22;
+    const gridStartX = numCols === 2 ? 600 : 250;
+    const gridStartY = 780;
+    const availableWidth = A4_W - (gridStartX * 2);
+    const colSpacing = numCols > 1 ? availableWidth / (numCols - 1) : 0;
+    const options = ['A', 'B', 'C', 'D'];
 
-    ctx.font = 'bold 35px Arial';
-    ctx.textAlign = 'right';
-
-    for (let i = 0; i < qCount; i++) {
+    for (let i = 0; i < pageQCount; i++) {
       const col = Math.floor(i / qPerColumn);
       const row = i % qPerColumn;
       
-      const startX = gridStartX + (col * colWidth);
+      const startX = gridStartX + (col * colSpacing);
       const startY = gridStartY + (row * rowHeight);
 
-      // Question Number
-      ctx.fillText(`${i + 1}.`, startX + 60, startY + 12);
+      // Question Number (Continuous numbering like 101, 102 for 2nd page)
+      ctx.font = `bold ${fontSize + 4}px Arial`;
+      ctx.textAlign = 'right';
+      ctx.fillText(`${startQ + i + 1}.`, startX - 20, startY + (fontSize / 2));
 
-      // Draw 4 Bubbles (A, B, C, D)
-      const options = ['A', 'B', 'C', 'D'];
+      // Bubbles
       ctx.textAlign = 'center';
-      
       options.forEach((opt, idx) => {
-        const bubbleX = startX + 130 + (idx * 70);
+        const bubblePitch = bubbleRadius * 2 + 15; 
+        const bubbleX = startX + 40 + (idx * bubblePitch);
         const bubbleY = startY;
         
-        // Draw Circle
         ctx.beginPath();
-        ctx.arc(bubbleX, bubbleY, 22, 0, Math.PI * 2);
+        ctx.arc(bubbleX, bubbleY, bubbleRadius, 0, Math.PI * 2);
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Draw Letter inside
-        ctx.font = 'bold 22px Arial';
-        ctx.fillText(opt, bubbleX, bubbleY + 8);
+        ctx.font = `bold ${fontSize}px Arial`;
+        ctx.fillText(opt, bubbleX, bubbleY + (fontSize / 2.5));
       });
-      ctx.textAlign = 'right'; // reset for next Q number
     }
 
     // 6. Signature Boxes at Bottom
     ctx.textAlign = 'center';
     ctx.font = 'bold 35px Arial';
     
-    ctx.strokeRect(300, A4_H - 300, 600, 120);
-    ctx.fillText("CANDIDATE SIGNATURE", 600, A4_H - 130);
+    ctx.strokeRect(300, A4_H - 250, 600, 100);
+    ctx.fillText("CANDIDATE SIGNATURE", 600, A4_H - 100);
 
-    ctx.strokeRect(1580, A4_H - 300, 600, 120);
-    ctx.fillText("INVIGILATOR SIGNATURE", 1880, A4_H - 130);
+    ctx.strokeRect(1580, A4_H - 250, 600, 100);
+    ctx.fillText("INVIGILATOR SIGNATURE", 1880, A4_H - 100);
   };
 
-  // Re-draw canvas whenever settings change
   useEffect(() => {
-    drawOMR();
-  }, [qCount, omrColor, instituteName, examName]);
+    // Har page ke liye canvas draw karo
+    for (let i = 0; i < totalPages; i++) {
+      if (canvasRefs.current[i]) {
+        drawOMRPage(canvasRefs.current[i]!, i);
+      }
+    }
+  }, [qCount, omrColor, instituteName, examName, totalPages]);
 
   const generateAndDownloadPDF = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
     setIsProcessing(true);
 
     try {
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const doc = new jsPDF('p', 'mm', 'a4');
-      
       const pdfW = doc.internal.pageSize.getWidth();
       const pdfH = doc.internal.pageSize.getHeight();
       
-      doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+      for (let i = 0; i < totalPages; i++) {
+        const canvas = canvasRefs.current[i];
+        if (!canvas) continue;
+
+        if (i > 0) doc.addPage(); // Doosra page add karo agar 100 se zyada q hain
+
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+      }
+      
       doc.save(`OMR_Sheet_${qCount}_Questions.pdf`);
 
     } catch (error) {
@@ -189,12 +197,12 @@ export default function OMRSheetMaker() {
     <div className="max-w-7xl mx-auto p-4 md:p-6 min-h-screen">
       <div className="text-center mb-8">
         <h2 className="text-4xl font-black text-slate-800 tracking-tight">Pro OMR Sheet Maker</h2>
-        <p className="text-slate-500 mt-2 text-lg">Generate Print-Ready A4 OMR Sheets for Exams & Mock Tests.</p>
+        <p className="text-slate-500 mt-2 text-lg">Clean, uncluttered A4 OMR Sheets (Max 100 Qs per page).</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* LEFT COLUMN: SETTINGS */}
+        {/* SETTINGS COLUMN */}
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-6">
             <h3 className="font-bold text-xl text-slate-800 mb-6">OMR Settings</h3>
@@ -229,12 +237,14 @@ export default function OMRSheetMaker() {
                   onChange={(e) => setQCount(Number(e.target.value) as QuestionCount)} 
                   className="w-full p-3 border rounded-xl font-black text-blue-800 bg-slate-50 focus:border-blue-500 outline-none"
                 >
-                  <option value={50}>50 Questions</option>
-                  <option value={100}>100 Questions</option>
-                  <option value={150}>150 Questions</option>
-                  <option value={200}>200 Questions</option>
+                  <option value={50}>50 Questions (1 Page)</option>
+                  <option value={100}>100 Questions (1 Page)</option>
+                  <option value={150}>150 Questions (2 Pages)</option>
+                  <option value={200}>200 Questions (2 Pages)</option>
                 </select>
-                <p className="text-xs text-slate-400 mt-1">Columns will auto-adjust to perfectly fit A4.</p>
+                <p className="text-xs text-emerald-600 mt-2 font-medium bg-emerald-50 p-2 rounded-lg">
+                  ✅ Strict Max 100 Questions per page for clear printing.
+                </p>
               </div>
 
               <div>
@@ -255,40 +265,36 @@ export default function OMRSheetMaker() {
               disabled={isProcessing}
               className={`w-full mt-8 py-4 rounded-xl font-black text-xl shadow-xl transition-transform ${isProcessing ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-[1.02]'}`}
             >
-              {isProcessing ? 'Generating PDF...' : 'Download A4 OMR PDF 📥'}
+              {isProcessing ? 'Generating PDF...' : `Download ${totalPages}-Page PDF 📥`}
             </button>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: LIVE PREVIEW */}
-        <div className="lg:col-span-7 bg-slate-100 rounded-3xl border border-slate-200 p-6 flex flex-col items-center">
-          <div className="flex justify-between items-center w-full mb-4">
+        {/* PREVIEW COLUMN */}
+        <div className="lg:col-span-7 bg-slate-100 rounded-3xl border border-slate-200 p-6 flex flex-col items-center max-h-[800px] overflow-y-auto">
+          <div className="flex justify-between items-center w-full mb-4 sticky top-0 bg-slate-100 py-2 z-10">
             <h3 className="font-bold text-xl text-slate-800">Live A4 Preview</h3>
             <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full border border-emerald-200">
-              Print Ready
+              {totalPages} Pages
             </span>
           </div>
 
-          <div className="bg-white p-2 rounded shadow-lg border border-slate-300 overflow-hidden w-full flex justify-center">
-            {/* Hidden High-Res Canvas for PDF */}
-            <canvas ref={canvasRef} width={A4_W} height={A4_H} className="hidden" />
-            
-            {/* Display Canvas (Scaled down for UI) */}
-            <canvas 
-              width={A4_W} 
-              height={A4_H} 
-              className="w-full h-auto max-w-lg object-contain bg-white border border-slate-100"
-              style={{
-                // We draw to the hidden canvas, and use a separate ref or trick to show it.
-                // For simplicity, we just use the same canvas ref but scale it with CSS.
-              }}
-              ref={(el) => {
-                // Point the main ref to this visible canvas instead so we draw directly to it, but CSS handles scaling.
-                canvasRef.current = el;
-                // Trigger initial draw
-                if (el && !isProcessing) setTimeout(drawOMR, 50);
-              }}
-            />
+          <div className="w-full flex flex-col items-center gap-6 pb-8">
+            {/* 🌟 DYNAMIC MULTI-PAGE PREVIEW 🌟 */}
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <div key={i} className="w-full flex flex-col items-center">
+                <span className="text-xs font-bold text-slate-400 mb-2">PAGE {i + 1}</span>
+                <canvas 
+                  width={A4_W} 
+                  height={A4_H} 
+                  className="w-full h-auto max-w-lg object-contain bg-white border shadow-md"
+                  ref={(el) => {
+                    canvasRefs.current[i] = el;
+                    if (el && !isProcessing) setTimeout(() => drawOMRPage(el, i), 50);
+                  }}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
