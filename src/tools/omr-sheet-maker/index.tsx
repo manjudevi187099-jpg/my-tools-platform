@@ -11,8 +11,6 @@ export default function OMRSheetMaker() {
   const [omrColor, setOmrColor] = useState('#000000'); 
   
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  // Array of refs to hold multiple canvases for multiple pages
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
 
   const A4_W = 2480;
@@ -67,7 +65,7 @@ export default function OMRSheetMaker() {
     ctx.lineTo(A4_W - 150, 330);
     ctx.stroke();
 
-    // 4. Student Info Section (Printed on all pages for safety)
+    // 4. Student Info Section
     ctx.textAlign = 'left';
     ctx.font = 'bold 35px Arial';
     
@@ -101,19 +99,23 @@ export default function OMRSheetMaker() {
     ctx.lineTo(A4_W - 150, 720);
     ctx.stroke();
 
-    // 🌟 5. SMART 100-MAX GRID LOGIC 🌟
+    // 🌟 5. FIXED SPACING LOGIC 🌟
     const startQ = pageIndex * 100;
-    const pageQCount = Math.min(100, qCount - startQ); // Ek page par max 100 aayenge
+    const pageQCount = Math.min(100, qCount - startQ); 
 
     const qPerColumn = 25;
-    const numCols = pageQCount > 50 ? 4 : 2; // Agar 50 hain toh 2 line, warna 4 line
-    const rowHeight = 85;
+    const numCols = pageQCount > 50 ? 4 : 2; 
+    const rowHeight = 80; 
     const bubbleRadius = 22;
     const fontSize = 22;
-    const gridStartX = numCols === 2 ? 600 : 250;
-    const gridStartY = 780;
-    const availableWidth = A4_W - (gridStartX * 2);
-    const colSpacing = numCols > 1 ? availableWidth / (numCols - 1) : 0;
+    
+    // SAFE MARGINS CALCULATION (Fixing the Overflow)
+    const gridStartX = numCols === 2 ? 650 : 250;
+    // Aakhiri column ke liye pehle hi 300px jagah reserve kar li taaki wo bahar na nikle
+    const gridEndX = numCols === 2 ? A4_W - 950 : A4_W - 550; 
+    const gridStartY = 770;
+    
+    const colSpacing = numCols > 1 ? (gridEndX - gridStartX) / (numCols - 1) : 0;
     const options = ['A', 'B', 'C', 'D'];
 
     for (let i = 0; i < pageQCount; i++) {
@@ -123,12 +125,10 @@ export default function OMRSheetMaker() {
       const startX = gridStartX + (col * colSpacing);
       const startY = gridStartY + (row * rowHeight);
 
-      // Question Number (Continuous numbering like 101, 102 for 2nd page)
       ctx.font = `bold ${fontSize + 4}px Arial`;
       ctx.textAlign = 'right';
       ctx.fillText(`${startQ + i + 1}.`, startX - 20, startY + (fontSize / 2));
 
-      // Bubbles
       ctx.textAlign = 'center';
       options.forEach((opt, idx) => {
         const bubblePitch = bubbleRadius * 2 + 15; 
@@ -145,7 +145,37 @@ export default function OMRSheetMaker() {
       });
     }
 
-    // 6. Signature Boxes at Bottom
+    // 6. TEST ANALYSIS & SCORE SECTION
+    const analysisY = A4_H - 620; 
+    ctx.lineWidth = 4;
+    ctx.strokeRect(150, analysisY, A4_W - 300, 280); 
+
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 35px Arial';
+    ctx.fillText("TEST ANALYSIS & SCORE", A4_W / 2, analysisY + 50);
+
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(150, analysisY + 75);
+    ctx.lineTo(A4_W - 150, analysisY + 75);
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 30px Arial';
+
+    // Row 1
+    ctx.fillText("SUBJECT: _________________________________", 200, analysisY + 140);
+    ctx.fillText("TOPIC: _________________________________", 1250, analysisY + 140);
+
+    // Row 2
+    ctx.fillText("TOTAL ATTEMPT: ___________", 200, analysisY + 200);
+    ctx.fillText("CORRECT: ___________", 850, analysisY + 200);
+    ctx.fillText("INCORRECT: ___________", 1500, analysisY + 200);
+
+    // Row 3
+    ctx.fillText("ANALYZED (WEAK POINTS / AREAS): ____________________________________________________________________", 200, analysisY + 260);
+
+    // 7. Signature Boxes at Bottom
     ctx.textAlign = 'center';
     ctx.font = 'bold 35px Arial';
     
@@ -157,7 +187,6 @@ export default function OMRSheetMaker() {
   };
 
   useEffect(() => {
-    // Har page ke liye canvas draw karo
     for (let i = 0; i < totalPages; i++) {
       if (canvasRefs.current[i]) {
         drawOMRPage(canvasRefs.current[i]!, i);
@@ -177,7 +206,7 @@ export default function OMRSheetMaker() {
         const canvas = canvasRefs.current[i];
         if (!canvas) continue;
 
-        if (i > 0) doc.addPage(); // Doosra page add karo agar 100 se zyada q hain
+        if (i > 0) doc.addPage(); 
 
         const imgData = canvas.toDataURL('image/jpeg', 1.0);
         doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
@@ -197,7 +226,7 @@ export default function OMRSheetMaker() {
     <div className="max-w-7xl mx-auto p-4 md:p-6 min-h-screen">
       <div className="text-center mb-8">
         <h2 className="text-4xl font-black text-slate-800 tracking-tight">Pro OMR Sheet Maker</h2>
-        <p className="text-slate-500 mt-2 text-lg">Clean, uncluttered A4 OMR Sheets (Max 100 Qs per page).</p>
+        <p className="text-slate-500 mt-2 text-lg">Clean, uncluttered A4 OMR Sheets with Test Analysis section.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -243,7 +272,7 @@ export default function OMRSheetMaker() {
                   <option value={200}>200 Questions (2 Pages)</option>
                 </select>
                 <p className="text-xs text-emerald-600 mt-2 font-medium bg-emerald-50 p-2 rounded-lg">
-                  ✅ Strict Max 100 Questions per page for clear printing.
+                  ✅ Includes Test Analysis Section for Evaluators.
                 </p>
               </div>
 
@@ -280,7 +309,6 @@ export default function OMRSheetMaker() {
           </div>
 
           <div className="w-full flex flex-col items-center gap-6 pb-8">
-            {/* 🌟 DYNAMIC MULTI-PAGE PREVIEW 🌟 */}
             {Array.from({ length: totalPages }).map((_, i) => (
               <div key={i} className="w-full flex flex-col items-center">
                 <span className="text-xs font-bold text-slate-400 mb-2">PAGE {i + 1}</span>
