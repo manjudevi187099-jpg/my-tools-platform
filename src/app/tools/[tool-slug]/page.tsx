@@ -37,7 +37,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "invoice-maker": dynamic(() => import('../../../tools/invoice-maker'), { ssr: false }),
   "certificate-maker": dynamic(() => import('../../../tools/certificate-maker'), { ssr: false }),
   "stamp-maker": dynamic(() => import('../../../tools/stamp-maker'), { ssr: false }),
-  "hindi-typing": dynamic(() => import('../../../tools/hindi-typing'), { ssr: false }),
+  "hindi-typing": dynamic(() => import('../../../tools/english-to-hindi-typing'), { ssr: false }),
 };
 
 export default function ToolPage() {
