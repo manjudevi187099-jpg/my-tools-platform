@@ -76,7 +76,7 @@ export default function RemoveBackground() {
 
       // 🌟 FINAL FIX: Vercel ke liye publicPath set kar diya taaki missing files browser online utha le
       const config = {
-        publicPath: "https://unpkg.com/@imgly/background-removal/dist/",
+        publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.1.0/dist/",
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Pro AI Processing: ${percent}%`);
