@@ -214,4 +214,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
     isActive: true,
   },
+  "hindi-typing": {
+    name: "English to Hindi Typing",
+    description: "Type in English and automatically convert it to Hindi text using fast phonetic transliteration.",
+    category: "utility",
+    keywords: ["hindi typing", "english to hindi", "hinglish to hindi", "transliteration", "hindi keyboard"],
+    isActive: true,
+  },
 };
