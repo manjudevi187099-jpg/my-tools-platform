@@ -172,4 +172,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["resume maker", "cv builder", "pdf resume", "job resume generator", "ats friendly cv"],
     isActive: true,
   },
+  "biodata-maker": {
+    name: "Marriage Biodata Maker",
+    description: "Create beautiful, professional marriage biodata profiles in PDF format in just 2 minutes.",
+    category: "utility",
+    keywords: ["biodata maker", "marriage profile", "shaadi biodata", "matrimonial profile generator"],
+    isActive: true,
+  },
 };
