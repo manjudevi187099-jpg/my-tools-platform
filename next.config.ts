@@ -1,6 +1,4 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   eslint: {
     // Ye Vercel ko faltu warnings ignore karne bolega
     ignoreDuringBuilds: true,
