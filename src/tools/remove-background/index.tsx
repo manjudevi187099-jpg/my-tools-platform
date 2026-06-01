@@ -73,9 +73,8 @@ export default function RemoveBackground() {
       const optimizedBlob = await optimizeImageForAI(originalImage);
       setProgress('Waking up Pro AI...');
 
-      // 🌟 100% FINAL FIX: Official Img.ly CDN link without spelling mistake (staticimgly.com)
+      // 🌟 FINAL FIX: Sirf progress dikhana hai, baaki AI khud apna original rasta dhoondh lega!
       const config = {
-        publicPath: "https://staticimgly.com/@imgly/background-removal-data/1.5.8/dist/",
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Pro AI Processing: ${percent}%`);
