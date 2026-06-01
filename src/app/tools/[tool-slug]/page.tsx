@@ -4,8 +4,8 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 
-// 🌟 ASLI FIX YAHAN HAI: Rasta ekdum theek kar diya gaya hai (tools-registry.ts)
-import { TOOLS_REGISTRY, ToolMetadata } from '../../../../config/tools-registry';
+// 🌟 FIX: TOOLS_REGISTRY ko toolsRegistry (small) kar diya gaya hai!
+import { toolsRegistry, ToolMetadata } from '../../../../config/siteConfig';
 
 const ToolComponents: Record<string, React.ElementType> = {
   "pdf-merger": dynamic(() => import('../../../tools/pdf-merger'), { ssr: false }),
@@ -53,11 +53,10 @@ export default function ToolPage() {
     );
   }
 
-  // Yahan se list (registry) check hoti hai
-  const toolMeta = TOOLS_REGISTRY[slug] as ToolMetadata;
+  // 🌟 FIX: Yahan par bhi toolsRegistry kar diya hai
+  const toolMeta = toolsRegistry[slug] as ToolMetadata;
   const ActiveToolComponent = ToolComponents[slug];
 
-  // Agar toolMeta nahi milta, tab ye error page dikhta hai
   if (!toolMeta || !toolMeta.isActive) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center bg-slate-50 px-4 text-center">

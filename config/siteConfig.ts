@@ -1,7 +1,7 @@
 export interface ToolMetadata {
   name: string;
   description: string;
-  category: "pdf" | "dev" | "utility" | "design";
+  category: "pdf" | "dev" | "utility" | "design" | "business";
   keywords: string[];
   isActive: boolean;
 }
@@ -115,5 +115,104 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["english to hindi typing", "hindi transliteration", "hindi typing online"],
     isActive: true,
   },
-  // Background Remover yahan se hata diya gaya hai!
+
+  // 🌟 YAHAN SE SAARE MISSING TOOLS WAPAS JOD DIYE GAYE HAIN 🌟
+  "age-calculator": {
+    name: "Age Calculator",
+    description: "Forms ke liye Date of Birth se exact age (Years, Months, Days) calculate karein.",
+    category: "utility",
+    keywords: ["age calculator", "calculate age", "dob calculator", "form age"],
+    isActive: true,
+  },
+  "signature-on-photo": {
+    name: "Signature On Photo",
+    description: "Photo ke upar directly signature overlay karein (Transparent PNG style).",
+    category: "utility",
+    keywords: ["signature on photo", "overlay signature", "watermark signature", "self attest"],
+    isActive: true,
+  },
+  "image-resizer": {
+    name: "Photo & Signature Resizer",
+    description: "Forms ke hisaab se image ko exact PX, CM, MM ya INCH dimensions mein resize karein.",
+    category: "utility",
+    keywords: ["image resizer", "photo resizer", "signature resizer", "resize to cm", "resize pixels"],
+    isActive: true,
+  },
+  "passport-psd-maker": {
+    name: "A4 Passport PSD Maker",
+    description: "A4 paper par 6x7 (42 photos) ka passport size format banayein aur seedha .PSD file download karein.",
+    category: "design",
+    keywords: ["passport size photo maker", "psd generator", "a4 photo format", "studio photo grid"],
+    isActive: true,
+  },
+  "smart-card-maker": {
+    name: "Smart Card A4 PSD Maker",
+    description: "PAN, Aadhaar, Voter ID jaise documents ko crop karein aur seedha A4 print sheet par perfectly arrange karke PSD download karein.",
+    category: "utility",
+    keywords: ["id card maker", "aadhaar print", "pan card print", "a4 smart card", "cr80 print format"],
+    isActive: true,
+  },
+  "omr-sheet-maker": {
+    name: "A4 OMR Sheet Generator",
+    description: "Coaching aur Mock Tests ke liye 50, 100, 150 ya 200 questions wali print-ready OMR sheet PDF download karein.",
+    category: "utility",
+    keywords: ["omr maker", "omr sheet generator", "mock test sheet", "print omr a4", "bubble sheet"],
+    isActive: true,
+  },
+  "typing-speed-test": {
+    name: "Typing Speed Test Engine",
+    description: "SSC, Railway, aur Data Entry exams ke liye apni typing speed (WPM) aur accuracy test karein.",
+    category: "utility",
+    keywords: ["typing test", "wpm checker", "typing speed calculator", "ssc typing test", "english typing"],
+    isActive: true,
+  },
+  "resume-builder": {
+    name: "Smart Resume / CV Builder",
+    description: "Build professional, ATS-friendly A4 resumes in minutes with Live Preview and high-quality PDF export.",
+    category: "utility",
+    keywords: ["resume maker", "cv builder", "pdf resume", "job resume generator", "ats friendly cv"],
+    isActive: true,
+  },
+  "biodata-maker": {
+    name: "Marriage Biodata Maker",
+    description: "Create beautiful, professional marriage biodata profiles in PDF format in just 2 minutes.",
+    category: "utility",
+    keywords: ["biodata maker", "marriage profile", "shaadi biodata", "matrimonial profile generator"],
+    isActive: true,
+  },
+  "muslim-biodata-maker": {
+    name: "Muslim Biodata Maker",
+    description: "Create professional Islamic marriage biodata profiles in PDF format.",
+    category: "utility",
+    keywords: ["muslim biodata", "islamic marriage profile", "shaadi biodata", "matrimonial profile generator"],
+    isActive: true,
+  },
+  "experience-letter-maker": {
+    name: "Experience Letter Maker",
+    description: "Generate professional Experience & Relieving Letters with company letterhead formatting and PDF export.",
+    category: "business",
+    keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
+    isActive: true,
+  },
+  "invoice-maker": {
+    name: "Pro Invoice Maker",
+    description: "Generate professional business invoices with auto-calculated taxes, discounts, and HD PDF export.",
+    category: "business",
+    keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
+    isActive: true,
+  },
+  "certificate-maker": {
+    name: "Pro Certificate Generator",
+    description: "Generate authentic, high-quality landscape certificates for courses and events with PDF/PNG export.",
+    category: "design",
+    keywords: ["certificate maker", "certificate generator", "award certificate", "course certificate", "event certificate"],
+    isActive: true,
+  },
+  "stamp-maker": {
+    name: "Digital Stamp & Seal Maker",
+    description: "Generate professional round seals and rectangle rubber stamps. Download as transparent PNG or printable PDF.",
+    category: "design",
+    keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
+    isActive: true,
+  },
 };
