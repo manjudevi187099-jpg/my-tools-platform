@@ -36,6 +36,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "experience-letter-maker": dynamic(() => import('../../../tools/experience-letter-maker'), { ssr: false }),
   "invoice-maker": dynamic(() => import('../../../tools/invoice-maker'), { ssr: false }),
   "certificate-maker": dynamic(() => import('../../../tools/certificate-maker'), { ssr: false }),
+  "stamp-maker": dynamic(() => import('../../../tools/stamp-maker'), { ssr: false }),
 };
 
 export default function ToolPage() {

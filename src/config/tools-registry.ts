@@ -207,4 +207,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["certificate maker", "certificate generator", "award certificate", "course certificate", "event certificate"],
     isActive: true,
   },
+  "stamp-maker": {
+    name: "Digital Stamp & Seal Maker",
+    description: "Generate professional round seals and rectangle rubber stamps. Download as transparent PNG or printable PDF.",
+    category: "utility",
+    keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
+    isActive: true,
+  },
 };
