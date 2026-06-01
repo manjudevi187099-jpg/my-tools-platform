@@ -39,20 +39,19 @@ export default function RemoveBackground() {
   const removeBg = async () => {
     if (!imageFile) return;
     setIsProcessing(true);
-    setProgress('Waking up AI Engine...');
+    setProgress('Waking up Pro AI Engine...');
 
     try {
-      // Lazy load the engine
       const imgly = await import('@imgly/background-removal');
       
-      setProgress('AI is processing...');
-
-      // 🌟 FINAL FIX: Added publicPath back so it finds the model files on Unpkg instead of Vercel
       const config = {
+        // 🌟 FIX: Version hataya taaki ye automatically sync ho jaye
         publicPath: "https://unpkg.com/@imgly/background-removal-data/dist/",
+        proxyToWorker: false, 
+        model: "isnet_fp16" as const, 
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
-          setProgress(`Pro AI: ${percent}%`);
+          setProgress(`Pro AI Processing: ${percent}%`);
         }
       };
 
@@ -60,8 +59,8 @@ export default function RemoveBackground() {
       const url = URL.createObjectURL(imageBlob);
       setProcessedImage(url);
     } catch (error) {
-      console.error("AI Error:", error);
-      alert("Error: Background removal failed. Check console for details.");
+      console.error("AI Error Master Log:", error);
+      alert("AI Processing me thodi dikkat aayi. Kripya ek baar page refresh karke dobara try karein!");
     } finally {
       setIsProcessing(false);
       setProgress('');
@@ -90,7 +89,6 @@ export default function RemoveBackground() {
         
         if (tCtx) {
           tCtx.drawImage(origImg, 0, 0, tempCanvas.width, tempCanvas.height);
-          
           tCtx.globalCompositeOperation = 'destination-in';
           tCtx.drawImage(aiImg, 0, 0, tempCanvas.width, tempCanvas.height);
         }
