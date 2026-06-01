@@ -74,8 +74,9 @@ export default function RemoveBackground() {
       const optimizedBlob = await optimizeImageForAI(originalImage);
       setProgress('Waking up Pro AI...');
 
-      // 🌟 FIX 2: 'model: "small"' hata diya hai. Ab ye by default "medium/high" quality model use karega.
+      // 🌟 FINAL FIX: Vercel ke liye publicPath set kar diya taaki missing files browser online utha le
       const config = {
+        publicPath: "https://unpkg.com/@imgly/background-removal/dist/",
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Pro AI Processing: ${percent}%`);
