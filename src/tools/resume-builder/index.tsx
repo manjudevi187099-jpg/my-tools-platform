@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useRef } from 'react';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas-pro'; // 🌟 YAHAN FIX KIYA HAI 🌟
+import html2canvas from 'html2canvas-pro';
 
 // --- DATA TYPES ---
 type Template = 't1' | 't2' | 't3' | 't4' | 't5' | 't6' | 't7' | 't8' | 't9' | 't10';
@@ -61,7 +61,10 @@ const BORDER_OPTIONS = [
 export default function ResumeBuilder() {
   const [step, setStep] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // 🌟 FIX: We use two refs. One for preview, one hidden unscaled for printing 🌟
   const previewRef = useRef<HTMLDivElement>(null);
+  const printRef = useRef<HTMLDivElement>(null); 
 
   const [data, setData] = useState<ResumeData>({
     template: 't10',
@@ -104,18 +107,17 @@ export default function ResumeBuilder() {
   const updateEdu = (id: string, field: string, value: string) => setData({ ...data, education: data.education.map(e => e.id === id ? { ...e, [field]: value } : e) });
   const updateExp = (id: string, field: string, value: string) => setData({ ...data, experience: data.experience.map(e => e.id === id ? { ...e, [field]: value } : e) });
 
-  // 🌟 PRO PDF GENERATION ENGINE 🌟
+  // 🌟 OFF-SCREEN UN-SCALED PDF GENERATION ENGINE 🌟
   const generatePDF = async () => {
-    if (!previewRef.current) return;
+    if (!printRef.current) return;
     setIsProcessing(true);
     try {
-      // Ab html2canvas-pro modern CSS colors (lab, oklch) ko easily handle kar lega
-      const canvas = await html2canvas(previewRef.current, { 
+      // 🌟 Fix: Render using the hidden 100% scaled div to prevent text overlap 🌟
+      const canvas = await html2canvas(printRef.current, { 
         scale: 2, 
         useCORS: true, 
         allowTaint: true, 
-        scrollY: -window.scrollY, 
-        backgroundColor: '#ffffff' 
+        backgroundColor: '#ffffff'
       });
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -138,6 +140,8 @@ export default function ResumeBuilder() {
     const skillList = skills.split(',').filter(s => s.trim());
     const langList = languages.split(',').filter(s => s.trim());
     const hobbyList = hobbies.split(',').filter(s => s.trim());
+
+    // NOTE: Removed all "text-justify" classes and replaced with "text-left" to fix html2canvas spacing issues.
 
     switch(template) {
       case 't1': 
@@ -164,7 +168,7 @@ export default function ResumeBuilder() {
             </div>
 
             <div className="bg-gray-200 border-y-2 border-gray-400 font-bold uppercase p-1 mb-3 text-sm">Objective</div>
-            <p className="text-sm mb-4 text-justify">{personal.summary}</p>
+            <p className="text-sm mb-4 text-left leading-relaxed">{personal.summary}</p>
 
             <div className="bg-gray-200 border-y-2 border-gray-400 font-bold uppercase p-1 mb-3 text-sm">Education</div>
             <table className="w-full text-sm border-collapse border border-gray-400 mb-4 text-center">
@@ -188,7 +192,7 @@ export default function ResumeBuilder() {
               <div>
                 <h1 className="text-2xl font-bold uppercase">RESUME</h1>
                 <h2 className="text-xl font-bold mt-4">{personal.name}</h2>
-                <p className="text-sm mt-2 w-64">{personal.address}<br/>{personal.phone}<br/>{personal.email}</p>
+                <p className="text-sm mt-2 w-64 leading-relaxed">{personal.address}<br/>{personal.phone}<br/>{personal.email}</p>
               </div>
               {photo && <img src={photo} className="w-28 h-32 object-cover border border-black p-1" />}
             </div>
@@ -201,7 +205,7 @@ export default function ResumeBuilder() {
             </div>
 
             <h3 className="font-bold text-md mb-2 uppercase">Skills & Interests</h3>
-            <p className="text-sm mb-6 leading-relaxed">{skills}<br/>{hobbies}</p>
+            <p className="text-sm mb-6 leading-relaxed text-left">{skills}<br/>{hobbies}</p>
 
             <h3 className="font-bold text-md mb-2 uppercase">Education</h3>
             <div className="space-y-4 mb-6">
@@ -274,7 +278,7 @@ export default function ResumeBuilder() {
 
               <div className="col-span-8">
                 <h4 className="font-bold text-md mb-1 underline">Objective :</h4>
-                <p className="text-sm text-justify mb-4 p-2 border border-gray-300 bg-gray-50">{personal.summary}</p>
+                <p className="text-sm text-left mb-4 p-2 border border-gray-300 bg-gray-50 leading-relaxed">{personal.summary}</p>
 
                 <h4 className="font-bold text-md mb-2 underline">Work Experience :</h4>
                 <ul className="list-disc list-inside text-sm mb-4 space-y-2">
@@ -323,7 +327,7 @@ export default function ResumeBuilder() {
               <div className="relative z-10 pt-4 mb-8">
                 <h1 className="text-4xl font-black text-[#b99553] uppercase">{personal.name.split(' ')[0]} <span className="text-white">{personal.name.split(' ').slice(1).join(' ')}</span></h1>
                 <h2 className="text-xl text-gray-300 uppercase tracking-widest mt-1">{personal.title}</h2>
-                <p className="text-sm mt-4 text-gray-700 leading-relaxed text-justify bg-white/90 p-3 rounded">{personal.summary}</p>
+                <p className="text-sm mt-4 text-gray-700 leading-relaxed text-left bg-white/90 p-3 rounded">{personal.summary}</p>
               </div>
 
               <h3 className="bg-[#c2a36b] text-white font-bold py-1 px-4 rounded-full mb-4 uppercase tracking-widest text-center w-max mx-auto text-sm">Experience</h3>
@@ -332,7 +336,7 @@ export default function ResumeBuilder() {
                   <div key={exp.id}>
                     <h4 className="font-bold text-[#1e3c45]">{exp.role}</h4>
                     <p className="text-sm text-gray-500 mb-2">{exp.company} | {exp.year}</p>
-                    <p className="text-sm text-gray-700 leading-relaxed">{exp.desc}</p>
+                    <p className="text-sm text-gray-700 leading-relaxed text-left">{exp.desc}</p>
                   </div>
                 ))}
               </div>
@@ -394,7 +398,7 @@ export default function ResumeBuilder() {
                       <span className="text-sm font-bold text-gray-500">{exp.year}</span>
                     </div>
                     <p className="text-sm font-bold text-gray-700 mb-2">{exp.company}</p>
-                    <p className="text-xs text-gray-600 leading-relaxed text-justify">{exp.desc}</p>
+                    <p className="text-xs text-gray-600 leading-relaxed text-left">{exp.desc}</p>
                   </div>
                 ))}
               </div>
@@ -415,14 +419,14 @@ export default function ResumeBuilder() {
             </div>
 
             <div className="border-b-2 border-[#1e61b0] mb-2"><h3 className="font-bold text-[#1e61b0] uppercase text-sm">Summary</h3></div>
-            <p className="text-sm text-gray-700 leading-relaxed mb-6">{personal.summary}</p>
+            <p className="text-sm text-gray-700 leading-relaxed mb-6 text-left">{personal.summary}</p>
 
             <div className="border-b-2 border-[#1e61b0] mb-2"><h3 className="font-bold text-[#1e61b0] uppercase text-sm">Professional Experience</h3></div>
             <div className="space-y-4 mb-6">
               {experience.map(exp => (
                 <div key={exp.id}>
                   <div className="flex justify-between font-bold text-sm text-gray-800"><span>{exp.role}, {exp.company}</span><span>{exp.year}</span></div>
-                  <p className="text-sm text-gray-600 mt-1">• {exp.desc}</p>
+                  <p className="text-sm text-gray-600 mt-1 text-left">• {exp.desc}</p>
                 </div>
               ))}
             </div>
@@ -450,7 +454,7 @@ export default function ResumeBuilder() {
               <div>
                 <h1 className="text-4xl font-black uppercase tracking-wider">{personal.name}</h1>
                 <h2 className="text-xl text-[#73a839] mt-1 mb-3">{personal.title}</h2>
-                <p className="text-sm text-gray-300 leading-relaxed">{personal.summary}</p>
+                <p className="text-sm text-gray-300 leading-relaxed text-left">{personal.summary}</p>
               </div>
             </div>
             
@@ -467,7 +471,7 @@ export default function ResumeBuilder() {
                       <div key={exp.id}>
                         <h4 className="font-bold text-gray-800 text-lg">{exp.role}</h4>
                         <div className="flex justify-between text-sm text-gray-500 mb-2 italic"><span>{exp.company}</span><span>{exp.year}</span></div>
-                        <p className="text-sm text-gray-600 leading-relaxed">{exp.desc}</p>
+                        <p className="text-sm text-gray-600 leading-relaxed text-left">{exp.desc}</p>
                       </div>
                     ))}
                   </div>
@@ -520,7 +524,7 @@ export default function ResumeBuilder() {
             </div>
 
             <div className="bg-[#185b9d] text-white text-center font-bold py-1 uppercase text-sm mb-3">Career Objective</div>
-            <p className="text-sm text-center italic text-gray-600 px-10 mb-6">{personal.summary}</p>
+            <p className="text-sm text-center italic text-gray-600 px-10 mb-6 leading-relaxed">{personal.summary}</p>
 
             <div className="bg-[#185b9d] text-white text-center font-bold py-1 uppercase text-sm mb-3">Education</div>
             <div className="space-y-3 mb-6 px-4">
@@ -546,7 +550,7 @@ export default function ResumeBuilder() {
                      <div key={exp.id}>
                        <p className="font-bold text-gray-800">• {exp.role} || {exp.company}</p>
                        <p className="text-gray-500 italic mb-1">{exp.year}</p>
-                       <p className="text-gray-600 leading-tight">{exp.desc}</p>
+                       <p className="text-gray-600 leading-relaxed text-left">{exp.desc}</p>
                      </div>
                    ))}
                  </div>
@@ -588,7 +592,7 @@ export default function ResumeBuilder() {
               <div className="bg-[#513c8b] text-white p-10">
                 <h1 className="text-5xl font-black mb-2">{personal.name}</h1>
                 <h2 className="text-xl font-bold text-gray-200 mb-4">{personal.title}</h2>
-                <p className="text-sm leading-relaxed">{personal.summary}</p>
+                <p className="text-sm leading-relaxed text-left">{personal.summary}</p>
               </div>
 
               <div className="p-10 space-y-8 relative">
@@ -619,7 +623,7 @@ export default function ResumeBuilder() {
                         <h4 className="font-bold text-[#513c8b] text-lg">{exp.role}</h4>
                         <h5 className="text-gray-700 font-medium">{exp.company}</h5>
                         <p className="text-sm text-gray-500 italic mb-2">{exp.year}</p>
-                        <p className="text-sm text-gray-600 leading-relaxed">• {exp.desc}</p>
+                        <p className="text-sm text-gray-600 leading-relaxed text-left">• {exp.desc}</p>
                       </div>
                     ))}
                   </div>
@@ -656,7 +660,6 @@ export default function ResumeBuilder() {
               </div>
             </div>
 
-            {/* 🌟 NEW BORDER SELECTION UI 🌟 */}
             <div>
               <h3 className="text-2xl font-black text-slate-800 mb-6">2. Choose Page Border</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -775,7 +778,7 @@ export default function ResumeBuilder() {
         <p className="text-slate-500 mt-2 text-lg">Choose from 10 Premium Templates and build ATS-friendly A4 resumes.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative">
         
         {/* LEFT COLUMN: WIZARD FORM */}
         <div className="lg:col-span-5 bg-white rounded-3xl shadow-xl border border-slate-200 p-6 flex flex-col min-h-[600px]">
@@ -810,6 +813,13 @@ export default function ResumeBuilder() {
                     {renderResumeTemplate()}
                  </div>
               </div>
+           </div>
+        </div>
+
+        {/* 🌟 FIX: HIDDEN OFF-SCREEN UN-SCALED RENDERER FOR PERFECT PDF 🌟 */}
+        <div className="absolute top-[-9999px] left-[-9999px]">
+           <div ref={printRef} className="w-[794px] h-[1123px] bg-white">
+              {renderResumeTemplate()}
            </div>
         </div>
 
