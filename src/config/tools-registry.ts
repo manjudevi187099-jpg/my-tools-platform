@@ -9,6 +9,7 @@ export interface ToolMetadata {
 
 // 2. Registry (Record<string, ToolMetadata>)
 export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
+  // --- PDF TOOLS ---
   "pdf-merger": {
     name: "Professional PDF Merger",
     description: "Multiple PDFs ko ek me jodein securely.",
@@ -93,6 +94,8 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["pdf stamper", "add stamp", "verified stamp"],
     isActive: true,
   },
+  
+  // --- UTILITY / IMAGE TOOLS ---
   "add-name-date": {
     name: "Add Name & Date",
     description: "Apni photo par naam aur date add karein taaki wo form filling ke liye ready rahe.",
@@ -128,13 +131,9 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["image resizer", "photo resizer", "signature resizer", "resize to cm", "resize pixels"],
     isActive: true,
   },
-  "remove-background": {
-    name: "AI Background Remover",
-    description: "AI ki madad se image ka background hatayein aur passport size photo ke liye naya color lagayein.",
-    category: "design",
-    keywords: ["remove bg", "background remover", "transparent image", "passport photo background"],
-    isActive: true,
-  },
+  
+  // ✂️ Remove Background yahan se permanently delete kar diya gaya hai!
+
   "passport-psd-maker": {
     name: "A4 Passport PSD Maker",
     description: "A4 paper par 6x7 (42 photos) ka passport size format banayein aur seedha .PSD file download karein.",
