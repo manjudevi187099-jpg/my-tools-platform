@@ -1,5 +1,4 @@
 const nextConfig = {
-  // eslint wali line hata di gayi hai kyunki Next 16 usko support nahi kar raha
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -15,8 +14,12 @@ const nextConfig = {
     }
     return config;
   },
-  // Ye Next.js 16 ke Turbopack error ko completely silence (chup) kar dega
-  turbopack: {},
+  // 🌟 FIX: Turbopack ko missing webgpu module ignore karne ka instruction
+  turbopack: {
+    resolveAlias: {
+      'onnxruntime-web/webgpu': 'onnxruntime-web',
+    },
+  },
 };
 
 export default nextConfig;
