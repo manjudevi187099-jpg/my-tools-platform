@@ -29,6 +29,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "passport-psd-maker": dynamic(() => import('../../../tools/passport-psd-maker'), { ssr: false }),
   "smart-card-maker": dynamic(() => import('../../../tools/smart-card-maker'), { ssr: false }),
   "omr-sheet-maker": dynamic(() => import('../../../tools/omr-sheet-maker'), { ssr: false }),
+  "typing-speed-test": dynamic(() => import('../../../tools/typing-speed-test'), { ssr: false }),
 };
 
 export default function ToolPage() {

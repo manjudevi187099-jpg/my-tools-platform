@@ -158,4 +158,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["omr maker", "omr sheet generator", "mock test sheet", "print omr a4", "bubble sheet"],
     isActive: true,
   },
+  "typing-speed-test": {
+    name: "Typing Speed Test Engine",
+    description: "SSC, Railway, aur Data Entry exams ke liye apni typing speed (WPM) aur accuracy test karein. 1, 3, aur 5 minutes mode available.",
+    category: "utility",
+    keywords: ["typing test", "wpm checker", "typing speed calculator", "ssc typing test", "english typing"],
+    isActive: true,
+  },
 };
