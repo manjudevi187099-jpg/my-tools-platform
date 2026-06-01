@@ -24,6 +24,7 @@ interface Experience {
 
 interface ResumeData {
   template: Template;
+  border: string; // 🌟 NEW BORDER STATE 🌟
   photo: string | null;
   personal: {
     name: string;
@@ -43,7 +44,19 @@ interface ResumeData {
 }
 
 const FLOW_STEPS = [
-  'Template', 'Personal Details', 'Education', 'Skills & Extras', 'Experience', 'Photo', 'Generate'
+  'Layout & Border', 'Personal Details', 'Education', 'Skills & Extras', 'Experience', 'Photo', 'Generate'
+];
+
+// 🌟 BORDER OPTIONS LIST 🌟
+const BORDER_OPTIONS = [
+  { id: '', name: '🚫 No Border' },
+  { id: 'border-2 border-slate-900', name: '✏️ Thin Classic' },
+  { id: 'border-[12px] border-slate-900', name: '⬛ Thick Bold' },
+  { id: 'border-[12px] border-double border-slate-900', name: '🏛️ Elegant Double' },
+  { id: 'border-4 border-dashed border-slate-600', name: '✂️ Dashed Creative' },
+  { id: 'border-l-[24px] border-slate-900', name: '📓 Left Dark Accent' },
+  { id: 'border-t-[24px] border-blue-700', name: '🧢 Top Blue Accent' },
+  { id: 'border-[12px] border-double border-[#b99553]', name: '👑 Premium Gold' },
 ];
 
 export default function ResumeBuilder() {
@@ -54,6 +67,7 @@ export default function ResumeBuilder() {
   // Initial State
   const [data, setData] = useState<ResumeData>({
     template: 't10',
+    border: '', // Default no border
     photo: null,
     personal: { 
       name: 'RAHUL KUMAR', 
@@ -92,19 +106,29 @@ export default function ResumeBuilder() {
   const updateEdu = (id: string, field: string, value: string) => setData({ ...data, education: data.education.map(e => e.id === id ? { ...e, [field]: value } : e) });
   const updateExp = (id: string, field: string, value: string) => setData({ ...data, experience: data.experience.map(e => e.id === id ? { ...e, [field]: value } : e) });
 
+  // 🌟 ADVANCED PDF GENERATION ENGINE (Crash Fix Included) 🌟
   const generatePDF = async () => {
     if (!previewRef.current) return;
     setIsProcessing(true);
     try {
-      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true });
+      const canvas = await html2canvas(previewRef.current, { 
+        scale: 2, 
+        useCORS: true, 
+        allowTaint: true, 
+        scrollY: -window.scrollY, 
+        backgroundColor: '#ffffff' 
+      });
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${data.personal.name.replace(' ', '_')}_Resume.pdf`);
-    } catch (error) {
-      alert("Error generating PDF");
+      
+      const safeName = data.personal.name ? data.personal.name.replace(/\s+/g, '_') : 'My';
+      pdf.save(`${safeName}_Resume.pdf`);
+    } catch (error: any) {
+      console.error("PDF Engine Crash Report:", error);
+      alert(`Oops! PDF Generate nahi ho paya. Reason: ${error.message || "Image Format Issue"}`);
     } finally {
       setIsProcessing(false);
     }
@@ -112,15 +136,15 @@ export default function ResumeBuilder() {
 
   // --- 🌟 10 TEMPLATES RENDERING ENGINE 🌟 ---
   const renderResumeTemplate = () => {
-    const { template, personal, education, experience, skills, languages, hobbies, photo } = data;
+    const { template, border, personal, education, experience, skills, languages, hobbies, photo } = data;
     const skillList = skills.split(',').filter(s => s.trim());
     const langList = languages.split(',').filter(s => s.trim());
     const hobbyList = hobbies.split(',').filter(s => s.trim());
 
     switch(template) {
-      case 't1': // RC1: Grey Table Headers, Blue Photo Bg
+      case 't1': 
         return (
-          <div className="w-[794px] h-[1123px] bg-white text-black font-serif shadow-2xl p-10 box-border flex flex-col">
+          <div className={`w-[794px] h-[1123px] bg-white text-black font-serif shadow-2xl p-10 box-border flex flex-col ${border}`}>
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h1 className="text-4xl font-black uppercase">{personal.name}</h1>
@@ -159,9 +183,9 @@ export default function ResumeBuilder() {
           </div>
         );
 
-      case 't2': // RC2: Basic Classic B&W
+      case 't2': 
         return (
-          <div className="w-[794px] h-[1123px] bg-white text-black font-serif shadow-2xl p-12 box-border flex flex-col">
+          <div className={`w-[794px] h-[1123px] bg-white text-black font-serif shadow-2xl p-12 box-border flex flex-col ${border}`}>
             <div className="flex justify-between items-start border-b-4 border-black pb-4 mb-6">
               <div>
                 <h1 className="text-2xl font-bold uppercase">RESUME</h1>
@@ -193,9 +217,9 @@ export default function ResumeBuilder() {
           </div>
         );
 
-      case 't3': // RC3: Standard Red/Maroon accents
+      case 't3': 
         return (
-          <div className="w-[794px] h-[1123px] bg-white text-black font-sans shadow-2xl p-12 box-border border-4 border-black">
+          <div className={`w-[794px] h-[1123px] bg-white text-black font-sans shadow-2xl p-12 box-border ${border}`}>
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h1 className="text-2xl font-black uppercase border-b-2 border-black pb-1 mb-4">Curriculum Vitae (CV)</h1>
@@ -235,9 +259,9 @@ export default function ResumeBuilder() {
           </div>
         );
 
-      case 't4': // RC4: Detailed Professional (Grey headers)
+      case 't4': 
         return (
-          <div className="w-[794px] h-[1123px] bg-white text-black font-sans shadow-2xl p-10 box-border flex flex-col">
+          <div className={`w-[794px] h-[1123px] bg-white text-black font-sans shadow-2xl p-10 box-border flex flex-col ${border}`}>
             <h1 className="text-2xl font-bold border-b-2 border-red-900 pb-2 mb-4 text-center uppercase tracking-widest">Curriculum Vitae</h1>
             
             <div className="grid grid-cols-12 gap-6">
@@ -273,9 +297,9 @@ export default function ResumeBuilder() {
           </div>
         );
 
-      case 't5': // RC5: Modern Sidebar (Teal & Gold)
+      case 't5': 
         return (
-          <div className="w-[794px] h-[1123px] bg-white flex shadow-2xl overflow-hidden font-sans">
+          <div className={`w-[794px] h-[1123px] bg-white flex shadow-2xl overflow-hidden font-sans box-border ${border}`}>
             <div className="w-1/3 bg-[#1e3c45] text-white p-8 flex flex-col">
               {photo && <img src={photo} className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-[#b99553] mb-6" />}
               
@@ -293,11 +317,6 @@ export default function ResumeBuilder() {
               <h3 className="bg-transparent border border-[#b99553] text-[#b99553] text-center font-bold py-1 rounded-full mb-4 uppercase tracking-widest text-sm">Languages</h3>
               <ul className="list-disc list-inside text-sm space-y-1 mb-8 text-gray-300">
                 {langList.map((s,i)=><li key={i}>{s}</li>)}
-              </ul>
-
-              <h3 className="bg-transparent border border-[#b99553] text-[#b99553] text-center font-bold py-1 rounded-full mb-4 uppercase tracking-widest text-sm">Hobbies</h3>
-              <ul className="list-disc list-inside text-sm space-y-1 text-gray-300">
-                {hobbyList.map((s,i)=><li key={i}>{s}</li>)}
               </ul>
             </div>
 
@@ -334,9 +353,9 @@ export default function ResumeBuilder() {
           </div>
         );
 
-      case 't6': // RC6: Creative Left (Dark blocks)
+      case 't6': 
         return (
-          <div className="w-[794px] h-[1123px] bg-white flex shadow-2xl font-sans border-[6px] border-[#9278ff]">
+          <div className={`w-[794px] h-[1123px] bg-white flex shadow-2xl font-sans box-border ${border}`}>
             <div className="w-[35%] bg-gray-100 p-8 flex flex-col items-center border-r border-gray-300">
               {photo && <img src={photo} className="w-40 h-40 rounded-full object-cover mb-6 border-4 border-white shadow-md" />}
               
@@ -385,9 +404,9 @@ export default function ResumeBuilder() {
           </div>
         );
 
-      case 't7': // RC7: Corporate Clean Blue
+      case 't7': 
         return (
-          <div className="w-[794px] h-[1123px] bg-white text-black font-sans shadow-2xl p-12 box-border flex flex-col">
+          <div className={`w-[794px] h-[1123px] bg-white text-black font-sans shadow-2xl p-12 box-border flex flex-col ${border}`}>
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h1 className="text-4xl font-black text-[#1e61b0] uppercase">{personal.name}</h1>
@@ -425,9 +444,9 @@ export default function ResumeBuilder() {
           </div>
         );
 
-      case 't8': // RC8: Professional Green
+      case 't8': 
         return (
-          <div className="w-[794px] h-[1123px] bg-white font-sans shadow-2xl box-border flex flex-col">
+          <div className={`w-[794px] h-[1123px] bg-white font-sans shadow-2xl box-border flex flex-col ${border}`}>
             <div className="bg-[#2c3e50] text-white p-10 flex items-center gap-6">
               {photo && <img src={photo} className="w-32 h-32 rounded-full object-cover border-4 border-gray-400" />}
               <div>
@@ -481,20 +500,14 @@ export default function ResumeBuilder() {
                     {langList.map((s,i)=><li key={i}>{s}</li>)}
                   </ul>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-[#73a839] mb-4">Hobbies</h3>
-                  <ul className="list-disc list-inside text-sm text-gray-700 space-y-2">
-                    {hobbyList.map((s,i)=><li key={i}>{s}</li>)}
-                  </ul>
-                </div>
               </div>
             </div>
           </div>
         );
 
-      case 't9': // RC9: Blocky Blue Fresher
+      case 't9': 
         return (
-          <div className="w-[794px] h-[1123px] bg-white text-gray-800 font-sans shadow-2xl p-8 box-border flex flex-col border border-gray-200">
+          <div className={`w-[794px] h-[1123px] bg-white text-gray-800 font-sans shadow-2xl p-8 box-border flex flex-col ${border}`}>
             <div className="flex items-center gap-6 mb-6">
                <div className="w-32 h-32 rounded-full border-4 border-[#185b9d] overflow-hidden flex-shrink-0 p-1">
                  {photo ? <img src={photo} className="w-full h-full object-cover rounded-full" /> : <div className="w-full h-full bg-blue-100 rounded-full"></div>}
@@ -545,15 +558,14 @@ export default function ResumeBuilder() {
             <div className="bg-[#185b9d] text-white text-center font-bold py-1 uppercase text-sm mb-3">Additional Information</div>
             <div className="text-sm px-4 space-y-2">
               <p><strong>Languages:</strong> {languages}</p>
-              <p><strong>Hobbies:</strong> {hobbies}</p>
               <p><strong>Date of Birth:</strong> {personal.dob}</p>
             </div>
           </div>
         );
 
-      case 't10': // RC10: Modern Purple Left
+      case 't10': 
         return (
-          <div className="w-[794px] h-[1123px] bg-white flex shadow-2xl overflow-hidden font-sans">
+          <div className={`w-[794px] h-[1123px] bg-white flex shadow-2xl overflow-hidden font-sans box-border ${border}`}>
             <div className="w-[30%] bg-[#f4f4f6] p-8 flex flex-col items-center text-center">
               {photo ? <img src={photo} className="w-32 h-32 rounded-full object-cover shadow-md mb-6 border-4 border-white" /> : <div className="w-32 h-32 rounded-full bg-gray-300 mb-6 border-4 border-white"></div>}
               
@@ -572,11 +584,6 @@ export default function ResumeBuilder() {
               <div className="w-full text-left text-sm text-gray-700 space-y-2 mb-8">
                 {langList.map((s,i)=><p key={i}>{s}</p>)}
               </div>
-
-              <h3 className="w-full text-left font-black text-[#513c8b] text-lg uppercase mb-3 border-b-2 border-[#513c8b]">Interests</h3>
-              <div className="w-full text-left text-sm text-gray-700 space-y-2">
-                {hobbyList.map((s,i)=><p key={i} className="border border-gray-300 p-2 rounded bg-white">{s}</p>)}
-              </div>
             </div>
 
             <div className="w-[70%] bg-white flex flex-col">
@@ -588,7 +595,6 @@ export default function ResumeBuilder() {
 
               <div className="p-10 space-y-8 relative">
                 <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-                  {/* Hexagon pattern simulation */}
                   <div className="w-64 h-64 border-8 border-[#513c8b] rounded-full translate-x-1/2 translate-y-1/2"></div>
                 </div>
 
@@ -632,22 +638,39 @@ export default function ResumeBuilder() {
     switch(step) {
       case 0:
         return (
-          <div className="space-y-4">
-            <h3 className="text-2xl font-black text-slate-800 mb-6">Choose Template</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {[
-                {id:'t1', name:'Fresher Basic'}, {id:'t2', name:'Classic B&W'}, {id:'t3', name:'Standard Red'}, 
-                {id:'t4', name:'Detailed Pro'}, {id:'t5', name:'Modern Sidebar'}, {id:'t6', name:'Creative Dark'}, 
-                {id:'t7', name:'Corporate Blue'}, {id:'t8', name:'Pro Green'}, {id:'t9', name:'Blocky Fresher'}, 
-                {id:'t10', name:'Modern Purple'}
-              ].map(t => (
-                <button 
-                  key={t.id} onClick={() => setData({...data, template: t.id as Template})}
-                  className={`p-3 rounded-xl border-2 font-black text-xs uppercase tracking-wider transition-all ${data.template === t.id ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-blue-300'}`}
-                >
-                  {t.name}
-                </button>
-              ))}
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-2xl font-black text-slate-800 mb-6">1. Choose Template</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {[
+                  {id:'t1', name:'Fresher Basic'}, {id:'t2', name:'Classic B&W'}, {id:'t3', name:'Standard Red'}, 
+                  {id:'t4', name:'Detailed Pro'}, {id:'t5', name:'Modern Sidebar'}, {id:'t6', name:'Creative Dark'}, 
+                  {id:'t7', name:'Corporate Blue'}, {id:'t8', name:'Pro Green'}, {id:'t9', name:'Blocky Fresher'}, 
+                  {id:'t10', name:'Modern Purple'}
+                ].map(t => (
+                  <button 
+                    key={t.id} onClick={() => setData({...data, template: t.id as Template})}
+                    className={`p-3 rounded-xl border-2 font-black text-xs uppercase tracking-wider transition-all ${data.template === t.id ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-blue-300'}`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 🌟 NEW BORDER SELECTION UI 🌟 */}
+            <div>
+              <h3 className="text-2xl font-black text-slate-800 mb-6">2. Choose Page Border</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {BORDER_OPTIONS.map(b => (
+                  <button 
+                    key={b.id} onClick={() => setData({...data, border: b.id})}
+                    className={`p-3 rounded-xl border-2 font-black text-xs tracking-wider transition-all ${data.border === b.id ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600 hover:border-emerald-300'}`}
+                  >
+                    {b.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -780,12 +803,12 @@ export default function ResumeBuilder() {
 
         {/* RIGHT COLUMN: LIVE A4 PREVIEW */}
         <div className="lg:col-span-7 bg-slate-100 rounded-3xl border border-slate-200 p-4 md:p-8 flex items-center justify-center overflow-hidden min-h-[600px] relative">
-           <span className="absolute top-4 left-6 bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full border border-blue-200 z-10 shadow-sm">
+           <span className="absolute top-4 left-6 bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full border border-emerald-200 z-10 shadow-sm">
               Live Preview: {data.template.toUpperCase()}
            </span>
            <div className="w-full h-full flex items-center justify-center overflow-hidden rounded-xl">
               <div className="origin-top scale-[0.45] sm:scale-[0.5] md:scale-[0.55] lg:scale-[0.55] xl:scale-[0.65] transition-all duration-300 flex-shrink-0" style={{ width: '794px', height: '1123px' }}>
-                 <div ref={previewRef} className="w-full h-full shadow-2xl">
+                 <div ref={previewRef} className="w-full h-full shadow-2xl overflow-hidden">
                     {renderResumeTemplate()}
                  </div>
               </div>
