@@ -27,7 +27,6 @@ const ToolComponents: Record<string, React.ElementType> = {
   "age-calculator": dynamic(() => import('../../../tools/age-calculator'), { ssr: false }),
   "signature-on-photo": dynamic(() => import('../../../tools/signature-on-photo'), { ssr: false }),
   "image-resizer": dynamic(() => import('../../../tools/image-resizer'), { ssr: false }),
-  "remove-background": dynamic(() => import('../../../tools/remove-background'), { ssr: false }),
   "passport-psd-maker": dynamic(() => import('../../../tools/passport-psd-maker'), { ssr: false }),
   "smart-card-maker": dynamic(() => import('../../../tools/smart-card-maker'), { ssr: false }),
   "omr-sheet-maker": dynamic(() => import('../../../tools/omr-sheet-maker'), { ssr: false }),

@@ -117,11 +117,4 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["english to hindi typing", "hindi transliteration", "hindi typing online"],
     isActive: true,
   },
-  "remove-background": {
-    name: "Pro Image Background Remover",
-    description: "High Quality AI for complex hair & edges. Remove image background with 1-click instantly.",
-    category: "utility",
-    keywords: ["remove background", "bg remover", "transparent png", "remove image bg"],
-    isActive: true,
-  },
 };
