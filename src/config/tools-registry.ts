@@ -200,4 +200,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
     isActive: true,
   },
+  "certificate-maker": {
+    name: "Pro Certificate Generator",
+    description: "Generate authentic, high-quality landscape certificates for courses and events with PDF/PNG export.",
+    category: "utility",
+    keywords: ["certificate maker", "certificate generator", "award certificate", "course certificate", "event certificate"],
+    isActive: true,
+  },
 };
