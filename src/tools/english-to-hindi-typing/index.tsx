@@ -7,7 +7,6 @@ export default function HindiTypingTool() {
   const [text, setText] = useState('');
   const [isCopied, setIsCopied] = useState(false);
 
-  // Word and Character count logic
   const charCount = text.length;
   const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
 
@@ -39,7 +38,6 @@ export default function HindiTypingTool() {
     <div className="max-w-7xl mx-auto p-4 md:p-6 min-h-screen font-sans">
       <div className="text-center mb-8">
         <h2 className="text-4xl font-black text-slate-800 tracking-tight">English to Hindi Typing</h2>
-        {/* FIX 1: -> changed to {'->'} */}
         <p className="text-slate-500 mt-2 text-lg">Type in English (Hinglish) and it will automatically convert to Hindi. (e.g., mera naam {'->'} मेरा नाम)</p>
       </div>
 
@@ -75,7 +73,6 @@ export default function HindiTypingTool() {
           <div className="flex-1 p-6 relative">
             <ReactTransliterate
               value={text}
-              {/* FIX 2: Added explicit string type */}
               onChangeText={(newText: string) => setText(newText)}
               lang="hi"
               containerClassName="w-full h-full"
