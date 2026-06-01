@@ -179,4 +179,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["biodata maker", "marriage profile", "shaadi biodata", "matrimonial profile generator"],
     isActive: true,
   },
+  "muslim-biodata-maker": {
+    name: "Muslim Biodata Maker",
+    description: "Create professional Islamic marriage biodata profiles in PDF format.",
+    category: "utility",
+    keywords: ["muslim biodata", "islamic marriage profile", "shaadi biodata", "matrimonial profile generator"],
+    isActive: true,
+  },
 };

@@ -32,6 +32,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "typing-speed-test": dynamic(() => import('../../../tools/typing-speed-test'), { ssr: false }),
   "resume-builder": dynamic(() => import('../../../tools/resume-builder'), { ssr: false }),
   "biodata-maker": dynamic(() => import('../../../tools/biodata-maker'), { ssr: false }),
+  "muslim-biodata-maker": dynamic(() => import('../../../tools/muslim-biodata-maker'), { ssr: false }),
 };
 
 export default function ToolPage() {
