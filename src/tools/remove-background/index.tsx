@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
-import { removeBackground } from '@imgly/background-removal';
 
 export default function RemoveBackground() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string>('transparent');
@@ -20,6 +20,7 @@ export default function RemoveBackground() {
 
   const resetTool = () => {
     setOriginalImage(null);
+    setImageFile(null);
     setProcessedImage(null);
     setProgress('');
     setSelectedColor('transparent');
@@ -28,67 +29,38 @@ export default function RemoveBackground() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const url = URL.createObjectURL(file);
       setOriginalImage(url);
       setProcessedImage(null); 
     }
   };
 
-  // 🌟 FIX 1: MaxSize ko 800px se badha kar 1500px kar diya taaki AI ko hair edges clear dikhein
-  const optimizeImageForAI = (imageUrl: string, maxSize = 1500): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "Anonymous";
-      img.onload = () => {
-        let w = img.width;
-        let h = img.height;
-        
-        if (w > maxSize || h > maxSize) {
-          const ratio = Math.min(maxSize / w, maxSize / h);
-          w = w * ratio;
-          h = h * ratio;
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, w, h);
-        
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error("Optimization failed"));
-        }, 'image/jpeg', 1.0); // Quality badha di hai
-      };
-      img.onerror = () => reject(new Error("Image Load Error"));
-      img.src = imageUrl;
-    });
-  };
-
   const removeBg = async () => {
-    if (!originalImage) return;
+    if (!imageFile) return;
     setIsProcessing(true);
-    setProgress('Preparing High-Res Image...');
+    setProgress('Waking up AI Engine...');
 
     try {
-      const optimizedBlob = await optimizeImageForAI(originalImage);
-      setProgress('Waking up Pro AI...');
+      // 🚀 THE MAGIC: Dynamic Lazy Import
+      // Is line ki wajah se Vercel build time par error nahi dega, kyunki ye sirf browser me chalega!
+      const imgly = await import('@imgly/background-removal');
+      
+      setProgress('AI is processing...');
 
-      // 🌟 ASLI CULPRIT KA ILAAJ: Yahan publicPath wapas add kar diya hai taaki 404 Vercel error na aaye!
-      const config = {
-        publicPath: "https://unpkg.com/@imgly/background-removal-data/dist/",
-        progress: (key: string, current: number, total: number) => {
+      // Seedha original file ko AI ko de diya (bina kisi complex optimization ke, jisse crash na ho)
+      const imageBlob = await imgly.removeBackground(imageFile, {
+        progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
-          setProgress(`Pro AI Processing: ${percent}%`);
+          setProgress(`Pro AI: ${percent}%`);
         }
-      };
+      });
 
-      const imageBlob = await (removeBackground as any)(optimizedBlob, config);
       const url = URL.createObjectURL(imageBlob);
       setProcessedImage(url);
     } catch (error) {
       console.error("AI Error:", error);
-      alert("Error: Background removal failed.");
+      alert("Background Hatane me dikkat aayi! Kripya koi dusri photo try karein.");
     } finally {
       setIsProcessing(false);
       setProgress('');
@@ -118,7 +90,6 @@ export default function RemoveBackground() {
         if (tCtx) {
           tCtx.drawImage(origImg, 0, 0, tempCanvas.width, tempCanvas.height);
           
-          // AI Mask lagana
           tCtx.globalCompositeOperation = 'destination-in';
           tCtx.drawImage(aiImg, 0, 0, tempCanvas.width, tempCanvas.height);
         }
