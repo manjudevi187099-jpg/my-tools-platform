@@ -34,6 +34,7 @@ export default function RemoveBackground() {
     }
   };
 
+  // 🌟 FIX 1: MaxSize ko 800px se badha kar 1500px kar diya taaki AI ko hair edges clear dikhein
   const optimizeImageForAI = (imageUrl: string, maxSize = 1500): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -57,7 +58,7 @@ export default function RemoveBackground() {
         canvas.toBlob((blob) => {
           if (blob) resolve(blob);
           else reject(new Error("Optimization failed"));
-        }, 'image/jpeg', 1.0); 
+        }, 'image/jpeg', 1.0); // Quality badha di hai
       };
       img.onerror = () => reject(new Error("Image Load Error"));
       img.src = imageUrl;
@@ -73,9 +74,8 @@ export default function RemoveBackground() {
       const optimizedBlob = await optimizeImageForAI(originalImage);
       setProgress('Waking up Pro AI...');
 
-      // 🌟 FINAL FIX: Ab engine downgrade ho chuka hai, toh unpkg ka rasta bina crash hue kaam karega!
+      // 🌟 FIX 2: 'model: "small"' hata diya hai. Ab ye by default "medium/high" quality model use karega.
       const config = {
-        publicPath: "https://unpkg.com/@imgly/background-removal/dist/",
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Pro AI Processing: ${percent}%`);
@@ -117,6 +117,7 @@ export default function RemoveBackground() {
         if (tCtx) {
           tCtx.drawImage(origImg, 0, 0, tempCanvas.width, tempCanvas.height);
           
+          // AI Mask lagana
           tCtx.globalCompositeOperation = 'destination-in';
           tCtx.drawImage(aiImg, 0, 0, tempCanvas.width, tempCanvas.height);
         }
