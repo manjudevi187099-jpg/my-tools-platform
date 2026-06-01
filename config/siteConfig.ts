@@ -3,7 +3,7 @@ export interface ToolMetadata {
   description: string;
   category: "pdf" | "dev" | "utility" | "design";
   keywords: string[];
-  isActive: boolean; // 🌟 Control ke liye
+  isActive: boolean;
 }
 
 export const toolsRegistry: Record<string, ToolMetadata> = {
@@ -108,8 +108,6 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["join photo signature", "merge image", "exam form photo"],
     isActive: true,
   },
-  
-  // 🌟 NAYE TOOLS YAHAN JOD DIYE GAYE HAIN 🌟
   "english-to-hindi-typing": {
     name: "English to Hindi Typing",
     description: "Type in English and automatically convert to Hindi text using fast phonetic transliteration.",
@@ -117,4 +115,5 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["english to hindi typing", "hindi transliteration", "hindi typing online"],
     isActive: true,
   },
+  // Background Remover yahan se hata diya gaya hai!
 };

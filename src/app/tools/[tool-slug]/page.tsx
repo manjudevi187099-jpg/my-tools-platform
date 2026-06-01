@@ -4,11 +4,9 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 
-// 🌟 DHYAN DEIN: Import path aur variable ka naam aapki file se match hona chahiye
-// Agar aapki file ka naam siteConfig.ts hai, toh path '../config/siteConfig' kar lijiye
 import { toolsRegistry, ToolMetadata } from '../../../../config/siteConfig'; 
 
-// Dynamic Tool Components Map (Lazy Loading for ultra-fast speed)
+// Dynamic Tool Components Map 
 const ToolComponents: Record<string, React.ElementType> = {
   "pdf-merger": dynamic(() => import('../../../tools/pdf-merger'), { ssr: false }),
   "image-to-pdf": dynamic(() => import('../../../tools/image-to-pdf'), { ssr: false }),
@@ -27,6 +25,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "age-calculator": dynamic(() => import('../../../tools/age-calculator'), { ssr: false }),
   "signature-on-photo": dynamic(() => import('../../../tools/signature-on-photo'), { ssr: false }),
   "image-resizer": dynamic(() => import('../../../tools/image-resizer'), { ssr: false }),
+  // Background remover yahan se nikal diya hai!
   "passport-psd-maker": dynamic(() => import('../../../tools/passport-psd-maker'), { ssr: false }),
   "smart-card-maker": dynamic(() => import('../../../tools/smart-card-maker'), { ssr: false }),
   "omr-sheet-maker": dynamic(() => import('../../../tools/omr-sheet-maker'), { ssr: false }),
@@ -55,11 +54,9 @@ export default function ToolPage() {
     );
   }
 
-  // Registry se metadata aur component fetch karein
   const toolMeta = toolsRegistry[slug] as ToolMetadata;
   const ActiveToolComponent = ToolComponents[slug];
 
-  // Agar tool registry mein nahi hai ya isActive: false hai, toh error dikhayein
   if (!toolMeta || !toolMeta.isActive) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center bg-slate-50 px-4 text-center">
@@ -74,7 +71,6 @@ export default function ToolPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 pb-12">
-      {/* Tool Header Box */}
       <div className="bg-white border-b py-10 px-4 text-center shadow-sm">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight">{toolMeta.name}</h1>
         <p className="text-slate-500 mt-3 max-w-2xl mx-auto text-sm md:text-base">
@@ -82,7 +78,6 @@ export default function ToolPage() {
         </p>
       </div>
       
-      {/* Dynamic Tool Component Render Area */}
       <div className="mt-8 px-4">
         {ActiveToolComponent ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
