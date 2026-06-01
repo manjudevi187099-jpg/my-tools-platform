@@ -42,25 +42,26 @@ export default function RemoveBackground() {
     setProgress('Waking up AI Engine...');
 
     try {
-      // 🚀 THE MAGIC: Dynamic Lazy Import
-      // Is line ki wajah se Vercel build time par error nahi dega, kyunki ye sirf browser me chalega!
+      // Lazy load the engine
       const imgly = await import('@imgly/background-removal');
       
       setProgress('AI is processing...');
 
-      // Seedha original file ko AI ko de diya (bina kisi complex optimization ke, jisse crash na ho)
-      const imageBlob = await imgly.removeBackground(imageFile, {
-        progress: (key, current, total) => {
+      // 🌟 FINAL FIX: Added publicPath back so it finds the model files on Unpkg instead of Vercel
+      const config = {
+        publicPath: "https://unpkg.com/@imgly/background-removal-data/dist/",
+        progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Pro AI: ${percent}%`);
         }
-      });
+      };
 
+      const imageBlob = await imgly.removeBackground(imageFile, config);
       const url = URL.createObjectURL(imageBlob);
       setProcessedImage(url);
     } catch (error) {
       console.error("AI Error:", error);
-      alert("Background Hatane me dikkat aayi! Kripya koi dusri photo try karein.");
+      alert("Error: Background removal failed. Check console for details.");
     } finally {
       setIsProcessing(false);
       setProgress('');
