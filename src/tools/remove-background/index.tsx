@@ -73,8 +73,9 @@ export default function RemoveBackground() {
       const optimizedBlob = await optimizeImageForAI(originalImage);
       setProgress('Waking up Pro AI...');
 
-      // 🌟 FINAL FIX: Sirf progress dikhana hai, baaki AI khud apna original rasta dhoondh lega!
+      // 🌟 FINAL FIX: Ab engine downgrade ho chuka hai, toh unpkg ka rasta bina crash hue kaam karega!
       const config = {
+        publicPath: "https://unpkg.com/@imgly/background-removal/dist/",
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Pro AI Processing: ${percent}%`);
