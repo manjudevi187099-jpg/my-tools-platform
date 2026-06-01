@@ -4,9 +4,9 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 
-import { toolsRegistry, ToolMetadata } from '../../../../config/siteConfig'; 
+// 🌟 ASLI FIX YAHAN HAI: Rasta ekdum theek kar diya gaya hai (tools-registry.ts)
+import { TOOLS_REGISTRY, ToolMetadata } from '../../../../config/tools-registry';
 
-// Dynamic Tool Components Map 
 const ToolComponents: Record<string, React.ElementType> = {
   "pdf-merger": dynamic(() => import('../../../tools/pdf-merger'), { ssr: false }),
   "image-to-pdf": dynamic(() => import('../../../tools/image-to-pdf'), { ssr: false }),
@@ -25,7 +25,6 @@ const ToolComponents: Record<string, React.ElementType> = {
   "age-calculator": dynamic(() => import('../../../tools/age-calculator'), { ssr: false }),
   "signature-on-photo": dynamic(() => import('../../../tools/signature-on-photo'), { ssr: false }),
   "image-resizer": dynamic(() => import('../../../tools/image-resizer'), { ssr: false }),
-  // Background remover yahan se nikal diya hai!
   "passport-psd-maker": dynamic(() => import('../../../tools/passport-psd-maker'), { ssr: false }),
   "smart-card-maker": dynamic(() => import('../../../tools/smart-card-maker'), { ssr: false }),
   "omr-sheet-maker": dynamic(() => import('../../../tools/omr-sheet-maker'), { ssr: false }),
@@ -54,9 +53,11 @@ export default function ToolPage() {
     );
   }
 
-  const toolMeta = toolsRegistry[slug] as ToolMetadata;
+  // Yahan se list (registry) check hoti hai
+  const toolMeta = TOOLS_REGISTRY[slug] as ToolMetadata;
   const ActiveToolComponent = ToolComponents[slug];
 
+  // Agar toolMeta nahi milta, tab ye error page dikhta hai
   if (!toolMeta || !toolMeta.isActive) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center bg-slate-50 px-4 text-center">
