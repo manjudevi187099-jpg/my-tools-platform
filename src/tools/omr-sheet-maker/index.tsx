@@ -42,9 +42,10 @@ export default function OMRSheetMaker() {
 
     // 2. Main Border
     ctx.lineWidth = 6;
+    // Border ends exactly at Y = A4_H - 100 (3408px)
     ctx.strokeRect(150, 100, A4_W - 300, A4_H - 200);
 
-    // Page Indicator for multi-page sheets
+    // Page Indicator
     if (totalPages > 1) {
       ctx.textAlign = 'right';
       ctx.font = 'bold 30px Arial';
@@ -99,7 +100,7 @@ export default function OMRSheetMaker() {
     ctx.lineTo(A4_W - 150, 720);
     ctx.stroke();
 
-    // 🌟 5. FIXED SPACING LOGIC 🌟
+    // 🌟 5. EXACT CENTERING LOGIC 🌟
     const startQ = pageIndex * 100;
     const pageQCount = Math.min(100, qCount - startQ); 
 
@@ -109,10 +110,9 @@ export default function OMRSheetMaker() {
     const bubbleRadius = 22;
     const fontSize = 22;
     
-    // SAFE MARGINS CALCULATION (Fixing the Overflow)
-    const gridStartX = numCols === 2 ? 650 : 250;
-    // Aakhiri column ke liye pehle hi 300px jagah reserve kar li taaki wo bahar na nikle
-    const gridEndX = numCols === 2 ? A4_W - 950 : A4_W - 550; 
+    // FIX: Mathematically locking the grid perfectly in the center (A4 Center is 1240px)
+    const gridStartX = numCols === 2 ? 800 : 315; 
+    const gridEndX = numCols === 2 ? 1430 : 1915; 
     const gridStartY = 770;
     
     const colSpacing = numCols > 1 ? (gridEndX - gridStartX) / (numCols - 1) : 0;
@@ -145,10 +145,12 @@ export default function OMRSheetMaker() {
       });
     }
 
-    // 6. TEST ANALYSIS & SCORE SECTION
-    const analysisY = A4_H - 620; 
+    // 🌟 6. FIXED BOTTOM SPACING (ANALYSIS & SIGNATURE) 🌟
+    
+    // Move Analysis Box up safely away from the bottom
+    const analysisY = A4_H - 650; 
     ctx.lineWidth = 4;
-    ctx.strokeRect(150, analysisY, A4_W - 300, 280); 
+    ctx.strokeRect(150, analysisY, A4_W - 300, 250); 
 
     ctx.textAlign = 'center';
     ctx.font = 'bold 35px Arial';
@@ -156,34 +158,34 @@ export default function OMRSheetMaker() {
 
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(150, analysisY + 75);
-    ctx.lineTo(A4_W - 150, analysisY + 75);
+    ctx.moveTo(150, analysisY + 70);
+    ctx.lineTo(A4_W - 150, analysisY + 70);
     ctx.stroke();
 
     ctx.textAlign = 'left';
     ctx.font = 'bold 30px Arial';
 
-    // Row 1
-    ctx.fillText("SUBJECT: _________________________________", 200, analysisY + 140);
-    ctx.fillText("TOPIC: _________________________________", 1250, analysisY + 140);
+    // Analysis Rows adjusted for new height
+    ctx.fillText("SUBJECT: _________________________________", 200, analysisY + 130);
+    ctx.fillText("TOPIC: _________________________________", 1250, analysisY + 130);
+    
+    ctx.fillText("TOTAL ATTEMPT: ___________", 200, analysisY + 190);
+    ctx.fillText("CORRECT: ___________", 850, analysisY + 190);
+    ctx.fillText("INCORRECT: ___________", 1500, analysisY + 190);
 
-    // Row 2
-    ctx.fillText("TOTAL ATTEMPT: ___________", 200, analysisY + 200);
-    ctx.fillText("CORRECT: ___________", 850, analysisY + 200);
-    ctx.fillText("INCORRECT: ___________", 1500, analysisY + 200);
+    ctx.fillText("ANALYZED (WEAK POINTS / AREAS): ____________________________________________________________________", 200, analysisY + 250);
 
-    // Row 3
-    ctx.fillText("ANALYZED (WEAK POINTS / AREAS): ____________________________________________________________________", 200, analysisY + 260);
-
-    // 7. Signature Boxes at Bottom
+    // FIX: Move Signatures up!
     ctx.textAlign = 'center';
     ctx.font = 'bold 35px Arial';
     
-    ctx.strokeRect(300, A4_H - 250, 600, 100);
-    ctx.fillText("CANDIDATE SIGNATURE", 600, A4_H - 100);
+    // Boxes moved up safely above the bottom border
+    ctx.strokeRect(300, A4_H - 350, 600, 120);
+    // Label moved up so it stays inside the safe zone (Y=3330, Border is 3408)
+    ctx.fillText("CANDIDATE SIGNATURE", 600, A4_H - 180);
 
-    ctx.strokeRect(1580, A4_H - 250, 600, 100);
-    ctx.fillText("INVIGILATOR SIGNATURE", 1880, A4_H - 100);
+    ctx.strokeRect(1580, A4_H - 350, 600, 120);
+    ctx.fillText("INVIGILATOR SIGNATURE", 1880, A4_H - 180);
   };
 
   useEffect(() => {
@@ -226,7 +228,7 @@ export default function OMRSheetMaker() {
     <div className="max-w-7xl mx-auto p-4 md:p-6 min-h-screen">
       <div className="text-center mb-8">
         <h2 className="text-4xl font-black text-slate-800 tracking-tight">Pro OMR Sheet Maker</h2>
-        <p className="text-slate-500 mt-2 text-lg">Clean, uncluttered A4 OMR Sheets with Test Analysis section.</p>
+        <p className="text-slate-500 mt-2 text-lg">Clean, uncluttered A4 OMR Sheets perfectly aligned for printing.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -271,9 +273,6 @@ export default function OMRSheetMaker() {
                   <option value={150}>150 Questions (2 Pages)</option>
                   <option value={200}>200 Questions (2 Pages)</option>
                 </select>
-                <p className="text-xs text-emerald-600 mt-2 font-medium bg-emerald-50 p-2 rounded-lg">
-                  ✅ Includes Test Analysis Section for Evaluators.
-                </p>
               </div>
 
               <div>
