@@ -4,10 +4,31 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 type Language = 'en' | 'hi';
 type Mode = 'time' | 'lesson';
 type Duration = 60 | 180 | 300;
-type LessonType = 'words' | 'quotes' | 'paragraph';
+type LessonType = 'basics' | 'intermediate' | 'advanced' | 'words' | 'quotes' | 'paragraph';
 type Theme = 'light' | 'dark' | 'midnight';
 
-// --- DATA BANKS ---
+// --- DATA BANKS (SYLLABUS & PRACTICE) ---
+
+// 1. ENGLISH SYLLABUS
+const BASICS_EN = [
+  "asdf jkl; asdf jkl; a s d f j k l ;",
+  "dad sad fall glass flask dash slash all ask",
+  "glad had sad salad dad flag half glad flash",
+  "ask dad glad sad flash fall glass all ask"
+];
+const INTER_EN = [
+  "qwer poiu zxcv m,./ quick brown fox jumps",
+  "lazy dog pack my box with five dozen liquor jugs",
+  "typing speed test checks your actual typing speed",
+  "mastering the full keyboard requires daily practice"
+];
+const ADV_EN = [
+  "Email me at: pro_typist99@example.com! Price: $45.99.",
+  "Call 1-800-555-1234 (Toll-Free) or visit 192.168.0.1.",
+  "The equation is: (A + B) * 100 = 50% of the revenue!",
+  "Username: John_Doe_88! Password: Super#Secure$99."
+];
+
 const WORD_BANK_EN = ['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me', 'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take', 'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other', 'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us', 'system', 'computer', 'software', 'typing', 'speed', 'test', 'practice', 'skill', 'fast', 'keyboard'];
 const QUOTES_EN = [
   "The only way to do great work is to love what you do. If you haven't found it yet, keep looking. Don't settle.",
@@ -19,6 +40,26 @@ const PARAGRAPHS_EN = [
   "Global warming is the long-term heating of Earth's climate system observed since the pre-industrial period. This is primarily due to human activities, primarily fossil fuel burning, which increases heat-trapping greenhouse gas levels in Earth's atmosphere."
 ];
 
+// 2. HINDI SYLLABUS
+const BASICS_HI = [
+  "अब कब सब नर घर चल जल फल मन तन धन",
+  "आम नाम काम दाम राम राजा बाजा छाता माता",
+  "कल चल जल फल नल मन तन धन पवन नयन",
+  "खाना जाना आना लाना पाना छाता बाजा राजा"
+];
+const INTER_HI = [
+  "किताब चिड़िया गिलास मीठा पानी दिन रात सुबह शाम",
+  "दुकान मकान कविता कहानी भारत हमारा देश है",
+  "समय बहुत कीमती है हमें इसका सदुपयोग करना चाहिए",
+  "मुझे हिंदी टाइपिंग सीखना बहुत अच्छा लगता है"
+];
+const ADV_HI = [
+  "विद्यालय विज्ञान प्रज्वलित आशीर्वाद श्रद्धांजलि उज्ज्वल",
+  "द्वंद्व स्वच्छता कार्यक्रम अंतर्राष्ट्रीय प्रौद्योगिकी",
+  "कृत्रिम बुद्धिमत्ता (AI) ने तकनीकी क्षेत्र में क्रांति ला दी है।",
+  "आर्थिक दृष्टिकोण से यह वर्ष 2024 अत्यधिक महत्वपूर्ण रहा।"
+];
+
 const WORD_BANK_HI = ['और', 'है', 'कि', 'में', 'का', 'को', 'से', 'एक', 'यह', 'पर', 'नहीं', 'लिए', 'हो', 'कर', 'अपने', 'तो', 'साथ', 'क्या', 'भी', 'था', 'जो', 'गया', 'ही', 'हम', 'हैं', 'करते', 'कुछ', 'करना', 'जैसे', 'होता', 'कोई', 'आप', 'भारत', 'समय', 'काम', 'अब', 'बात', 'उन', 'तथा', 'दिन', 'तक', 'कारण', 'बहुत', 'तरह', 'लोग', 'जब', 'कहा', 'जाता', 'अधिक', 'अन्य', 'बार', 'सरकार', 'जीवन', 'नाम', 'बाद', 'देश', 'पहले', 'दिया', 'वाले', 'गए', 'हुए', 'किया', 'जा', 'दो', 'रहा', 'इन', 'उसके', 'रूप', 'नीचे', 'आ', 'मुख्य', 'वाली', 'बीच', 'आई', 'उनसे', 'कई', 'कम', 'मानव', 'स्थान', 'ऐसा', 'रख', 'वहाँ', 'आज', 'फिर', 'गई', 'देख', 'पास', 'कभी', 'यहाँ', 'तकनीक', 'सकते'];
 const QUOTES_HI = [
   "सफलता अंतिम नहीं है, विफलता घातक नहीं है: यह जारी रखने का साहस है जो मायने रखता है।",
@@ -28,6 +69,7 @@ const PARAGRAPHS_HI = [
   "हिंदी भारत की सबसे अधिक बोली जाने वाली भाषा है और यह देवनागरी लिपि में लिखी जाती है। यह न केवल हमारी संस्कृति का अभिन्न अंग है, बल्कि देश भर में करोड़ों लोगों के संवाद का मुख्य माध्यम भी है। हिंदी टाइपिंग का अभ्यास करने से न केवल आपकी गति बढ़ती है, बल्कि सरकारी नौकरी की परीक्षाओं में भी यह एक अनिवार्य कौशल माना जाता है।",
   "कंप्यूटर आज के युग की सबसे बड़ी जरूरत बन गया है। शिक्षा, चिकित्सा, व्यापार और मनोरंजन सहित हर क्षेत्र में कंप्यूटर का उपयोग हो रहा है। इंटरनेट के माध्यम से दुनिया के किसी भी कोने में बैठे व्यक्ति से संपर्क किया जा सकता है।"
 ];
+
 
 export default function TypingSpeedTest() {
   const [language, setLanguage] = useState<Language>('en');
@@ -50,7 +92,6 @@ export default function TypingSpeedTest() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Initialize Web Audio API for Mechanical Keyboard Sound
   useEffect(() => {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (AudioContextClass) {
@@ -92,8 +133,23 @@ export default function TypingSpeedTest() {
     if (mode === 'lesson') {
       if (lessonType === 'quotes') return dbQuotes[Math.floor(Math.random() * dbQuotes.length)];
       if (lessonType === 'paragraph') return dbParas[Math.floor(Math.random() * dbParas.length)];
+      
+      // Zero to Advance Syllabus Generation
+      let syllabusArray: string[] = [];
+      if (lessonType === 'basics') syllabusArray = language === 'en' ? BASICS_EN : BASICS_HI;
+      if (lessonType === 'intermediate') syllabusArray = language === 'en' ? INTER_EN : INTER_HI;
+      if (lessonType === 'advanced') syllabusArray = language === 'en' ? ADV_EN : ADV_HI;
+      
+      if (syllabusArray.length > 0) {
+        let lessonText = [];
+        for(let i = 0; i < 3; i++) {
+          lessonText.push(syllabusArray[Math.floor(Math.random() * syllabusArray.length)]);
+        }
+        return lessonText.join(' ');
+      }
     }
 
+    // Default Random Words
     let textArray = [];
     for (let i = 0; i < 150; i++) {
       textArray.push(dbWords[Math.floor(Math.random() * dbWords.length)]);
@@ -105,14 +161,12 @@ export default function TypingSpeedTest() {
     resetTest();
   }, [language, mode, duration, lessonType]);
 
-  // Main Timer & Live History Tracking
   useEffect(() => {
     let interval: any = null;
     
     if (isActive && !isFinished) {
       interval = setInterval(() => {
         setTimer((prevTime) => {
-          // Track WPM history every second for the chart
           setWpmHistory(prev => {
              const timeElapsedMins = (mode === 'time' ? (duration - (prevTime - 1)) : (prevTime + 1)) / 60;
              const correctChars = userInput.split('').filter((c, i) => c === targetText[i]).length;
@@ -160,7 +214,6 @@ export default function TypingSpeedTest() {
     const value = e.target.value;
     if (!isActive && value.length > 0) {
       setIsActive(true);
-      // Auto-start Audio context on first user interaction
       if (audioCtxRef.current?.state === 'suspended') {
         audioCtxRef.current.resume();
       }
@@ -168,7 +221,6 @@ export default function TypingSpeedTest() {
     
     if (value.length <= targetText.length) {
       setUserInput(value);
-      
       if (mode === 'lesson' && value.length === targetText.length) {
         setIsFinished(true);
         setIsActive(false);
@@ -180,7 +232,6 @@ export default function TypingSpeedTest() {
     if (inputRef.current && !isFinished) inputRef.current.focus();
   };
 
-  // Advanced Stats Calculation
   const stats = useMemo(() => {
     let correctChars = 0;
     let incorrectChars = 0;
@@ -193,14 +244,10 @@ export default function TypingSpeedTest() {
     const timeElapsedInSeconds = mode === 'time' ? (duration - timer) : timer;
     const timeElapsedInMinutes = timeElapsedInSeconds / 60;
     
-    // NET WPM (Standard)
     const netWpm = timeElapsedInMinutes > 0 ? Math.round((correctChars / 5) / timeElapsedInMinutes) : 0;
-    // RAW WPM (Speed ignoring errors)
     const rawWpm = timeElapsedInMinutes > 0 ? Math.round((userInput.length / 5) / timeElapsedInMinutes) : 0;
-    
     const accuracy = userInput.length > 0 ? Math.round((correctChars / userInput.length) * 100) : 100;
     
-    // Consistency Calculation (Variance in WPM history)
     let consistency = 100;
     if (wpmHistory.length > 5) {
        const avg = wpmHistory.reduce((a,b) => a+b, 0) / wpmHistory.length;
@@ -246,7 +293,6 @@ export default function TypingSpeedTest() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Theme configuration objects
   const themeClasses = {
     light: 'bg-slate-50 text-slate-800',
     dark: 'bg-[#121212] text-slate-200',
@@ -261,14 +307,14 @@ export default function TypingSpeedTest() {
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${themeClasses[theme]} p-4 md:p-6`}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         
-        {/* HEADER & SETTINGS */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div>
             <h2 className="text-3xl font-black tracking-tight flex items-center gap-2">
-              ⌨️ ProType Engine
+              ⌨️ ProType Academy
             </h2>
+            <p className={`text-sm mt-1 font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Zero to Advanced Govt Exam Typing Course</p>
           </div>
           
           <div className="flex gap-2">
@@ -285,10 +331,10 @@ export default function TypingSpeedTest() {
 
         <div className={`rounded-3xl shadow-2xl border p-6 md:p-8 relative overflow-hidden transition-colors duration-500 ${cardClasses[theme]}`}>
           
-          {/* ADVANCED TOP CONTROLS */}
-          <div className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-6">
+          <div className="flex flex-col xl:flex-row justify-between items-center mb-8 gap-6">
             
-            <div className="flex flex-wrap gap-4 items-center justify-center">
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-center">
+              
               <div className={`flex p-1 rounded-xl ${theme === 'light' ? 'bg-slate-100' : 'bg-black/20'}`}>
                 <button onClick={() => setLanguage('en')} className={`px-4 py-2 rounded-lg font-bold transition-all ${language === 'en' ? 'bg-blue-600 text-white shadow' : 'text-slate-500 hover:text-slate-400'}`}>EN</button>
                 <button onClick={() => setLanguage('hi')} className={`px-4 py-2 rounded-lg font-bold transition-all ${language === 'hi' ? 'bg-blue-600 text-white shadow' : 'text-slate-500 hover:text-slate-400'}`}>HI</button>
@@ -298,7 +344,7 @@ export default function TypingSpeedTest() {
 
               <div className={`flex p-1 rounded-xl ${theme === 'light' ? 'bg-slate-100' : 'bg-black/20'}`}>
                 <button onClick={() => setMode('time')} className={`px-4 py-2 rounded-lg font-bold transition-all ${mode === 'time' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-400'}`}>⏱️ Time</button>
-                <button onClick={() => setMode('lesson')} className={`px-4 py-2 rounded-lg font-bold transition-all ${mode === 'lesson' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-400'}`}>📚 Lesson</button>
+                <button onClick={() => { setMode('lesson'); setLessonType('basics'); }} className={`px-4 py-2 rounded-lg font-bold transition-all ${mode === 'lesson' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-400'}`}>📚 Course</button>
               </div>
 
               <div className="h-8 w-px bg-slate-500/30 hidden lg:block"></div>
@@ -312,17 +358,26 @@ export default function TypingSpeedTest() {
                   ))}
                 </div>
               ) : (
-                <div className={`flex p-1 rounded-xl border ${theme === 'light' ? 'bg-purple-50 border-purple-100' : 'bg-purple-900/20 border-purple-800'}`}>
-                  {['words', 'quotes', 'paragraph'].map((l) => (
-                    <button key={l} onClick={() => setLessonType(l as LessonType)} className={`px-4 py-2 rounded-lg font-bold capitalize transition-all ${lessonType === l ? 'bg-purple-600 text-white shadow' : 'text-purple-500 hover:bg-purple-500/10'}`}>
-                      {l}
-                    </button>
-                  ))}
+                <div className="flex flex-col md:flex-row gap-2">
+                  <div className={`flex p-1 rounded-xl border ${theme === 'light' ? 'bg-amber-50 border-amber-100' : 'bg-amber-900/20 border-amber-800'}`}>
+                    {['basics', 'intermediate', 'advanced'].map((l) => (
+                      <button key={l} onClick={() => setLessonType(l as LessonType)} className={`px-3 py-2 rounded-lg text-sm font-bold capitalize transition-all ${lessonType === l ? 'bg-amber-500 text-white shadow' : 'text-amber-600 hover:bg-amber-500/10'}`}>
+                        {l === 'basics' ? '👶 Lvl 1' : l === 'intermediate' ? '🚶 Lvl 2' : '🏃 Lvl 3'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className={`flex p-1 rounded-xl border ${theme === 'light' ? 'bg-purple-50 border-purple-100' : 'bg-purple-900/20 border-purple-800'}`}>
+                    {['words', 'quotes', 'paragraph'].map((l) => (
+                      <button key={l} onClick={() => setLessonType(l as LessonType)} className={`px-3 py-2 rounded-lg text-sm font-bold capitalize transition-all ${lessonType === l ? 'bg-purple-600 text-white shadow' : 'text-purple-500 hover:bg-purple-500/10'}`}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className={`flex gap-8 px-6 py-3 rounded-2xl border ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-black/20 border-slate-700'}`}>
+            <div className={`flex gap-8 px-6 py-3 rounded-2xl border mt-4 xl:mt-0 ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-black/20 border-slate-700'}`}>
               <div className="text-center">
                 <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{mode === 'time' ? 'Time Left' : 'Elapsed'}</span>
                 <span className={`text-4xl font-black ${mode === 'time' && timer <= 10 ? 'text-red-500 animate-pulse' : ''}`}>{formatTime(timer)}</span>
@@ -335,14 +390,12 @@ export default function TypingSpeedTest() {
             </div>
           </div>
 
-          {/* CAPS LOCK WARNING */}
           {capsLockActive && (
-            <div className="absolute top-[100px] left-1/2 transform -translate-x-1/2 z-20 bg-red-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg animate-bounce">
+            <div className="absolute top-[120px] left-1/2 transform -translate-x-1/2 z-20 bg-red-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg animate-bounce">
               ⚠️ Caps Lock is ON
             </div>
           )}
 
-          {/* 🌟 TYPING AREA 🌟 */}
           <div 
             onClick={focusInput}
             className={`relative border-2 rounded-2xl p-6 h-[260px] overflow-y-auto cursor-text transition-colors shadow-inner ${theme === 'light' ? 'bg-white border-slate-200 hover:border-blue-400' : 'bg-[#121212]/50 border-slate-700 hover:border-blue-500'}`}
@@ -374,7 +427,6 @@ export default function TypingSpeedTest() {
             </button>
           </div>
 
-          {/* 🌟 RESULTS OVERLAY MODAL (INDUSTRY LEVEL) 🌟 */}
           {isFinished && (
             <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center p-6 animate-in zoom-in-95 duration-300 ${theme === 'light' ? 'bg-white/95' : 'bg-[#1e1e1e]/95'} backdrop-blur-md`}>
               <h3 className="text-4xl font-black mb-2">Test Complete! 🎯</h3>
@@ -406,15 +458,13 @@ export default function TypingSpeedTest() {
                 </div>
               </div>
 
-              {/* LIVE WPM SPARKLINE CHART */}
               {wpmHistory.length > 0 && (
                 <div className={`w-full max-w-4xl p-4 rounded-xl border mb-8 flex items-end justify-between h-32 gap-1 ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-black/20 border-slate-800'}`}>
                   {wpmHistory.map((wpm, i) => {
-                    const maxWpm = Math.max(...wpmHistory, 50); // Minimum scale 50
+                    const maxWpm = Math.max(...wpmHistory, 50); 
                     const heightPercent = Math.max(5, (wpm / maxWpm) * 100);
                     return (
                       <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-                        {/* Tooltip on hover */}
                         <div className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-black text-white text-[10px] px-2 py-1 rounded rounded-b-none transition-opacity z-10 whitespace-nowrap">
                           {wpm} wpm
                         </div>
