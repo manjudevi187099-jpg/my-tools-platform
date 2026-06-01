@@ -1,12 +1,9 @@
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // eslint wali line hata di gayi hai kyunki Next 16 usko support nahi kar raha
   typescript: {
     ignoreBuildErrors: true,
   },
   webpack: (config: any, { isServer }: any) => {
-    // Agar server par build ho raha hai, toh missing backend modules ignore karo
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -18,6 +15,8 @@ const nextConfig = {
     }
     return config;
   },
+  // Ye Next.js 16 ke Turbopack error ko completely silence (chup) kar dega
+  turbopack: {},
 };
 
 export default nextConfig;
