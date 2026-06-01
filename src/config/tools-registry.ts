@@ -2,7 +2,7 @@
 export interface ToolMetadata {
   name: string;
   description: string;
-  category: "pdf" | "dev" | "utility" | "design";
+  category: "pdf" | "dev" | "utility" | "design" | "business";
   keywords: string[];
   isActive: boolean; // 🌟 NAYA: Isse control kar sakte ho ki kaunsa tool site pe dikhe
 }
@@ -196,7 +196,7 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
   "invoice-maker": {
     name: "Pro Invoice Maker",
     description: "Generate professional business invoices with auto-calculated taxes, discounts, and HD PDF export.",
-    category: "business",
+    category: "utility",
     keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
     isActive: true,
   },
