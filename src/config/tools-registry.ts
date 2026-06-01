@@ -4,7 +4,7 @@ export interface ToolMetadata {
   description: string;
   category: "pdf" | "dev" | "utility" | "design" | "business";
   keywords: string[];
-  isActive: boolean; // 🌟 NAYA: Isse control kar sakte ho ki kaunsa tool site pe dikhe
+  isActive: boolean; // Isse control kar sakte ho ki kaunsa tool site pe dikhe
 }
 
 // 2. Registry (Record<string, ToolMetadata>)
@@ -93,23 +93,21 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["pdf stamper", "add stamp", "verified stamp"],
     isActive: true,
   },
-"add-name-date": {
-  name: "Add Name & Date",
-  description: "Apni photo par naam aur date add karein taaki wo form filling ke liye ready rahe.",
-  category: "utility",
-  keywords: ["add name on photo", "photo editor"],
-  isActive: true, // <--- YE 'true' hona chahiye
-},
-
-"photo-signature-joiner": {
-  name: "Photo Signature Joiner",
-  description: "Form bharne ke liye photo aur signature ko ek single image mein merge karein.",
-  category: "utility",
-  keywords: ["join photo signature", "merge image", "exam form photo"],
-  isActive: true,
-},
-
-"age-calculator": {
+  "add-name-date": {
+    name: "Add Name & Date",
+    description: "Apni photo par naam aur date add karein taaki wo form filling ke liye ready rahe.",
+    category: "utility",
+    keywords: ["add name on photo", "photo editor"],
+    isActive: true,
+  },
+  "photo-signature-joiner": {
+    name: "Photo Signature Joiner",
+    description: "Form bharne ke liye photo aur signature ko ek single image mein merge karein.",
+    category: "utility",
+    keywords: ["join photo signature", "merge image", "exam form photo"],
+    isActive: true,
+  },
+  "age-calculator": {
     name: "Age Calculator",
     description: "Forms ke liye Date of Birth se exact age (Years, Months, Days) calculate karein.",
     category: "utility",
@@ -214,11 +212,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
     isActive: true,
   },
-  "english-to-hindi-typing": { // Slug yahi hona chahiye
+  "english-to-hindi-typing": { 
     name: "English to Hindi Typing",
     description: "Type in English and automatically convert to Hindi text using fast phonetic transliteration.",
     category: "utility",
     keywords: ["hindi typing", "english to hindi", "hinglish to hindi"],
-    isActive: true, // Ye TRUE hona zaruri hai
-  },
+    isActive: true, 
+  }
 };
