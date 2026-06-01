@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useRef } from 'react';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro'; // 🌟 YAHAN FIX KIYA HAI 🌟
 
 // --- DATA TYPES ---
 type Template = 't1' | 't2' | 't3' | 't4' | 't5' | 't6' | 't7' | 't8' | 't9' | 't10';
@@ -24,7 +24,7 @@ interface Experience {
 
 interface ResumeData {
   template: Template;
-  border: string; // 🌟 NEW BORDER STATE 🌟
+  border: string; 
   photo: string | null;
   personal: {
     name: string;
@@ -47,7 +47,6 @@ const FLOW_STEPS = [
   'Layout & Border', 'Personal Details', 'Education', 'Skills & Extras', 'Experience', 'Photo', 'Generate'
 ];
 
-// 🌟 BORDER OPTIONS LIST 🌟
 const BORDER_OPTIONS = [
   { id: '', name: '🚫 No Border' },
   { id: 'border-2 border-slate-900', name: '✏️ Thin Classic' },
@@ -64,10 +63,9 @@ export default function ResumeBuilder() {
   const [isProcessing, setIsProcessing] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // Initial State
   const [data, setData] = useState<ResumeData>({
     template: 't10',
-    border: '', // Default no border
+    border: '',
     photo: null,
     personal: { 
       name: 'RAHUL KUMAR', 
@@ -106,11 +104,12 @@ export default function ResumeBuilder() {
   const updateEdu = (id: string, field: string, value: string) => setData({ ...data, education: data.education.map(e => e.id === id ? { ...e, [field]: value } : e) });
   const updateExp = (id: string, field: string, value: string) => setData({ ...data, experience: data.experience.map(e => e.id === id ? { ...e, [field]: value } : e) });
 
-  // 🌟 ADVANCED PDF GENERATION ENGINE (Crash Fix Included) 🌟
+  // 🌟 PRO PDF GENERATION ENGINE 🌟
   const generatePDF = async () => {
     if (!previewRef.current) return;
     setIsProcessing(true);
     try {
+      // Ab html2canvas-pro modern CSS colors (lab, oklch) ko easily handle kar lega
       const canvas = await html2canvas(previewRef.current, { 
         scale: 2, 
         useCORS: true, 
@@ -134,7 +133,6 @@ export default function ResumeBuilder() {
     }
   };
 
-  // --- 🌟 10 TEMPLATES RENDERING ENGINE 🌟 ---
   const renderResumeTemplate = () => {
     const { template, border, personal, education, experience, skills, languages, hobbies, photo } = data;
     const skillList = skills.split(',').filter(s => s.trim());
