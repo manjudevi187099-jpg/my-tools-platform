@@ -102,10 +102,26 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     isActive: true,
   },
   "photo-signature-joiner": {
-  name: "Photo Signature Joiner",
-  description: "Form bharne ke liye photo aur signature ko ek single image mein merge karein.",
-  category: "utility",
-  keywords: ["join photo signature", "merge image", "exam form photo"],
-  isActive: true,
-},
+    name: "Photo Signature Joiner",
+    description: "Form bharne ke liye photo aur signature ko ek single image mein merge karein.",
+    category: "utility",
+    keywords: ["join photo signature", "merge image", "exam form photo"],
+    isActive: true,
+  },
+  
+  // 🌟 NAYE TOOLS YAHAN JOD DIYE GAYE HAIN 🌟
+  "english-to-hindi-typing": {
+    name: "English to Hindi Typing",
+    description: "Type in English and automatically convert to Hindi text using fast phonetic transliteration.",
+    category: "utility",
+    keywords: ["english to hindi typing", "hindi transliteration", "hindi typing online"],
+    isActive: true,
+  },
+  "remove-background": {
+    name: "Pro Image Background Remover",
+    description: "High Quality AI for complex hair & edges. Remove image background with 1-click instantly.",
+    category: "utility",
+    keywords: ["remove background", "bg remover", "transparent png", "remove image bg"],
+    isActive: true,
+  },
 };

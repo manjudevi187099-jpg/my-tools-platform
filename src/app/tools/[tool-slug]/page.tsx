@@ -3,10 +3,12 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-// Yahan ensure karo ki import path wahi hai jahan aapki registry file hai
-import { TOOLS_REGISTRY, ToolMetadata } from '../../../config/tools-registry';
 
-// Dynamic Tool Components Map
+// 🌟 DHYAN DEIN: Import path aur variable ka naam aapki file se match hona chahiye
+// Agar aapki file ka naam siteConfig.ts hai, toh path '../config/siteConfig' kar lijiye
+import { toolsRegistry, ToolMetadata } from '../../../../config/siteConfig'; 
+
+// Dynamic Tool Components Map (Lazy Loading for ultra-fast speed)
 const ToolComponents: Record<string, React.ElementType> = {
   "pdf-merger": dynamic(() => import('../../../tools/pdf-merger'), { ssr: false }),
   "image-to-pdf": dynamic(() => import('../../../tools/image-to-pdf'), { ssr: false }),
@@ -44,34 +46,54 @@ export default function ToolPage() {
   const params = useParams();
   const slug = (params?.['tool-slug'] as string) || (params?.slug as string);
 
-  if (!slug) return <div className="p-20 text-center">⏳ Loading...</div>;
+  if (!slug) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-pulse text-slate-500 font-bold text-lg flex items-center gap-2">
+          <span className="text-2xl">⏳</span> Loading Tool...
+        </div>
+      </div>
+    );
+  }
 
   // Registry se metadata aur component fetch karein
-  const toolMeta = TOOLS_REGISTRY[slug] as ToolMetadata;
+  const toolMeta = toolsRegistry[slug] as ToolMetadata;
   const ActiveToolComponent = ToolComponents[slug];
 
   // Agar tool registry mein nahi hai ya isActive: false hai, toh error dikhayein
   if (!toolMeta || !toolMeta.isActive) {
     return (
-      <div className="p-20 text-center text-red-500 font-bold text-lg">
-        ⚠️ Tool "{slug}" abhi available nahi hai!
+      <div className="min-h-[70vh] flex flex-col items-center justify-center bg-slate-50 px-4 text-center">
+        <div className="text-6xl mb-4">⚠️</div>
+        <h2 className="text-2xl font-black text-slate-800">Tool Not Found</h2>
+        <p className="text-slate-500 mt-2 max-w-md">
+          The tool "{slug}" is currently unavailable, under maintenance, or does not exist.
+        </p>
       </div>
     );
   }
 
   return (
     <main className="min-h-screen bg-slate-50 pb-12">
+      {/* Tool Header Box */}
       <div className="bg-white border-b py-10 px-4 text-center shadow-sm">
-        <h1 className="text-3xl font-black text-slate-900">{toolMeta.name}</h1>
-        <p className="text-slate-500 mt-2">{toolMeta.description}</p>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">{toolMeta.name}</h1>
+        <p className="text-slate-500 mt-3 max-w-2xl mx-auto text-sm md:text-base">
+          {toolMeta.description}
+        </p>
       </div>
       
+      {/* Dynamic Tool Component Render Area */}
       <div className="mt-8 px-4">
         {ActiveToolComponent ? (
-          <ActiveToolComponent />
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <ActiveToolComponent />
+          </div>
         ) : (
-          <div className="text-center p-20 font-bold text-red-500">
-            ⚠️ Component linked nahi hai. Check ToolComponents map in page.tsx!
+          <div className="text-center p-20">
+            <div className="inline-block bg-red-50 text-red-600 px-6 py-4 rounded-xl border border-red-200 font-bold shadow-sm">
+              ⚠️ Warning: Component not linked. Please check ToolComponents map for "{slug}"
+            </div>
           </div>
         )}
       </div>
