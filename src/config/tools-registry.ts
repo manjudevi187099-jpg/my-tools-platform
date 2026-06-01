@@ -165,4 +165,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["typing test", "wpm checker", "typing speed calculator", "ssc typing test", "english typing"],
     isActive: true,
   },
+  "resume-builder": {
+    name: "Smart Resume / CV Builder",
+    description: "Build professional, ATS-friendly A4 resumes in minutes with Live Preview and high-quality PDF export.",
+    category: "utility",
+    keywords: ["resume maker", "cv builder", "pdf resume", "job resume generator", "ats friendly cv"],
+    isActive: true,
+  },
 };

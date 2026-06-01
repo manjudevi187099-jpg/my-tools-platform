@@ -30,6 +30,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "smart-card-maker": dynamic(() => import('../../../tools/smart-card-maker'), { ssr: false }),
   "omr-sheet-maker": dynamic(() => import('../../../tools/omr-sheet-maker'), { ssr: false }),
   "typing-speed-test": dynamic(() => import('../../../tools/typing-speed-test'), { ssr: false }),
+  "resume-builder": dynamic(() => import('../../../tools/resume-builder'), { ssr: false }),
 };
 
 export default function ToolPage() {
