@@ -186,4 +186,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["muslim biodata", "islamic marriage profile", "shaadi biodata", "matrimonial profile generator"],
     isActive: true,
   },
+  "experience-letter-maker": {
+    name: "Experience Letter Maker",
+    description: "Generate professional Experience & Relieving Letters with company letterhead formatting and PDF export.",
+    category: "utility",
+    keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
+    isActive: true,
+  },
 };

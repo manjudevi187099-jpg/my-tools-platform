@@ -33,6 +33,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "resume-builder": dynamic(() => import('../../../tools/resume-builder'), { ssr: false }),
   "biodata-maker": dynamic(() => import('../../../tools/biodata-maker'), { ssr: false }),
   "muslim-biodata-maker": dynamic(() => import('../../../tools/muslim-biodata-maker'), { ssr: false }),
+  "experience-letter-maker": dynamic(() => import('../../../tools/experience-letter-maker'), { ssr: false }),
 };
 
 export default function ToolPage() {
