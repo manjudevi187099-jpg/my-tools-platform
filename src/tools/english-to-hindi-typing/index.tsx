@@ -39,15 +39,14 @@ export default function HindiTypingTool() {
     <div className="max-w-7xl mx-auto p-4 md:p-6 min-h-screen font-sans">
       <div className="text-center mb-8">
         <h2 className="text-4xl font-black text-slate-800 tracking-tight">English to Hindi Typing</h2>
+        {/* FIX 1: -> changed to {'->'} */}
         <p className="text-slate-500 mt-2 text-lg">Type in English (Hinglish) and it will automatically convert to Hindi. (e.g., mera naam {'->'} मेरा नाम)</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* MAIN TYPING AREA */}
         <div className="lg:col-span-8 bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col min-h-[600px]">
           
-          {/* Toolbar */}
           <div className="bg-slate-50 border-b border-slate-200 p-4 flex flex-wrap justify-between items-center gap-4">
             <div className="flex gap-2">
               <button 
@@ -73,11 +72,11 @@ export default function HindiTypingTool() {
             </div>
           </div>
 
-          {/* Typing Container */}
           <div className="flex-1 p-6 relative">
             <ReactTransliterate
               value={text}
-              onChangeText={(newText) => setText(newText)}
+              {/* FIX 2: Added explicit string type */}
+              onChangeText={(newText: string) => setText(newText)}
               lang="hi"
               containerClassName="w-full h-full"
               className="w-full h-full min-h-[450px] p-4 text-2xl leading-relaxed text-slate-800 outline-none resize-none border-2 border-dashed border-slate-200 rounded-xl focus:border-blue-400 transition-colors"
@@ -85,7 +84,6 @@ export default function HindiTypingTool() {
             />
           </div>
 
-          {/* Status Bar */}
           <div className="bg-slate-800 text-white p-3 flex justify-between items-center text-sm font-medium">
             <span>Powered by Google Phonetic Transliteration</span>
             <div className="flex gap-6">
@@ -95,7 +93,6 @@ export default function HindiTypingTool() {
           </div>
         </div>
 
-        {/* SIDEBAR INSTRUCTIONS */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
             <h3 className="text-xl font-black text-slate-800 border-b-2 border-blue-100 pb-2 mb-6">💡 How to use?</h3>
