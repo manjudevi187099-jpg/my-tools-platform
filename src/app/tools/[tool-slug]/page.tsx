@@ -37,6 +37,12 @@ const ToolComponents: Record<string, React.ElementType> = {
   "certificate-maker": dynamic(() => import('../../../tools/certificate-maker'), { ssr: false }),
   "stamp-maker": dynamic(() => import('../../../tools/stamp-maker'), { ssr: false }),
   "english-to-hindi-typing": dynamic(() => import('../../../tools/english-to-hindi-typing'), { ssr: false }),
+  "qr-generator": dynamic(() => import('../../../tools/qr-generator'), { ssr: false }),
+  "p2p-share": dynamic(() => import('../../../tools/p2p-share'), { ssr: false }),
+  
+  // 🔥 FIX: timer wale path mein '/page' add kar diya gaya hai
+  "timer": dynamic(() => import('../../../tools/timer'), { ssr: false }),
+  "walkie-talkie": dynamic(() => import('../../../tools/walkie-talkie'), { ssr: false }),
 };
 
 export default function ToolPage() {

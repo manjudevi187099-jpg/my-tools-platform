@@ -115,8 +115,6 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["english to hindi typing", "hindi transliteration", "hindi typing online"],
     isActive: true,
   },
-
-  // 🌟 YAHAN SE SAARE MISSING TOOLS WAPAS JOD DIYE GAYE HAIN 🌟
   "age-calculator": {
     name: "Age Calculator",
     description: "Forms ke liye Date of Birth se exact age (Years, Months, Days) calculate karein.",
@@ -215,4 +213,34 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
     isActive: true,
   },
+  "qr-generator": {
+    name: "Mega QR Studio",
+    description: "Generate URL, Text, WiFi, and VCard (Contact) QR Codes instantly in High Quality.",
+    category: "utility",
+    keywords: ["qr generator", "qr code maker", "wifi qr", "vcard qr", "mega qr studio", "barcode maker"],
+    isActive: true,
+  },
+  "p2p-share": {
+    name: "P2P Secure Share",
+    description: "Send any size file directly between devices without servers. 100% private.",
+    category: "utility",
+    keywords: ["p2p share", "file transfer", "send large files", "direct transfer", "webrtc"],
+    isActive: true,
+  },
+  "timer": {
+    name: "Stopwatch & Timer",
+    description: "Advanced browser-based stopwatch and countdown timer with background sync and alarms.",
+    category: "utility",
+    keywords: ["timer", "stopwatch", "countdown timer", "browser timer", "alarm timer", "study timer"],
+    isActive: true,
+  },
+
+  // 🔥 YAHAN NAYA WALKIE TALKIE TOOL ADD KIYA HAI 🔥
+  "walkie-talkie": {
+    name: "Walkie Talkie P2P",
+    description: "Free, private, push-to-talk voice chat directly in your browser. No signup required.",
+    category: "utility",
+    keywords: ["walkie talkie", "voice chat", "push to talk", "p2p audio", "browser radio"],
+    isActive: true,
+  }
 };

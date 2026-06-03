@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-// 🌟 FIX 1: Hum yahan sirf toolsRegistry import kar rahe hain (Kyunki siteConfig wahan nahi hai)
 import { toolsRegistry } from '../../config/siteConfig';
+// 🌟 FIX 1: Supabase ko import kar rahe hain
+import { supabase } from '../lib/supabase';
 
-// 🌟 FIX 2: Homepage ka basic text humne yahin par local define kar liya hai
 const siteInfo = {
   name: "PdfNexa",
   tagline: "All-In-One Professional Utility Engine",
@@ -14,16 +14,39 @@ const siteInfo = {
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // 🌟 FIX 2: Naye states database ke data aur loading status ke liye
+  const [activeSlugs, setActiveSlugs] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 🌟 FIX 3: Registry Object ko safely Array mein convert karna 
+  // 🌟 FIX 3: Jaise hi page khule, Database se check karo ki kaun se tools ON hain
+  useEffect(() => {
+    const fetchActiveTools = async () => {
+      const { data, error } = await supabase
+        .from('tools_status')
+        .select('slug, is_active');
+        
+      if (data) {
+        // Sirf un tools ke 'slug' nikal lo jinki is_active true hai
+        const active = data.filter(t => t.is_active).map(t => t.slug);
+        setActiveSlugs(active);
+      } else {
+        console.error("Database fetch error:", error);
+      }
+      setIsLoading(false); // Data aane ke baad loading band kar do
+    };
+
+    fetchActiveTools();
+  }, []);
+
+  // 🌟 FIX 4: Ab hum 'toolsRegistry' ko Database ke status ('activeSlugs') se filter kar rahe hain
   const toolsList = Object.entries(toolsRegistry)
-    .filter(([_, tool]) => tool.isActive)
+    .filter(([slug]) => activeSlugs.includes(slug)) // Pura khel is ek line ka hai! 🔥
     .map(([slug, tool]) => ({
       slug,
       title: tool.name,
       description: tool.description,
       category: (tool.category || 'utility').toUpperCase(),
-      // Category ke hisaab se default icons
       icon: tool.category === 'pdf' ? '📄' : tool.category === 'design' ? '🎨' : tool.category === 'business' ? '💼' : '🛠️'
     }));
 
@@ -33,7 +56,7 @@ export default function HomePage() {
     tool.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // 🌟 FIX 4: TypeScript ko 'acc' aur 'tool' ka sahi type batana (No more 'any' errors)
+  // Grouping
   const groupedTools = filteredTools.reduce((acc: Record<string, typeof toolsList>, tool) => {
     const cat = tool.category;
     if (!acc[cat]) acc[cat] = [];
@@ -41,7 +64,6 @@ export default function HomePage() {
     return acc;
   }, {});
 
-  // Category Metadata (Sundar headings ke liye)
   const categoryDetails: Record<string, { title: string, icon: string, desc: string }> = {
     'PDF': { title: 'PDF & Document Tools', icon: '📄', desc: 'Edit, convert, merge, and secure your PDF files instantly.' },
     'UTILITY': { title: 'Daily Utility & Forms', icon: '🛠️', desc: 'Handy tools for form filling, signatures, and quick tasks.' },
@@ -52,7 +74,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
       
-      {/* PROFESSIONAL HEADER */}
+      {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -64,10 +86,11 @@ export default function HomePage() {
           <nav className="hidden md:flex items-center gap-6 font-semibold text-slate-600">
             <Link href="/" className="hover:text-purple-600 transition-colors">Home</Link>
             <a href="#tools" className="hover:text-purple-600 transition-colors">All Tools</a>
+            <Link href="/admin" className="hover:text-purple-600 transition-colors">Admin Panel</Link>
           </nav>
           <div className="flex items-center gap-3">
             <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-black rounded-full uppercase tracking-wider border border-green-200">
-              ● Live
+              ● Live DB
             </span>
           </div>
         </div>
@@ -101,7 +124,14 @@ export default function HomePage() {
 
         {/* CATEGORIZED TOOLS SECTION */}
         <section id="tools" className="py-16 px-4 max-w-7xl mx-auto">
-          {Object.keys(groupedTools).length === 0 ? (
+          
+          {/* 🌟 FIX 5: Jab tak database se data aa raha hai, tab tak Loader dikhao */}
+          {isLoading ? (
+            <div className="text-center py-20 flex flex-col items-center justify-center space-y-4">
+               <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+               <p className="text-slate-500 font-bold">Loading tools from Database... ⏳</p>
+            </div>
+          ) : Object.keys(groupedTools).length === 0 ? (
             <div className="text-center py-20">
               <span className="text-5xl">🕵️‍♂️</span>
               <h3 className="mt-4 text-2xl font-bold text-slate-700">No tools found</h3>
@@ -113,7 +143,7 @@ export default function HomePage() {
                 const meta = categoryDetails[category] || { title: category, icon: '⚡', desc: 'Explore our powerful tools.' };
                 
                 return (
-                  <div key={category} className="scroll-mt-24">
+                  <div key={category} className="scroll-mt-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="mb-8 border-b border-slate-200 pb-4">
                       <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
                         <span className="p-2 bg-purple-100 text-purple-600 rounded-xl">{meta.icon}</span>
@@ -151,7 +181,7 @@ export default function HomePage() {
         </section>
       </main>
 
-      {/* PROFESSIONAL FOOTER */}
+      {/* FOOTER */}
       <footer className="bg-[#0f172a] text-slate-300 py-12 mt-auto border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>

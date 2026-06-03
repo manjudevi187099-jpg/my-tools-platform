@@ -1,34 +1,53 @@
-// 1. Interface Definition
 export interface ToolMetadata {
   name: string;
   description: string;
   category: "pdf" | "dev" | "utility" | "design" | "business";
   keywords: string[];
-  isActive: boolean; // Isse control kar sakte ho ki kaunsa tool site pe dikhe
+  isActive: boolean;
 }
 
-// 2. Registry (Record<string, ToolMetadata>)
-export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
+export const toolsRegistry: Record<string, ToolMetadata> = {
   // --- PDF TOOLS ---
   "pdf-merger": {
     name: "Professional PDF Merger",
-    description: "Multiple PDFs ko ek me jodein securely.",
+    description: "Merge multiple PDF files into a single, high-quality document securely.",
     category: "pdf",
     keywords: ["pdf merger", "combine pdf", "join pdf tools"],
     isActive: true,
   },
-  "image-to-pdf": {
-    name: "JPG to PDF",
-    description: "Images (JPG, PNG) ko high-quality PDF me convert karein.",
-    category: "pdf",
-    keywords: ["image to pdf", "jpg to pdf", "convert images"],
-    isActive: true,
-  },
   "split-pdf": {
     name: "Split PDF Pro",
-    description: "Badi PDF ko alag-alag panno me todein aur extract karein.",
+    description: "Extract specific pages or split a large PDF visually in seconds.",
     category: "pdf",
     keywords: ["split pdf", "extract pages", "cut pdf"],
+    isActive: true,
+  },
+  "compress-pdf": {
+    name: "PDF Compressor Engine",
+    description: "Reduce PDF file size quickly right in your browser. 100% private.",
+    category: "pdf",
+    keywords: ["compress pdf", "reduce pdf size", "shrink pdf"],
+    isActive: true,
+  },
+  "unlock-pdf": {
+    name: "Unlock PDF",
+    description: "Remove passwords from your protected PDF files quickly and securely.",
+    category: "pdf",
+    keywords: ["unlock pdf", "remove password", "decrypt pdf"],
+    isActive: true,
+  },
+  "protect-pdf": {
+    name: "Protect PDF",
+    description: "Add a secure password to your PDF file to prevent unauthorized access.",
+    category: "pdf",
+    keywords: ["protect pdf", "encrypt pdf", "add password pdf"],
+    isActive: true,
+  },
+  "image-to-pdf": {
+    name: "Image to PDF",
+    description: "Convert single or multiple JPG/PNG images into a high-quality PDF document.",
+    category: "pdf",
+    keywords: ["image to pdf", "jpg to pdf", "png to pdf", "convert images"],
     isActive: true,
   },
   "watermark-pdf": {
@@ -38,46 +57,11 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["watermark pdf", "add text watermark", "secure pdf"],
     isActive: true,
   },
-  "pdf-editor": {
-    name: "Advanced PDF Editor",
-    description: "All-in-one visual editor. Add text, erase content, and highlight shapes directly.",
-    category: "pdf",
-    keywords: ["pdf editor", "whiteout pdf", "add text to pdf"],
-    isActive: true,
-  },
-  "pdf-to-word": {
-    name: "PDF to Word Converter",
-    description: "Extract text and paragraphs into an editable DOC file.",
-    category: "pdf",
-    keywords: ["pdf to word", "pdf to doc"],
-    isActive: true,
-  },
-  "compress-pdf": {
-    name: "PDF Compressor Engine",
-    description: "Reduce PDF file size quickly right in your browser.",
-    category: "pdf",
-    keywords: ["compress pdf", "reduce pdf size"],
-    isActive: true,
-  },
-  "unlock-pdf": {
-    name: "Unlock PDF",
-    description: "Remove passwords from your protected PDF files quickly.",
-    category: "pdf",
-    keywords: ["unlock pdf", "remove password"],
-    isActive: true,
-  },
-  "protect-pdf": {
-    name: "Protect PDF",
-    description: "Add a secure password to your PDF file.",
-    category: "pdf",
-    keywords: ["protect pdf", "encrypt pdf"],
-    isActive: true,
-  },
   "invert-pdf": {
     name: "Invert PDF Colors",
     description: "Dark background wali PDF ko white background mein convert karein.",
     category: "pdf",
-    keywords: ["invert pdf", "white background"],
+    keywords: ["invert pdf", "white background", "pdf color fix"],
     isActive: true,
   },
   "remove-watermark": {
@@ -86,21 +70,35 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["remove watermark", "delete watermark"],
     isActive: true,
-  },
+  }, 
   "pdf-stamper": {
     name: "PDF Stamper",
-    description: "Click and add custom stamps like VERIFIED or APPROVED.",
+    description: "Click and add custom stamps like VERIFIED or APPROVED anywhere on your PDF.",
     category: "pdf",
-    keywords: ["pdf stamper", "add stamp", "verified stamp"],
+    keywords: ["pdf stamper", "add stamp", "verified stamp", "custom pdf stamp"],
     isActive: true,
   },
-  
+  "pdf-editor": {
+    name: "Advanced PDF Editor",
+    description: "All-in-one visual editor. Add text, erase content with whiteout, and highlight shapes directly on your PDF.",
+    category: "pdf",
+    keywords: ["pdf editor", "whiteout pdf", "add text to pdf", "edit pdf online"],
+    isActive: true,
+  },
+  "pdf-to-word": {
+    name: "PDF to Word Converter",
+    description: "Extract text and paragraphs into an editable DOC file. 100% Free & Secure.",
+    category: "pdf",
+    keywords: ["pdf to word", "pdf to doc", "convert pdf to word"],
+    isActive: true,
+  },
+
   // --- UTILITY / IMAGE TOOLS ---
   "add-name-date": {
     name: "Add Name & Date",
     description: "Apni photo par naam aur date add karein taaki wo form filling ke liye ready rahe.",
     category: "utility",
-    keywords: ["add name on photo", "photo editor"],
+    keywords: ["add name on photo", "photo editor", "date on photo", "form photo"],
     isActive: true,
   },
   "photo-signature-joiner": {
@@ -108,6 +106,13 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     description: "Form bharne ke liye photo aur signature ko ek single image mein merge karein.",
     category: "utility",
     keywords: ["join photo signature", "merge image", "exam form photo"],
+    isActive: true,
+  },
+  "english-to-hindi-typing": {
+    name: "English to Hindi Typing",
+    description: "Type in English and automatically convert to Hindi text using fast phonetic transliteration.",
+    category: "utility",
+    keywords: ["english to hindi typing", "hindi transliteration", "hindi typing online"],
     isActive: true,
   },
   "age-calculator": {
@@ -131,9 +136,6 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
     keywords: ["image resizer", "photo resizer", "signature resizer", "resize to cm", "resize pixels"],
     isActive: true,
   },
-  
-  // ✂️ Remove Background yahan se permanently delete kar diya gaya hai!
-
   "passport-psd-maker": {
     name: "A4 Passport PSD Maker",
     description: "A4 paper par 6x7 (42 photos) ka passport size format banayein aur seedha .PSD file download karein.",
@@ -157,7 +159,7 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
   },
   "typing-speed-test": {
     name: "Typing Speed Test Engine",
-    description: "SSC, Railway, aur Data Entry exams ke liye apni typing speed (WPM) aur accuracy test karein. 1, 3, aur 5 minutes mode available.",
+    description: "SSC, Railway, aur Data Entry exams ke liye apni typing speed (WPM) aur accuracy test karein.",
     category: "utility",
     keywords: ["typing test", "wpm checker", "typing speed calculator", "ssc typing test", "english typing"],
     isActive: true,
@@ -186,36 +188,59 @@ export const TOOLS_REGISTRY: Record<string, ToolMetadata> = {
   "experience-letter-maker": {
     name: "Experience Letter Maker",
     description: "Generate professional Experience & Relieving Letters with company letterhead formatting and PDF export.",
-    category: "utility",
+    category: "business",
     keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
     isActive: true,
   },
   "invoice-maker": {
     name: "Pro Invoice Maker",
     description: "Generate professional business invoices with auto-calculated taxes, discounts, and HD PDF export.",
-    category: "utility",
+    category: "business",
     keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
     isActive: true,
   },
   "certificate-maker": {
     name: "Pro Certificate Generator",
     description: "Generate authentic, high-quality landscape certificates for courses and events with PDF/PNG export.",
-    category: "utility",
+    category: "design",
     keywords: ["certificate maker", "certificate generator", "award certificate", "course certificate", "event certificate"],
     isActive: true,
   },
   "stamp-maker": {
     name: "Digital Stamp & Seal Maker",
     description: "Generate professional round seals and rectangle rubber stamps. Download as transparent PNG or printable PDF.",
-    category: "utility",
+    category: "design",
     keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
     isActive: true,
   },
-  "english-to-hindi-typing": { 
-    name: "English to Hindi Typing",
-    description: "Type in English and automatically convert to Hindi text using fast phonetic transliteration.",
+  "qr-generator": {
+    name: "Mega QR Studio",
+    description: "Generate URL, Text, WiFi, and VCard (Contact) QR Codes instantly in High Quality.",
     category: "utility",
-    keywords: ["hindi typing", "english to hindi", "hinglish to hindi"],
-    isActive: true, 
+    keywords: ["qr generator", "qr code maker", "wifi qr", "vcard qr", "mega qr studio", "barcode maker"],
+    isActive: true,
+  },
+  "p2p-share": {
+    name: "P2P Secure Share",
+    description: "Send any size file directly between devices without servers. 100% private.",
+    category: "utility",
+    keywords: ["p2p share", "file transfer", "send large files", "direct transfer", "webrtc"],
+    isActive: true,
+  },
+  
+  // 👇 YAHAN NAYA TIMER TOOL ADD HO GAYA HAI 👇
+  "timer": {
+    name: "Stopwatch & Timer",
+    description: "Advanced browser-based stopwatch and countdown timer with background sync and alarms.",
+    category: "utility",
+    keywords: ["timer", "stopwatch", "countdown timer", "browser timer", "alarm timer", "study timer"],
+    isActive: true,
+  },
+  "walkie-talkie": {
+    name: "Walkie Talkie P2P",
+    description: "Free, private, push-to-talk voice chat directly in your browser. No signup required.",
+    category: "utility",
+    keywords: ["walkie talkie", "p2p voice chat", "real-time communication", "browser voice chat"],
+    isActive: true,
   }
 };
