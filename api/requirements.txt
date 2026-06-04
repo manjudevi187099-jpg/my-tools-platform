@@ -1,2 +1,7 @@
 fastapi
-pydantic
+python-multipart
+pdfplumber
+pandas
+openpyxl
+pdf2docx
+Pillow

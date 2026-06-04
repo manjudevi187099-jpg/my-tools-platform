@@ -56,7 +56,7 @@ export default function MegaPhotoStudio() {
       formData.append('enhance', enhance.toString());
 
       try {
-        const response = await fetch('http://localhost:8000/api/mega-preview', {
+        const response = await fetch('/api/mega-preview', {
           method: 'POST',
           body: formData,
         });
@@ -91,7 +91,7 @@ export default function MegaPhotoStudio() {
     formData.append('add_border', addBorder.toString());
 
     try {
-      const response = await fetch('http://localhost:8000/api/mega-sheet', {
+      const response = await fetch('/api/mega-sheet', {
         method: 'POST',
         body: formData,
       });
