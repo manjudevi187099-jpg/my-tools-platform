@@ -4,7 +4,7 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 
-// 🌟 FIX: TOOLS_REGISTRY ko toolsRegistry (small) kar diya gaya hai!
+// 🌟 FIX: toolsRegistry use ho raha hai
 import { toolsRegistry, ToolMetadata } from '../../../../config/siteConfig';
 
 const ToolComponents: Record<string, React.ElementType> = {
@@ -13,7 +13,6 @@ const ToolComponents: Record<string, React.ElementType> = {
   "split-pdf": dynamic(() => import('../../../tools/split-pdf'), { ssr: false }),
   "watermark-pdf": dynamic(() => import('../../../tools/watermark-pdf'), { ssr: false }),
   "pdf-editor": dynamic(() => import('../../../tools/pdf-editor'), { ssr: false }),
-  "pdf-to-word": dynamic(() => import('../../../tools/pdf-to-word'), { ssr: false }),
   "compress-pdf": dynamic(() => import('../../../tools/compress-pdf'), { ssr: false }),
   "unlock-pdf": dynamic(() => import('../../../tools/unlock-pdf'), { ssr: false }),
   "protect-pdf": dynamic(() => import('../../../tools/protect-pdf'), { ssr: false }),
@@ -39,8 +38,6 @@ const ToolComponents: Record<string, React.ElementType> = {
   "english-to-hindi-typing": dynamic(() => import('../../../tools/english-to-hindi-typing'), { ssr: false }),
   "qr-generator": dynamic(() => import('../../../tools/qr-generator'), { ssr: false }),
   "p2p-share": dynamic(() => import('../../../tools/p2p-share'), { ssr: false }),
-  
-  // 🔥 FIX: timer wale path mein '/page' add kar diya gaya hai
   "timer": dynamic(() => import('../../../tools/timer'), { ssr: false }),
   "walkie-talkie": dynamic(() => import('../../../tools/walkie-talkie'), { ssr: false }),
 };
@@ -59,7 +56,6 @@ export default function ToolPage() {
     );
   }
 
-  // 🌟 FIX: Yahan par bhi toolsRegistry kar diya hai
   const toolMeta = toolsRegistry[slug] as ToolMetadata;
   const ActiveToolComponent = ToolComponents[slug];
 

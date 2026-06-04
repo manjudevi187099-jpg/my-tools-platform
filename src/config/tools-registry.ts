@@ -87,9 +87,16 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
   },
   "pdf-to-word": {
     name: "PDF to Word Converter",
-    description: "Extract text and paragraphs into an editable DOC file. 100% Free & Secure.",
+    description: "Convert PDF documents to editable Word files.",
     category: "pdf",
     keywords: ["pdf to word", "pdf to doc", "convert pdf to word"],
+    isActive: true,
+  },
+  "pdf-to-excel": {
+    name: "PDF to Excel",
+    description: "Convert PDF tables to Excel spreadsheets easily.",
+    category: "pdf",
+    keywords: ["pdf to excel", "convert pdf to excel", "pdf to xlsx"],
     isActive: true,
   },
 
@@ -136,13 +143,6 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["image resizer", "photo resizer", "signature resizer", "resize to cm", "resize pixels"],
     isActive: true,
   },
-  "passport-psd-maker": {
-    name: "A4 Passport PSD Maker",
-    description: "A4 paper par 6x7 (42 photos) ka passport size format banayein aur seedha .PSD file download karein.",
-    category: "design",
-    keywords: ["passport size photo maker", "psd generator", "a4 photo format", "studio photo grid"],
-    isActive: true,
-  },
   "smart-card-maker": {
     name: "Smart Card A4 PSD Maker",
     description: "PAN, Aadhaar, Voter ID jaise documents ko crop karein aur seedha A4 print sheet par perfectly arrange karke PSD download karein.",
@@ -185,18 +185,41 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["muslim biodata", "islamic marriage profile", "shaadi biodata", "matrimonial profile generator"],
     isActive: true,
   },
-  "experience-letter-maker": {
-    name: "Experience Letter Maker",
-    description: "Generate professional Experience & Relieving Letters with company letterhead formatting and PDF export.",
-    category: "business",
-    keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
+  "qr-generator": {
+    name: "Mega QR Studio",
+    description: "Generate URL, Text, WiFi, and VCard (Contact) QR Codes instantly in High Quality.",
+    category: "utility",
+    keywords: ["qr generator", "qr code maker", "wifi qr", "vcard qr", "mega qr studio", "barcode maker"],
     isActive: true,
   },
-  "invoice-maker": {
-    name: "Pro Invoice Maker",
-    description: "Generate professional business invoices with auto-calculated taxes, discounts, and HD PDF export.",
-    category: "business",
-    keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
+  "p2p-share": {
+    name: "P2P Secure Share",
+    description: "Send any size file directly between devices without servers. 100% private.",
+    category: "utility",
+    keywords: ["p2p share", "file transfer", "send large files", "direct transfer", "webrtc"],
+    isActive: true,
+  },
+  "timer": {
+    name: "Stopwatch & Timer",
+    description: "Advanced browser-based stopwatch and countdown timer with background sync and alarms.",
+    category: "utility",
+    keywords: ["timer", "stopwatch", "countdown timer", "browser timer", "alarm timer", "study timer"],
+    isActive: true,
+  },
+  "walkie-talkie": {
+    name: "Walkie Talkie P2P",
+    description: "Free, private, push-to-talk voice chat directly in your browser. No signup required.",
+    category: "utility",
+    keywords: ["walkie talkie", "p2p voice chat", "real-time communication", "browser voice chat"],
+    isActive: true,
+  },
+
+  // --- DESIGN TOOLS ---
+  "passport-psd-maker": {
+    name: "A4 Passport PSD Maker",
+    description: "A4 paper par 6x7 (42 photos) ka passport size format banayein aur seedha .PSD file download karein.",
+    category: "design",
+    keywords: ["passport size photo maker", "psd generator", "a4 photo format", "studio photo grid"],
     isActive: true,
   },
   "certificate-maker": {
@@ -213,34 +236,27 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
     isActive: true,
   },
-  "qr-generator": {
-    name: "Mega QR Studio",
-    description: "Generate URL, Text, WiFi, and VCard (Contact) QR Codes instantly in High Quality.",
-    category: "utility",
-    keywords: ["qr generator", "qr code maker", "wifi qr", "vcard qr", "mega qr studio", "barcode maker"],
+  "photo-studio": {
+    name: "Mega Photo Studio",
+    description: "Crop, resize, and arrange photos for printing.",
+    category: "design",
+    keywords: ["photo studio", "crop photo", "resize image", "photo printing"],
     isActive: true,
   },
-  "p2p-share": {
-    name: "P2P Secure Share",
-    description: "Send any size file directly between devices without servers. 100% private.",
-    category: "utility",
-    keywords: ["p2p share", "file transfer", "send large files", "direct transfer", "webrtc"],
+
+  // --- BUSINESS TOOLS ---
+  "experience-letter-maker": {
+    name: "Experience Letter Maker",
+    description: "Generate professional Experience & Relieving Letters with company letterhead formatting and PDF export.",
+    category: "business",
+    keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
     isActive: true,
   },
-  
-  // 👇 YAHAN NAYA TIMER TOOL ADD HO GAYA HAI 👇
-  "timer": {
-    name: "Stopwatch & Timer",
-    description: "Advanced browser-based stopwatch and countdown timer with background sync and alarms.",
-    category: "utility",
-    keywords: ["timer", "stopwatch", "countdown timer", "browser timer", "alarm timer", "study timer"],
-    isActive: true,
-  },
-  "walkie-talkie": {
-    name: "Walkie Talkie P2P",
-    description: "Free, private, push-to-talk voice chat directly in your browser. No signup required.",
-    category: "utility",
-    keywords: ["walkie talkie", "p2p voice chat", "real-time communication", "browser voice chat"],
+  "invoice-maker": {
+    name: "Pro Invoice Maker",
+    description: "Generate professional business invoices with auto-calculated taxes, discounts, and HD PDF export.",
+    category: "business",
+    keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
     isActive: true,
   }
 };
