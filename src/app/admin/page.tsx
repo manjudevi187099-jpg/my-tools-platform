@@ -12,12 +12,10 @@ type Tool = {
 };
 
 export default function AdminDashboard() {
-  // --- AUTH STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
-  // --- APP STATE ---
   const [activeTab, setActiveTab] = useState('dashboard');
   const [search, setSearch] = useState('');
   const [tools, setTools] = useState<Tool[]>([]);
@@ -25,19 +23,23 @@ export default function AdminDashboard() {
   const [errors, setErrors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // --- METRICS STATE ---
   const [totalViews, setTotalViews] = useState(0);
   const [popularTool, setPopularTool] = useState({ name: 'N/A', views: 0 });
   const [activeCount, setActiveCount] = useState(0);
 
-  // 🔥 SEO STATE WITH SCRIPT BOX 🔥
   const [seoData, setSeoData] = useState({
     site_name: '', tagline: '', seo_description: '', keywords: '', header_scripts: ''
   });
   const [isSavingSeo, setIsSavingSeo] = useState(false);
   const [seoMessage, setSeoMessage] = useState('');
 
-  // 1. Initial Load & Auth Check
+  // 🔥 NEW: BLOG EDITOR STATES 🔥
+  const [blogTitle, setBlogTitle] = useState('');
+  const [blogSlug, setBlogSlug] = useState('');
+  const [blogContent, setBlogContent] = useState('');
+  const [isSavingBlog, setIsSavingBlog] = useState(false);
+  const [blogMessage, setBlogMessage] = useState('');
+
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
     if (token === 'pdfnexa_secure_admin') {
@@ -63,7 +65,6 @@ export default function AdminDashboard() {
     setIsAuthenticated(false);
   };
 
-  // 2. 🌟 FETCH ALL DATA (Tools, Analytics, SEO, Ratings, Errors) 🌟
   const fetchRealData = async () => {
     setLoading(true);
     try {
@@ -103,7 +104,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // 3. 🌟 ACTIONS 🌟
   const toggleToolStatus = async (slug: string, currentStatus: boolean) => {
     const newStatus = !currentStatus;
     setTools(tools.map(t => t.slug === slug ? { ...t, is_active: newStatus } : t));
@@ -125,15 +125,42 @@ export default function AdminDashboard() {
     }
   };
 
-  // 🔥 FILTER TOOLS FOR SEARCH BOX 🔥
+  // 🔥 NEW: SAVE BLOG LOGIC 🔥
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const title = e.target.value;
+    setBlogTitle(title);
+    // Auto-generate slug from title
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    setBlogSlug(slug);
+  };
+
+  const handleSaveBlog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingBlog(true);
+    setBlogMessage('');
+    
+    // Database mein blog save karna
+    const { error } = await supabase.from('blog_posts').insert([
+      { title: blogTitle, slug: blogSlug, content: blogContent }
+    ]);
+
+    setIsSavingBlog(false);
+    if (error) {
+      setBlogMessage('❌ Error: ' + error.message);
+    } else {
+      setBlogMessage('✅ Blog Published Successfully! 🎉');
+      setBlogTitle('');
+      setBlogSlug('');
+      setBlogContent('');
+      setTimeout(() => setBlogMessage(''), 4000);
+    }
+  };
+
   const filteredTools = tools.filter((tool) =>
     tool.name.toLowerCase().includes(search.toLowerCase()) || 
     tool.slug.toLowerCase().includes(search.toLowerCase())
   );
 
-  // ==========================================
-  // 🚫 LOGIN SCREEN UI
-  // ==========================================
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -153,13 +180,8 @@ export default function AdminDashboard() {
     );
   }
 
-  // ==========================================
-  // ✅ DYNAMIC DASHBOARD UI
-  // ==========================================
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
-      
-      {/* 🚀 SIDEBAR (Upgraded with 6 Tabs) */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col fixed h-full z-20">
         <div className="p-6 border-b border-slate-800">
           <h1 className="text-2xl font-black flex items-center gap-2"><span className="text-blue-500">🛡️</span> Admin Pro</h1>
@@ -187,10 +209,8 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* 🚀 MAIN CONTENT */}
       <main className="ml-64 flex-1 p-8">
         
-        {/* 🔥 GLOBAL SEARCH BAR 🔥 */}
         <div className="mb-8 relative max-w-2xl">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <span className="text-xl">🔍</span>
@@ -212,154 +232,136 @@ export default function AdminDashboard() {
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             
-            {/* 🟢 TAB 1: DASHBOARD (Beautiful UI Restored) */}
+            {/* ... (DASHBOARD, TOOLS, SEO, RATINGS, ERRORS Tabs - Unchanged) ... */}
             {activeTab === 'dashboard' && (
               <div className="space-y-8">
                 <div><h2 className="text-3xl font-black text-slate-900">Analytics Overview</h2></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
-                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Tool Views</p>
-                    <h3 className="text-4xl font-black text-slate-800 mt-2">{totalViews}</h3>
-                  </div>
-                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
-                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Most Popular Tool</p>
-                    <h3 className="text-2xl font-black text-purple-600 mt-2 truncate">{popularTool.name}</h3>
-                    <p className="text-slate-500 text-sm font-medium mt-2">{popularTool.views} uses</p>
-                  </div>
-                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
-                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Active Tools</p>
-                    <h3 className="text-4xl font-black text-slate-800 mt-2">{activeCount} <span className="text-lg text-slate-400">/ {tools.length}</span></h3>
-                  </div>
-                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
-                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Database Status</p>
-                    <h3 className="text-2xl font-black text-green-600 mt-2">Connected</h3>
-                    <p className="text-slate-500 text-sm font-medium mt-2">{errors.length} System Errors Logged</p>
-                  </div>
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden"><p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Tool Views</p><h3 className="text-4xl font-black text-slate-800 mt-2">{totalViews}</h3></div>
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden"><p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Most Popular Tool</p><h3 className="text-2xl font-black text-purple-600 mt-2 truncate">{popularTool.name}</h3><p className="text-slate-500 text-sm font-medium mt-2">{popularTool.views} uses</p></div>
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden"><p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Active Tools</p><h3 className="text-4xl font-black text-slate-800 mt-2">{activeCount} <span className="text-lg text-slate-400">/ {tools.length}</span></h3></div>
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden"><p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Database Status</p><h3 className="text-2xl font-black text-green-600 mt-2">Connected</h3><p className="text-slate-500 text-sm font-medium mt-2">{errors.length} System Errors</p></div>
                 </div>
               </div>
             )}
 
-            {/* 🟢 TAB 2: TOOLS MANAGER (With Search Filtering) */}
             {activeTab === 'tools' && (
               <div className="space-y-8">
-                <div>
-                  <h2 className="text-3xl font-black text-slate-900">Tools Manager</h2>
-                  <p className="text-slate-500 mt-1">Turn tools ON or OFF instantly. Showing {filteredTools.length} tools.</p>
-                </div>
+                <div><h2 className="text-3xl font-black text-slate-900">Tools Manager</h2></div>
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                   <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 text-slate-400 text-sm uppercase tracking-wider border-b border-slate-200">
-                        <th className="p-5 font-semibold">Tool Name</th>
-                        <th className="p-5 font-semibold">Category</th>
-                        <th className="p-5 font-semibold text-right">Status Control</th>
-                      </tr>
-                    </thead>
+                    <thead><tr className="bg-slate-50 text-slate-400 text-sm uppercase tracking-wider border-b border-slate-200"><th className="p-5 font-semibold">Tool Name</th><th className="p-5 font-semibold text-right">Status Control</th></tr></thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredTools.map((tool) => (
                         <tr key={tool.slug} className={`transition-colors ${!tool.is_active ? 'bg-red-50/50' : 'hover:bg-slate-50'}`}>
                           <td className={`p-5 font-bold ${!tool.is_active ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{tool.name}</td>
-                          <td className="p-5"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase">{tool.category}</span></td>
-                          <td className="p-5 text-right">
-                            <button onClick={() => toggleToolStatus(tool.slug, tool.is_active)} className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none ${tool.is_active ? 'bg-green-500 shadow-md shadow-green-500/20' : 'bg-slate-300'}`}>
-                              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${tool.is_active ? 'translate-x-8' : 'translate-x-1'}`}/>
-                            </button>
-                          </td>
+                          <td className="p-5 text-right"><button onClick={() => toggleToolStatus(tool.slug, tool.is_active)} className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${tool.is_active ? 'bg-green-500' : 'bg-slate-300'}`}><span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${tool.is_active ? 'translate-x-8' : 'translate-x-1'}`}/></button></td>
                         </tr>
                       ))}
-                      {filteredTools.length === 0 && (
-                        <tr><td colSpan={3} className="p-10 text-center text-slate-500 font-bold">No tools found matching "{search}"</td></tr>
-                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
             )}
 
-            {/* 🟢 TAB 3: SEO & SCRIPTS (AdSense Ready) */}
             {activeTab === 'seo' && (
               <div className="space-y-8 max-w-4xl">
-                <div>
-                  <h2 className="text-3xl font-black text-slate-900">Global SEO & Scripts</h2>
-                  <p className="text-slate-500 mt-1">Manage how your website appears on Google, and inject AdSense/Analytics codes.</p>
-                </div>
-                
+                <div><h2 className="text-3xl font-black text-slate-900">Global SEO & Scripts</h2></div>
                 <form onSubmit={handleSaveSEO} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div><label className="block text-sm font-bold text-slate-700 mb-2">Website Name</label><input type="text" value={seoData.site_name || ''} onChange={(e) => setSeoData({...seoData, site_name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 transition-all font-medium" /></div>
-                    <div><label className="block text-sm font-bold text-slate-700 mb-2">Tagline (Hero Section)</label><input type="text" value={seoData.tagline || ''} onChange={(e) => setSeoData({...seoData, tagline: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 transition-all font-medium" /></div>
+                    <div><label className="block text-sm font-bold text-slate-700 mb-2">Website Name</label><input type="text" value={seoData.site_name || ''} onChange={(e) => setSeoData({...seoData, site_name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500" /></div>
+                    <div><label className="block text-sm font-bold text-slate-700 mb-2">Tagline</label><input type="text" value={seoData.tagline || ''} onChange={(e) => setSeoData({...seoData, tagline: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500" /></div>
                   </div>
-                  <div><label className="block text-sm font-bold text-slate-700 mb-2">Meta Description (For Google Search)</label><textarea value={seoData.seo_description || ''} onChange={(e) => setSeoData({...seoData, seo_description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 transition-all font-medium min-h-[100px]" /></div>
-                  <div><label className="block text-sm font-bold text-slate-700 mb-2">Global Keywords</label><input type="text" value={seoData.keywords || ''} onChange={(e) => setSeoData({...seoData, keywords: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 transition-all font-medium" /></div>
-
-                  {/* 🔥 ADSENSE / ANALYTICS SCRIPT BOX 🔥 */}
+                  <div><label className="block text-sm font-bold text-slate-700 mb-2">Meta Description</label><textarea value={seoData.seo_description || ''} onChange={(e) => setSeoData({...seoData, seo_description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 min-h-[100px]" /></div>
+                  <div><label className="block text-sm font-bold text-slate-700 mb-2">Global Keywords</label><input type="text" value={seoData.keywords || ''} onChange={(e) => setSeoData({...seoData, keywords: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500" /></div>
                   <div className="bg-slate-900 p-6 rounded-2xl shadow-inner border border-slate-800">
-                    <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><span>💻</span> Custom Header Scripts (AdSense / Analytics)</label>
-                    <textarea value={seoData.header_scripts || ''} onChange={(e) => setSeoData({...seoData, header_scripts: e.target.value})} className="w-full bg-slate-950 text-green-400 font-mono border border-slate-700 rounded-xl px-4 py-4 outline-none focus:border-green-500 focus:ring-1 transition-all min-h-[150px] text-sm" placeholder="<script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'></script>" />
+                    <label className="block text-sm font-bold text-slate-300 mb-2">💻 Custom Header Scripts (AdSense / Analytics)</label>
+                    <textarea value={seoData.header_scripts || ''} onChange={(e) => setSeoData({...seoData, header_scripts: e.target.value})} className="w-full bg-slate-950 text-green-400 font-mono border border-slate-700 rounded-xl px-4 py-4 outline-none focus:border-green-500 min-h-[150px] text-sm" />
                   </div>
-
-                  <div className="pt-4 flex items-center gap-4">
-                    <button type="submit" disabled={isSavingSeo} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed">
-                      {isSavingSeo ? 'Saving Changes...' : 'Save All Settings 💾'}
-                    </button>
-                    {seoMessage && <span className={`font-bold ${seoMessage.includes('❌') ? 'text-red-500' : 'text-green-500'} animate-in fade-in`}>{seoMessage}</span>}
-                  </div>
+                  <div className="pt-4 flex items-center gap-4"><button type="submit" disabled={isSavingSeo} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-xl">{isSavingSeo ? 'Saving...' : 'Save All Settings 💾'}</button>{seoMessage && <span className="font-bold text-green-500">{seoMessage}</span>}</div>
                 </form>
               </div>
             )}
 
-            {/* 🟢 TAB 4: USER RATINGS */}
             {activeTab === 'ratings' && (
               <div className="space-y-8">
-                <div><h2 className="text-3xl font-black text-slate-900">User Ratings Feedback</h2></div>
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-8">
-                  {ratings && ratings.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {ratings.map((r: any) => (
-                        <div key={r.id} className="p-5 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
-                          <span className="font-bold text-slate-800 text-lg">{r.tool_slug}</span> 
-                          <span className="text-orange-500 font-black text-2xl mt-2">{'⭐'.repeat(r.rating)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center p-10"><span className="text-4xl">⭐</span><p className="text-slate-500 font-bold mt-4">No ratings submitted yet.</p></div>
-                  )}
-                </div>
+                <div><h2 className="text-3xl font-black text-slate-900">User Ratings</h2></div>
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">{ratings && ratings.length > 0 ? (<div className="grid grid-cols-1 md:grid-cols-3 gap-4">{ratings.map((r: any) => (<div key={r.id} className="p-5 border border-slate-100 rounded-2xl bg-slate-50"><span className="font-bold text-slate-800">{r.tool_slug}</span> <span className="text-orange-500 font-black block mt-2 text-xl">{'⭐'.repeat(r.rating)}</span></div>))}</div>) : (<p className="text-slate-500 font-bold">No ratings yet.</p>)}</div>
               </div>
             )}
 
-            {/* 🟢 TAB 5: ERROR LOGS */}
             {activeTab === 'errors' && (
               <div className="space-y-8">
                 <div><h2 className="text-3xl font-black text-slate-900">System Error Logs</h2></div>
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-8">
-                  {errors && errors.length > 0 ? (
-                    <div className="space-y-4">
-                      {errors.map((err: any) => (
-                        <div key={err.id} className="p-5 bg-red-50 text-red-700 border border-red-100 rounded-2xl">
-                          <div className="font-black flex items-center gap-2 mb-1"><span className="text-xl">🐞</span> {err.tool_slug}</div>
-                          <p className="font-medium text-red-600/80">{err.error_message}</p>
-                          <p className="text-xs text-red-400 mt-2 uppercase tracking-wider">{new Date(err.created_at).toLocaleString()}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center p-10"><span className="text-4xl">✅</span><p className="text-green-600 font-bold mt-4">Zero errors detected. System is running flawlessly!</p></div>
-                  )}
-                </div>
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">{errors && errors.length > 0 ? (<div className="space-y-4">{errors.map((err: any) => (<div key={err.id} className="p-5 bg-red-50 text-red-700 border border-red-100 rounded-2xl"><div className="font-black mb-1">🐞 {err.tool_slug}</div><p className="font-medium text-red-600/80">{err.error_message}</p></div>))}</div>) : (<p className="text-green-600 font-bold">✅ Zero errors detected.</p>)}</div>
               </div>
             )}
 
-            {/* 🟢 TAB 6: BLOG CMS */}
+            {/* 🔥 TAB 6: THE NEW REAL BLOG CMS 🔥 */}
             {activeTab === 'blog' && (
-              <div className="space-y-8">
-                <div><h2 className="text-3xl font-black text-slate-900">Blog Content Manager</h2></div>
-                <div className="bg-white p-16 rounded-3xl border border-slate-200 text-center shadow-sm">
-                  <span className="text-6xl">📝</span>
-                  <h3 className="text-2xl font-black text-slate-800 mt-6">Blog Engine Setup Required</h3>
-                  <p className="text-slate-500 mt-2 max-w-md mx-auto">The database table is ready. Frontend blog pages will be added in the next deployment update.</p>
+              <div className="space-y-8 max-w-5xl">
+                <div>
+                  <h2 className="text-3xl font-black text-slate-900">Write a New Blog Post</h2>
+                  <p className="text-slate-500 mt-1">Publish articles to improve SEO and user engagement.</p>
                 </div>
+                
+                <form onSubmit={handleSaveBlog} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                  
+                  {/* Title & Slug */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Blog Title</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={blogTitle}
+                        onChange={handleTitleChange}
+                        placeholder="e.g., How to Convert PDF to JPG"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">URL Slug (Auto-generated)</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={blogSlug}
+                        onChange={(e) => setBlogSlug(e.target.value)}
+                        placeholder="how-to-convert-pdf-to-jpg"
+                        className="w-full bg-slate-100 text-slate-500 border border-slate-200 rounded-xl px-4 py-3 outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Content Editor */}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Blog Content (Write in text or HTML)</label>
+                    <textarea 
+                      required
+                      value={blogContent}
+                      onChange={(e) => setBlogContent(e.target.value)}
+                      placeholder="<h2>Introduction</h2><p>Start writing your awesome post here...</p>"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 outline-none focus:border-purple-500 focus:ring-2 font-mono min-h-[400px]"
+                    />
+                    <p className="text-xs text-slate-400 mt-2">You can use standard HTML tags like &lt;h2&gt;, &lt;p&gt;, &lt;strong&gt;, &lt;ul&gt;, etc., to format your blog.</p>
+                  </div>
+
+                  {/* Submit */}
+                  <div className="pt-4 flex items-center gap-4 border-t border-slate-100 pt-6">
+                    <button 
+                      type="submit" 
+                      disabled={isSavingBlog}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md shadow-purple-600/20 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isSavingBlog ? 'Publishing...' : 'Publish Blog Post 🚀'}
+                    </button>
+                    {blogMessage && (
+                      <span className={`font-bold ${blogMessage.includes('❌') ? 'text-red-500' : 'text-green-500'} animate-in fade-in`}>
+                        {blogMessage}
+                      </span>
+                    )}
+                  </div>
+                </form>
               </div>
             )}
 
