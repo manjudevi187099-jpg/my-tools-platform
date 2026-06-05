@@ -21,6 +21,9 @@ export default function AdminDashboard() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [ratings, setRatings] = useState<any[]>([]);
   const [errors, setErrors] = useState<any[]>([]);
+  
+  // 🔥 NAYA STATE: Blogs store karne ke liye
+  const [blogs, setBlogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [totalViews, setTotalViews] = useState(0);
@@ -33,7 +36,7 @@ export default function AdminDashboard() {
   const [isSavingSeo, setIsSavingSeo] = useState(false);
   const [seoMessage, setSeoMessage] = useState('');
 
-  // 🔥 NEW: BLOG EDITOR STATES 🔥
+  // BLOG EDITOR STATES
   const [blogTitle, setBlogTitle] = useState('');
   const [blogSlug, setBlogSlug] = useState('');
   const [blogContent, setBlogContent] = useState('');
@@ -68,17 +71,20 @@ export default function AdminDashboard() {
   const fetchRealData = async () => {
     setLoading(true);
     try {
-      const [tData, aData, sData, rData, eData] = await Promise.all([
+      const [tData, aData, sData, rData, eData, bData] = await Promise.all([
         supabase.from('tools_status').select('*').order('name', { ascending: true }),
         supabase.from('tool_analytics').select('*'),
         supabase.from('site_settings').select('*').eq('id', 1).single(),
         supabase.from('tool_ratings').select('*').order('created_at', { ascending: false }),
-        supabase.from('error_logs').select('*').order('created_at', { ascending: false })
+        supabase.from('error_logs').select('*').order('created_at', { ascending: false }),
+        // 🔥 NAYA: Blogs fetch kar rahe hain
+        supabase.from('blog_posts').select('*').order('created_at', { ascending: false })
       ]);
 
       if (sData.data) setSeoData(sData.data);
       if (rData.data) setRatings(rData.data);
       if (eData.data) setErrors(eData.data);
+      if (bData.data) setBlogs(bData.data); // Blogs state mein set kiye
 
       if (tData.data) {
         let tViews = 0, maxViews = -1, bestTool = 'N/A', aCount = 0;
@@ -125,11 +131,10 @@ export default function AdminDashboard() {
     }
   };
 
-  // 🔥 NEW: SAVE BLOG LOGIC 🔥
+  // SAVE BLOG LOGIC
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
     setBlogTitle(title);
-    // Auto-generate slug from title
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     setBlogSlug(slug);
   };
@@ -139,7 +144,6 @@ export default function AdminDashboard() {
     setIsSavingBlog(true);
     setBlogMessage('');
     
-    // Database mein blog save karna
     const { error } = await supabase.from('blog_posts').insert([
       { title: blogTitle, slug: blogSlug, content: blogContent }
     ]);
@@ -149,12 +153,19 @@ export default function AdminDashboard() {
       setBlogMessage('❌ Error: ' + error.message);
     } else {
       setBlogMessage('✅ Blog Published Successfully! 🎉');
-      setBlogTitle('');
-      setBlogSlug('');
-      setBlogContent('');
+      setBlogTitle(''); setBlogSlug(''); setBlogContent('');
+      fetchRealData(); // 🔄 Naya blog list mein dikhane ke liye reload
       setTimeout(() => setBlogMessage(''), 4000);
     }
   };
+
+  // 🔥 DELETE BLOG LOGIC 🔥
+  const deleteBlog = async (id: number) => {
+    if(confirm("Are you sure you want to delete this blog?")) {
+      await supabase.from('blog_posts').delete().eq('id', id);
+      fetchRealData(); 
+    }
+  }
 
   const filteredTools = tools.filter((tool) =>
     tool.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -232,7 +243,6 @@ export default function AdminDashboard() {
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             
-            {/* ... (DASHBOARD, TOOLS, SEO, RATINGS, ERRORS Tabs - Unchanged) ... */}
             {activeTab === 'dashboard' && (
               <div className="space-y-8">
                 <div><h2 className="text-3xl font-black text-slate-900">Analytics Overview</h2></div>
@@ -297,71 +307,64 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* 🔥 TAB 6: THE NEW REAL BLOG CMS 🔥 */}
+            {/* 🔥 TAB 6: THE UPDATED BLOG CMS (FORM + LIST) 🔥 */}
             {activeTab === 'blog' && (
-              <div className="space-y-8 max-w-5xl">
+              <div className="space-y-12 max-w-5xl">
+                
+                {/* WRITE BLOG FORM */}
                 <div>
                   <h2 className="text-3xl font-black text-slate-900">Write a New Blog Post</h2>
-                  <p className="text-slate-500 mt-1">Publish articles to improve SEO and user engagement.</p>
+                  <form onSubmit={handleSaveBlog} className="mt-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Blog Title</label>
+                        <input type="text" required value={blogTitle} onChange={handleTitleChange} placeholder="e.g., How to Convert PDF" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 font-medium" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">URL Slug (Auto-generated)</label>
+                        <input type="text" required readOnly value={blogSlug} className="w-full bg-slate-100 text-slate-500 border border-slate-200 rounded-xl px-4 py-3 outline-none font-mono" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Blog Content (Write in text or HTML)</label>
+                      <textarea required value={blogContent} onChange={(e) => setBlogContent(e.target.value)} placeholder="<h2>Introduction</h2><p>Start writing here...</p>" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 outline-none focus:border-purple-500 focus:ring-2 font-mono min-h-[300px]" />
+                    </div>
+                    <div className="pt-4 flex items-center gap-4 border-t border-slate-100 pt-6">
+                      <button type="submit" disabled={isSavingBlog} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-xl shadow-md shadow-purple-600/20">{isSavingBlog ? 'Publishing...' : 'Publish Blog Post 🚀'}</button>
+                      {blogMessage && <span className={`font-bold ${blogMessage.includes('❌') ? 'text-red-500' : 'text-green-500'} animate-in fade-in`}>{blogMessage}</span>}
+                    </div>
+                  </form>
                 </div>
-                
-                <form onSubmit={handleSaveBlog} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-                  
-                  {/* Title & Slug */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Blog Title</label>
-                      <input 
-                        type="text" 
-                        required
-                        value={blogTitle}
-                        onChange={handleTitleChange}
-                        placeholder="e.g., How to Convert PDF to JPG"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">URL Slug (Auto-generated)</label>
-                      <input 
-                        type="text" 
-                        required
-                        value={blogSlug}
-                        onChange={(e) => setBlogSlug(e.target.value)}
-                        placeholder="how-to-convert-pdf-to-jpg"
-                        className="w-full bg-slate-100 text-slate-500 border border-slate-200 rounded-xl px-4 py-3 outline-none font-mono"
-                      />
-                    </div>
-                  </div>
 
-                  {/* Content Editor */}
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Blog Content (Write in text or HTML)</label>
-                    <textarea 
-                      required
-                      value={blogContent}
-                      onChange={(e) => setBlogContent(e.target.value)}
-                      placeholder="<h2>Introduction</h2><p>Start writing your awesome post here...</p>"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 outline-none focus:border-purple-500 focus:ring-2 font-mono min-h-[400px]"
-                    />
-                    <p className="text-xs text-slate-400 mt-2">You can use standard HTML tags like &lt;h2&gt;, &lt;p&gt;, &lt;strong&gt;, &lt;ul&gt;, etc., to format your blog.</p>
-                  </div>
-
-                  {/* Submit */}
-                  <div className="pt-4 flex items-center gap-4 border-t border-slate-100 pt-6">
-                    <button 
-                      type="submit" 
-                      disabled={isSavingBlog}
-                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md shadow-purple-600/20 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                      {isSavingBlog ? 'Publishing...' : 'Publish Blog Post 🚀'}
-                    </button>
-                    {blogMessage && (
-                      <span className={`font-bold ${blogMessage.includes('❌') ? 'text-red-500' : 'text-green-500'} animate-in fade-in`}>
-                        {blogMessage}
-                      </span>
+                {/* PUBLISHED BLOGS LIST */}
+                <div>
+                  <h2 className="text-3xl font-black text-slate-900 mb-6">Published Blogs ({blogs.length})</h2>
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    {blogs.length === 0 ? <p className="p-8 text-slate-500 font-medium">No blogs published yet.</p> : (
+                      <table className="w-full text-left border-collapse">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-sm">
+                          <tr><th className="p-5 font-bold">Blog Title</th><th className="p-5 font-bold">Live URL</th><th className="p-5 font-bold text-right">Action</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {blogs.map((blog) => (
+                            <tr key={blog.id} className="hover:bg-slate-50">
+                              <td className="p-5 font-bold text-slate-800">{blog.title}</td>
+                              <td className="p-5">
+                                <a href={`/blog/${blog.slug}`} target="_blank" className="text-purple-600 hover:underline font-mono text-sm bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-100">
+                                  /blog/{blog.slug} ↗
+                                </a>
+                              </td>
+                              <td className="p-5 text-right">
+                                <button onClick={() => deleteBlog(blog.id)} className="text-red-500 hover:bg-red-50 px-4 py-1.5 rounded-lg font-bold transition-colors">Delete</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     )}
                   </div>
-                </form>
+                </div>
+
               </div>
             )}
 
