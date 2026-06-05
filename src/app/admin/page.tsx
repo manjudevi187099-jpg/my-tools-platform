@@ -1,31 +1,53 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+// 🌟 FIX: Apna Supabase ka sahi path check karein (Agar error aaye toh '@/' ya '../../' use karein)
+import { supabase } from '../lib/supabase';
+
+// Data Types
+type Tool = {
+  id: number;
+  slug: string;
+  name: string;
+  category: string;
+  is_active: boolean;
+  views?: number;
+};
 
 export default function AdminDashboard() {
-  // --- AUTHENTICATION STATE ---
+  // --- AUTH STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [authError, setAuthError] = useState('');
 
-  // Page load par check karo ki kya admin pehle se login hai?
+  // --- APP STATE ---
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // --- METRICS STATE ---
+  const [totalViews, setTotalViews] = useState(0);
+  const [popularTool, setPopularTool] = useState({ name: 'N/A', views: 0 });
+  const [activeCount, setActiveCount] = useState(0);
+
+  // 1. Check Login
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
     if (token === 'pdfnexa_secure_admin') {
       setIsAuthenticated(true);
+      fetchRealData(); // Login hote hi data laao
     }
   }, []);
 
-  // Login Handle Function
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // 🛑 Yahan apna manpasand password set karein (Mera example: Admin@2024)
     if (password === 'Admin@2024') {
       localStorage.setItem('admin_token', 'pdfnexa_secure_admin');
       setIsAuthenticated(true);
-      setError('');
+      setAuthError('');
+      fetchRealData();
     } else {
-      setError('Galat Password Bhai! 🚫');
+      setAuthError('Galat Password Bhai! 🚫');
     }
   };
 
@@ -34,8 +56,77 @@ export default function AdminDashboard() {
     setIsAuthenticated(false);
   };
 
+  // 2. 🌟 FETCH REAL DATA FROM SUPABASE 🌟
+  const fetchRealData = async () => {
+    setLoading(true);
+    try {
+      // Tools status le aao
+      const { data: toolsData, error: toolsError } = await supabase
+        .from('tools_status')
+        .select('*')
+        .order('id', { ascending: true });
+
+      // Analytics le aao
+      const { data: analyticsData, error: analyticsError } = await supabase
+        .from('tool_analytics')
+        .select('*');
+
+      if (toolsData) {
+        let tViews = 0;
+        let maxViews = -1;
+        let bestTool = 'N/A';
+        let aCount = 0;
+
+        // Dono tables ko merge kar rahe hain
+        const mergedTools = toolsData.map((tool) => {
+          if (tool.is_active) aCount++;
+
+          const stat = analyticsData?.find((a) => a.tool_slug === tool.slug);
+          const views = stat ? stat.total_views : 0;
+          
+          tViews += views;
+          if (views > maxViews) {
+            maxViews = views;
+            bestTool = tool.name;
+          }
+
+          return { ...tool, views };
+        });
+
+        setTools(mergedTools);
+        setTotalViews(tViews);
+        setActiveCount(aCount);
+        setPopularTool({ name: bestTool !== 'N/A' ? bestTool : 'No data yet', views: maxViews > -1 ? maxViews : 0 });
+      }
+    } catch (error) {
+      console.error("Data Fetch Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 3. 🌟 TOGGLE TOOL STATUS (ON / OFF) 🌟
+  const toggleToolStatus = async (slug: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    
+    // UI mein turant update dikhane ke liye
+    setTools(tools.map(t => t.slug === slug ? { ...t, is_active: newStatus } : t));
+    setActiveCount(prev => newStatus ? prev + 1 : prev - 1);
+
+    // Database mein update bhejna
+    const { error } = await supabase
+      .from('tools_status')
+      .update({ is_active: newStatus })
+      .eq('slug', slug);
+
+    if (error) {
+      alert("Status update fail ho gaya!");
+      fetchRealData(); // Error aaya toh purana data wapas le aao
+    }
+  };
+
   // ==========================================
-  // 🚫 LOGIN SCREEN UI (Agar login nahi hai)
+  // 🚫 LOGIN SCREEN UI
   // ==========================================
   if (!isAuthenticated) {
     return (
@@ -46,22 +137,16 @@ export default function AdminDashboard() {
             <h1 className="text-2xl font-black text-white tracking-wider">ADMIN PORTAL</h1>
             <p className="text-slate-400 text-sm mt-2">Restricted Area. Enter Master Password.</p>
           </div>
-          
           <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <input
-                type="password"
-                placeholder="Enter Password..."
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-900 text-white border border-slate-700 p-4 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500 outline-none transition-all text-center text-lg tracking-widest"
-              />
-            </div>
-            {error && <p className="text-red-400 text-center text-sm font-bold animate-pulse">{error}</p>}
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black py-4 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-purple-500/30"
-            >
+            <input
+              type="password"
+              placeholder="Enter Password..."
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-slate-900 text-white border border-slate-700 p-4 rounded-xl focus:border-purple-500 outline-none text-center text-lg tracking-widest"
+            />
+            {authError && <p className="text-red-400 text-center text-sm font-bold animate-pulse">{authError}</p>}
+            <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black py-4 rounded-xl hover:opacity-90 transition-opacity">
               UNLOCK DASHBOARD 🚀
             </button>
           </form>
@@ -71,116 +156,171 @@ export default function AdminDashboard() {
   }
 
   // ==========================================
-  // ✅ PROFESSIONAL ADMIN DASHBOARD UI
+  // ✅ DYNAMIC DASHBOARD UI
   // ==========================================
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 flex font-sans">
       
-      {/* Top Navbar */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🛡️</span>
-          <h1 className="text-xl font-black text-slate-800 tracking-tight">Admin Pro</h1>
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-slate-900 text-white flex flex-col fixed h-full">
+        <div className="p-6 border-b border-slate-800">
+          <h1 className="text-2xl font-black flex items-center gap-2"><span className="text-blue-500">🛡️</span> Admin Pro</h1>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            System Online
-          </span>
+        <nav className="flex-1 p-4 space-y-2">
           <button 
-            onClick={handleLogout}
-            className="text-sm font-bold text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors border border-transparent hover:border-red-200"
+            onClick={() => setActiveTab('dashboard')} 
+            className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'dashboard' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
           >
-            Logout🚪
+            📊 Analytics Dashboard
+          </button>
+          <button 
+            onClick={() => setActiveTab('tools')} 
+            className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'tools' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+          >
+            ⚙️ Tools Manager
+          </button>
+          <button 
+            onClick={() => setActiveTab('seo')} 
+            className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'seo' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+          >
+            🔍 SEO & Settings
+          </button>
+        </nav>
+        <div className="p-4 border-t border-slate-800">
+          <button onClick={handleLogout} className="w-full bg-red-500/10 text-red-500 font-bold py-3 rounded-xl hover:bg-red-500 hover:text-white transition-all">
+            Logout 🚪
           </button>
         </div>
-      </header>
+      </aside>
 
-      <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-8">
-        
-        {/* Page Title */}
-        <div>
-          <h2 className="text-3xl font-black text-slate-900">Analytics Overview</h2>
-          <p className="text-slate-500 mt-1">Track your platform's performance and user activity.</p>
-        </div>
-
-        {/* Top Analytics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl">👀</div>
-            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Tool Views</p>
-            <h3 className="text-4xl font-black text-slate-800 mt-2">1,204</h3>
-            <p className="text-green-500 text-sm font-bold mt-2">↑ 12% from last week</p>
+      {/* MAIN CONTENT */}
+      <main className="ml-64 flex-1 p-8">
+        {loading ? (
+          <div className="h-full flex flex-col items-center justify-center text-slate-500">
+            <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-4"></div>
+            <p className="font-bold">Syncing with Supabase...</p>
           </div>
+        ) : (
+          <>
+            {/* 🟢 TAB 1: DASHBOARD */}
+            {activeTab === 'dashboard' && (
+              <div className="space-y-8 animate-in fade-in">
+                <div>
+                  <h2 className="text-3xl font-black text-slate-900">Analytics Overview</h2>
+                  <p className="text-slate-500 mt-1">Real-time data synced from Supabase.</p>
+                </div>
 
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl">🔥</div>
-            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Most Popular Tool</p>
-            <h3 className="text-2xl font-black text-purple-600 mt-2 truncate">PDF to Excel</h3>
-            <p className="text-slate-500 text-sm font-medium mt-2">450 uses today</p>
-          </div>
+                {/* METRICS CARDS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Tool Views</p>
+                    <h3 className="text-4xl font-black text-slate-800 mt-2">{totalViews}</h3>
+                  </div>
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Most Popular Tool</p>
+                    <h3 className="text-2xl font-black text-purple-600 mt-2 truncate">{popularTool.name}</h3>
+                    <p className="text-slate-500 text-sm font-medium mt-2">{popularTool.views} uses</p>
+                  </div>
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Active Tools</p>
+                    <h3 className="text-4xl font-black text-slate-800 mt-2">{activeCount} <span className="text-lg text-slate-400">/ {tools.length}</span></h3>
+                  </div>
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Database Status</p>
+                    <h3 className="text-2xl font-black text-green-600 mt-2">Connected</h3>
+                    <p className="text-slate-500 text-sm font-medium mt-2">Real-time sync active</p>
+                  </div>
+                </div>
 
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl">🛠️</div>
-            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Active Tools</p>
-            <h3 className="text-4xl font-black text-slate-800 mt-2">35 <span className="text-lg text-slate-400">/ 35</span></h3>
-            <p className="text-slate-500 text-sm font-medium mt-2">100% Tools Live</p>
-          </div>
+                {/* TOP TOOLS TABLE */}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-6 border-b border-slate-200 bg-slate-50/50">
+                    <h3 className="text-xl font-bold text-slate-800">All Tools Performance</h3>
+                  </div>
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-white text-slate-400 text-sm uppercase tracking-wider border-b">
+                        <th className="p-4 font-semibold">Tool Name</th>
+                        <th className="p-4 font-semibold">Category</th>
+                        <th className="p-4 font-semibold text-right">Total Uses</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {/* Views ke hisaab se sort karke dikha rahe hain */}
+                      {tools.sort((a,b) => (b.views || 0) - (a.views || 0)).map((tool) => (
+                        <tr key={tool.id} className="hover:bg-slate-50">
+                          <td className="p-4 font-bold text-slate-700">{tool.name}</td>
+                          <td className="p-4"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase">{tool.category}</span></td>
+                          <td className="p-4 font-bold text-purple-600 text-right">{tool.views || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl">⚡</div>
-            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Database Status</p>
-            <h3 className="text-2xl font-black text-green-600 mt-2">Connected</h3>
-            <p className="text-slate-500 text-sm font-medium mt-2">Supabase Responding</p>
-          </div>
-        </div>
+            {/* 🔴 TAB 2: TOOLS MANAGER (ON/OFF) */}
+            {activeTab === 'tools' && (
+              <div className="space-y-8 animate-in fade-in">
+                <div>
+                  <h2 className="text-3xl font-black text-slate-900">Tools Manager</h2>
+                  <p className="text-slate-500 mt-1">Turn tools ON or OFF instantly. Changes reflect live on the homepage.</p>
+                </div>
 
-        {/* Detailed Tracking Table */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center">
-            <h3 className="text-xl font-bold text-slate-800">Top Performing Tools</h3>
-            <button className="text-purple-600 font-bold text-sm hover:underline">View All Report →</button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-white text-slate-400 text-sm uppercase tracking-wider">
-                  <th className="p-4 font-semibold">Tool Name</th>
-                  <th className="p-4 font-semibold">Category</th>
-                  <th className="p-4 font-semibold text-right">Total Uses</th>
-                  <th className="p-4 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                <tr className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 font-bold text-slate-700 flex items-center gap-3">
-                    <span className="p-2 bg-blue-50 text-blue-600 rounded-lg">📄</span> PDF to Excel
-                  </td>
-                  <td className="p-4"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">PDF</span></td>
-                  <td className="p-4 font-bold text-slate-800 text-right">450</td>
-                  <td className="p-4"><span className="text-green-500 font-bold text-sm">Active</span></td>
-                </tr>
-                <tr className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 font-bold text-slate-700 flex items-center gap-3">
-                    <span className="p-2 bg-purple-50 text-purple-600 rounded-lg">🎨</span> Mega Photo Studio
-                  </td>
-                  <td className="p-4"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">DESIGN</span></td>
-                  <td className="p-4 font-bold text-slate-800 text-right">312</td>
-                  <td className="p-4"><span className="text-green-500 font-bold text-sm">Active</span></td>
-                </tr>
-                <tr className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 font-bold text-slate-700 flex items-center gap-3">
-                    <span className="p-2 bg-orange-50 text-orange-600 rounded-lg">🛠️</span> Smart Card Maker
-                  </td>
-                  <td className="p-4"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">UTILITY</span></td>
-                  <td className="p-4 font-bold text-slate-800 text-right">280</td>
-                  <td className="p-4"><span className="text-green-500 font-bold text-sm">Active</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-white text-slate-400 text-sm uppercase tracking-wider border-b">
+                        <th className="p-4 font-semibold">Tool Name</th>
+                        <th className="p-4 font-semibold">Slug (URL)</th>
+                        <th className="p-4 font-semibold text-right">Status Control</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {tools.map((tool) => (
+                        <tr key={tool.id} className={`transition-colors ${!tool.is_active ? 'bg-red-50/50' : 'hover:bg-slate-50'}`}>
+                          <td className={`p-4 font-bold ${!tool.is_active ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                            {tool.name}
+                          </td>
+                          <td className="p-4 text-slate-500 text-sm">{tool.slug}</td>
+                          <td className="p-4 text-right">
+                            {/* 🔥 THE MAGIC TOGGLE BUTTON 🔥 */}
+                            <button 
+                              onClick={() => toggleToolStatus(tool.slug, tool.is_active)}
+                              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+                                tool.is_active ? 'bg-green-500' : 'bg-slate-300'
+                              }`}
+                            >
+                              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
+                                tool.is_active ? 'translate-x-8' : 'translate-x-1'
+                              }`}/>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
+            {/* 🔵 TAB 3: SEO & SETTINGS */}
+            {activeTab === 'seo' && (
+              <div className="space-y-8 animate-in fade-in">
+                <div>
+                  <h2 className="text-3xl font-black text-slate-900">SEO & Site Settings</h2>
+                  <p className="text-slate-500 mt-1">Manage Meta tags, descriptions, and site configurations.</p>
+                </div>
+                <div className="bg-white p-12 rounded-3xl border border-slate-200 shadow-sm text-center">
+                  <span className="text-6xl">🚧</span>
+                  <h3 className="text-2xl font-bold text-slate-800 mt-4">Under Construction</h3>
+                  <p className="text-slate-500 mt-2">SEO Module Database se connect hona baaki hai. (Coming Soon)</p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </main>
     </div>
   );

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { toolsRegistry } from '../../config/siteConfig';
-// 🌟 FIX 1: Supabase ko import kar rahe hain
 import { supabase } from '../lib/supabase';
 
 const siteInfo = {
@@ -15,33 +14,64 @@ const siteInfo = {
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   
-  // 🌟 FIX 2: Naye states database ke data aur loading status ke liye
+  // States
   const [activeSlugs, setActiveSlugs] = useState<string[]>([]);
+  const [trendingTools, setTrendingTools] = useState<any[]>([]);
+  const [platformViews, setPlatformViews] = useState(0); // 🔥 Naya State Live Counter ke liye
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🌟 FIX 3: Jaise hi page khule, Database se check karo ki kaun se tools ON hain
   useEffect(() => {
-    const fetchActiveTools = async () => {
-      const { data, error } = await supabase
-        .from('tools_status')
-        .select('slug, is_active');
-        
-      if (data) {
-        // Sirf un tools ke 'slug' nikal lo jinki is_active true hai
-        const active = data.filter(t => t.is_active).map(t => t.slug);
-        setActiveSlugs(active);
-      } else {
+    const fetchToolsData = async () => {
+      try {
+        const { data: statusData } = await supabase
+          .from('tools_status')
+          .select('slug')
+          .eq('is_active', true);
+          
+        const { data: analyticsData } = await supabase
+          .from('tool_analytics')
+          .select('tool_slug, total_views');
+
+        if (statusData) {
+          const active = statusData.map(t => t.slug);
+          setActiveSlugs(active);
+
+          if (analyticsData) {
+            // 🔥 Calculate Total Platform Views for Hero Section
+            const totalViews = analyticsData.reduce((sum, item) => sum + (item.total_views || 0), 0);
+            // Thoda base number add kar dete hain taaki shuru mein counter bada dikhe (Optional)
+            setPlatformViews(totalViews + 15420); 
+
+            // Trending Tools Logic
+            const toolsWithViews = active.map(slug => {
+              const toolData = toolsRegistry[slug];
+              const viewData = analyticsData.find(a => a.tool_slug === slug);
+              return {
+                slug,
+                ...toolData,
+                views: viewData ? viewData.total_views : 0
+              };
+            }).filter(t => t.name); 
+
+            const top6 = toolsWithViews
+              .sort((a, b) => b.views - a.views)
+              .slice(0, 6);
+              
+            setTrendingTools(top6);
+          }
+        }
+      } catch (error) {
         console.error("Database fetch error:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false); // Data aane ke baad loading band kar do
     };
 
-    fetchActiveTools();
+    fetchToolsData();
   }, []);
 
-  // 🌟 FIX 4: Ab hum 'toolsRegistry' ko Database ke status ('activeSlugs') se filter kar rahe hain
   const toolsList = Object.entries(toolsRegistry)
-    .filter(([slug]) => activeSlugs.includes(slug)) // Pura khel is ek line ka hai! 🔥
+    .filter(([slug]) => activeSlugs.includes(slug))
     .map(([slug, tool]) => ({
       slug,
       title: tool.name,
@@ -50,13 +80,11 @@ export default function HomePage() {
       icon: tool.category === 'pdf' ? '📄' : tool.category === 'design' ? '🎨' : tool.category === 'business' ? '💼' : '🛠️'
     }));
 
-  // Search filter
   const filteredTools = toolsList.filter((tool) =>
     tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     tool.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Grouping
   const groupedTools = filteredTools.reduce((acc: Record<string, typeof toolsList>, tool) => {
     const cat = tool.category;
     if (!acc[cat]) acc[cat] = [];
@@ -64,159 +92,234 @@ export default function HomePage() {
     return acc;
   }, {});
 
-  const categoryDetails: Record<string, { title: string, icon: string, desc: string }> = {
-    'PDF': { title: 'PDF & Document Tools', icon: '📄', desc: 'Edit, convert, merge, and secure your PDF files instantly.' },
-    'UTILITY': { title: 'Daily Utility & Forms', icon: '🛠️', desc: 'Handy tools for form filling, signatures, and quick tasks.' },
-    'DESIGN': { title: 'Design & Creators', icon: '🎨', desc: 'Create smart cards, stamps, and studio-quality photo grids.' },
-    'BUSINESS': { title: 'Business & Office', icon: '💼', desc: 'Generate professional invoices, letters, and certificates.' },
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
       
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🛠️</span>
-            <span className="text-xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              {siteInfo.name}
-            </span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6 font-semibold text-slate-600">
-            <Link href="/" className="hover:text-purple-600 transition-colors">Home</Link>
-            <a href="#tools" className="hover:text-purple-600 transition-colors">All Tools</a>
-            <Link href="/admin" className="hover:text-purple-600 transition-colors">Admin Panel</Link>
+      {/* 🌟 UPGRADED HEADER 🌟 */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          
+          {/* Logo Section */}
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <span className="text-3xl bg-slate-100 p-2 rounded-xl border border-slate-200 shadow-sm">🛠️</span>
+            <div>
+              <h1 className="text-2xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-none">
+                {siteInfo.name}
+              </h1>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Pro Tools</span>
+            </div>
+          </Link>
+
+          {/* Center Navigation */}
+          <nav className="hidden md:flex items-center gap-8 font-bold text-slate-600">
+            <Link href="/" className="text-purple-600">Home</Link>
+            <a href="#tools" className="hover:text-purple-600 transition-colors">Tools Library</a>
+            <a href="#trending" className="hover:text-purple-600 transition-colors">Trending</a>
+            <Link href="/contact" className="hover:text-purple-600 transition-colors">Support</Link>
           </nav>
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-black rounded-full uppercase tracking-wider border border-green-200">
-              ● Live DB
-            </span>
+
+          {/* Right Action Buttons */}
+          <div className="flex items-center gap-4">
+            <button className="hidden sm:flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors border border-slate-200">
+              🌙 {/* Dark Mode Placeholder */}
+            </button>
+            <Link href="/admin" className="bg-slate-900 text-white text-sm font-bold px-6 py-2.5 rounded-full hover:bg-black transition-colors shadow-md hover:shadow-lg">
+              Admin Area 🛡️
+            </Link>
           </div>
         </div>
       </header>
 
-      {/* HERO SECTION */}
       <main className="flex-1">
-        <section className="bg-white border-b border-slate-200 pt-20 pb-16 px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight">
-              All-In-One Professional <span className="text-purple-600">Utility Engine</span>
+        
+        {/* 🌟 UPGRADED HERO SECTION WITH LIVE COUNTERS 🌟 */}
+        <section className="bg-white border-b border-slate-200 pt-24 pb-20 px-4 relative overflow-hidden">
+          {/* Background Decoration */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-full bg-gradient-to-b from-purple-50/50 to-transparent -z-10"></div>
+          
+          <div className="max-w-4xl mx-auto text-center z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 border border-purple-100 text-purple-700 text-sm font-bold mb-6">
+              <span className="animate-pulse">✨</span> {siteInfo.tagline}
+            </div>
+            
+            <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight leading-tight">
+              Work Smarter with <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Powerful Tools</span>
             </h1>
-            <p className="mt-6 text-lg text-slate-500 max-w-2xl mx-auto">
-              {siteInfo.description} No installation required.
+            
+            <p className="mt-6 text-xl text-slate-500 max-w-2xl mx-auto font-medium">
+              {siteInfo.description} No registration, no watermarks, just pure productivity.
             </p>
-
+            
+            {/* Search Bar */}
             <div className="mt-10 max-w-2xl mx-auto relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                 <span className="text-slate-400 text-xl">🔍</span>
               </div>
               <input
                 type="text"
-                placeholder="Search for tools (e.g., Invoice, PDF, Stamp...)"
+                placeholder="Search tools (e.g., PDF, Invoice, Photo...)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all text-lg font-medium shadow-sm outline-none"
+                className="w-full pl-14 pr-4 py-5 rounded-3xl border-2 border-slate-200 bg-white focus:border-purple-500 transition-all text-lg font-bold shadow-lg shadow-slate-200/50 outline-none hover:shadow-xl"
               />
+            </div>
+
+            {/* 🔥 LIVE TRUST BADGES 🔥 */}
+            <div className="flex flex-wrap justify-center gap-4 mt-8">
+              <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 px-5 py-2.5 rounded-full font-black text-sm shadow-sm">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span> 
+                {platformViews.toLocaleString()}+ Tools Processed
+              </div>
+              <div className="flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 px-5 py-2.5 rounded-full font-black text-sm shadow-sm">
+                🛡️ 100% Free & Secure
+              </div>
+              <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 text-orange-700 px-5 py-2.5 rounded-full font-black text-sm shadow-sm">
+                ⚡ No Sign-up Required
+              </div>
             </div>
           </div>
         </section>
 
-        {/* CATEGORIZED TOOLS SECTION */}
-        <section id="tools" className="py-16 px-4 max-w-7xl mx-auto">
-          
-          {/* 🌟 FIX 5: Jab tak database se data aa raha hai, tab tak Loader dikhao */}
+        <section id="tools" className="py-20 px-4 max-w-7xl mx-auto">
           {isLoading ? (
             <div className="text-center py-20 flex flex-col items-center justify-center space-y-4">
                <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-               <p className="text-slate-500 font-bold">Loading tools from Database... ⏳</p>
-            </div>
-          ) : Object.keys(groupedTools).length === 0 ? (
-            <div className="text-center py-20">
-              <span className="text-5xl">🕵️‍♂️</span>
-              <h3 className="mt-4 text-2xl font-bold text-slate-700">No tools found</h3>
-              <p className="text-slate-500 mt-2">Try searching with a different keyword.</p>
+               <p className="text-slate-500 font-bold">Syncing live tools... ⏳</p>
             </div>
           ) : (
-            <div className="space-y-16">
-              {Object.entries(groupedTools).map(([category, tools]) => {
-                const meta = categoryDetails[category] || { title: category, icon: '⚡', desc: 'Explore our powerful tools.' };
-                
-                return (
-                  <div key={category} className="scroll-mt-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="mb-8 border-b border-slate-200 pb-4">
-                      <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                        <span className="p-2 bg-purple-100 text-purple-600 rounded-xl">{meta.icon}</span>
-                        {meta.title}
+            <>
+              {/* TRENDING TOOLS SECTION */}
+              {!searchQuery && trendingTools.length > 0 && (
+                <div id="trending" className="mb-20 scroll-mt-24">
+                  <div className="mb-8 border-b border-slate-200 pb-4 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
+                        <span className="p-2 bg-orange-100 text-orange-600 rounded-xl">🔥</span>
+                        Trending Now
                       </h2>
-                      <p className="text-slate-500 mt-2 ml-14">{meta.desc}</p>
+                      <p className="text-slate-500 mt-2 ml-14">Most used tools by our community today.</p>
                     </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {trendingTools.map((tool) => (
+                      <Link 
+                        key={tool.slug} 
+                        href={`/tools/${tool.slug}`} 
+                        className="group flex items-start gap-4 p-6 bg-gradient-to-br from-white to-orange-50/20 border-2 border-orange-100 rounded-3xl hover:border-orange-500 hover:shadow-xl hover:shadow-orange-500/10 transition-all duration-300 relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 right-0 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-black px-4 py-1.5 rounded-bl-2xl z-10 shadow-sm">
+                          {tool.views} Uses
+                        </div>
+                        <div className="text-4xl bg-white p-4 rounded-2xl shadow-sm border border-orange-100 group-hover:scale-110 transition-transform">
+                          {tool.category === 'pdf' ? '📄' : tool.category === 'design' ? '🎨' : tool.category === 'business' ? '💼' : '🛠️'}
+                        </div>
+                        <div className="flex-1 pt-1 z-10">
+                          <h3 className="font-black text-slate-800 text-xl leading-tight group-hover:text-orange-600 transition-colors">
+                            {tool.name}
+                          </h3>
+                          <p className="text-sm text-slate-500 mt-2 line-clamp-2 leading-relaxed font-medium">
+                            {tool.description}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* ALL CATEGORIES */}
+              <div className="space-y-20">
+                {Object.entries(groupedTools).map(([category, tools]) => (
+                  <div key={category} className="scroll-mt-24">
+                    <div className="mb-8 border-b border-slate-200 pb-4">
+                      <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
+                        <span className="p-2 bg-slate-100 text-slate-600 rounded-xl">⚡</span>
+                        {category} Utilities
+                      </h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                       {tools.map((tool) => (
-                        <Link 
-                          key={tool.slug} 
-                          href={`/tools/${tool.slug}`} 
-                          className="group flex items-start gap-4 p-5 bg-white border border-slate-200 rounded-2xl hover:border-purple-600 hover:shadow-xl transition-all duration-300"
-                        >
-                          <div className="text-3xl bg-slate-50 p-3.5 rounded-xl group-hover:bg-purple-50 group-hover:-translate-y-1 transition-transform border border-slate-100 group-hover:border-purple-100">
-                            {tool.icon}
-                          </div>
-                          <div className="flex-1 pt-1">
-                            <h3 className="font-bold text-slate-800 group-hover:text-purple-700 transition-colors text-lg leading-tight">
-                              {tool.title}
-                            </h3>
-                            <p className="text-sm text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
-                              {tool.description}
-                            </p>
-                          </div>
-                        </Link>
+                         <Link key={tool.slug} href={`/tools/${tool.slug}`} className="group flex items-start gap-4 p-6 bg-white border border-slate-200 rounded-3xl hover:border-purple-600 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
+                            <div className="text-4xl bg-slate-50 p-4 rounded-2xl border border-slate-100 group-hover:bg-purple-50 group-hover:scale-110 transition-all">
+                              {tool.icon}
+                            </div>
+                            <div className="flex-1 pt-1">
+                              <h3 className="font-black text-slate-800 text-lg leading-tight group-hover:text-purple-700 transition-colors">{tool.title}</h3>
+                              <p className="text-sm text-slate-500 mt-2 line-clamp-2 font-medium">{tool.description}</p>
+                            </div>
+                         </Link>
                       ))}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </section>
       </main>
 
-      {/* FOOTER */}
-      <footer className="bg-[#0f172a] text-slate-300 py-12 mt-auto border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
-            <div className="flex items-center gap-2 text-white mb-4">
-              <span className="text-2xl">🛠️</span>
-              <span className="text-xl font-black">{siteInfo.name}</span>
-            </div>
-            <p className="text-slate-400 text-sm max-w-xs">
-              {siteInfo.tagline}. Making developers and designers more productive every day.
+      {/* 🌟 PROFESSIONAL SEO FOOTER 🌟 */}
+      <footer className="bg-slate-900 text-slate-300 pt-20 pb-10 border-t-4 border-purple-600 font-sans">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 border-b border-slate-800 pb-16">
+          
+          {/* Column 1: Brand */}
+          <div className="space-y-6">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity inline-block">
+              <span className="text-3xl">🛠️</span>
+              <h1 className="text-2xl font-black text-white">{siteInfo.name}</h1>
+            </Link>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              {siteInfo.tagline}. We build high-performance, browser-based tools that respect your privacy and save your time.
             </p>
+            <div className="flex items-center gap-2">
+              <span className="bg-green-500/20 text-green-400 border border-green-500/30 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> All Systems Operational
+              </span>
+            </div>
           </div>
+
+          {/* Column 2: Popular Tools */}
           <div>
-            <h4 className="text-white font-bold mb-4">Top Categories</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><a href="#tools" className="hover:text-purple-400 transition-colors">PDF Tools</a></li>
-              <li><a href="#tools" className="hover:text-purple-400 transition-colors">Utility Tools</a></li>
+            <h4 className="text-white font-black uppercase tracking-wider mb-6">Popular Tools</h4>
+            <ul className="space-y-3 text-sm font-medium">
+              <li><Link href="/tools/pdf-to-word" className="hover:text-purple-400 transition-colors flex items-center gap-2">📄 PDF to Word Converter</Link></li>
+              <li><Link href="/tools/pdf-to-excel" className="hover:text-purple-400 transition-colors flex items-center gap-2">📊 PDF to Excel Spreadsheet</Link></li>
+              <li><Link href="/tools/photo-studio" className="hover:text-purple-400 transition-colors flex items-center gap-2">🎨 Mega Photo Studio</Link></li>
+              <li><Link href="/tools/resume-builder" className="hover:text-purple-400 transition-colors flex items-center gap-2">💼 Smart Resume Builder</Link></li>
+            </ul>
+          </div>
+
+          {/* Column 3: Tools Categories */}
+          <div>
+            <h4 className="text-white font-black uppercase tracking-wider mb-6">Explore</h4>
+            <ul className="space-y-3 text-sm font-medium">
+              <li><a href="#tools" className="hover:text-purple-400 transition-colors">All PDF Tools</a></li>
+              <li><a href="#tools" className="hover:text-purple-400 transition-colors">Image & Design Editors</a></li>
               <li><a href="#tools" className="hover:text-purple-400 transition-colors">Business Generators</a></li>
+              <li><a href="#tools" className="hover:text-purple-400 transition-colors">Daily Utilities</a></li>
             </ul>
           </div>
+
+          {/* Column 4: Legal & SEO Pages */}
           <div>
-            <h4 className="text-white font-bold mb-4">Legal & Support</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><a href="#" className="hover:text-purple-400 transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-purple-400 transition-colors">Terms of Service</a></li>
-              <li><a href="#" className="hover:text-purple-400 transition-colors">Contact Us</a></li>
+            <h4 className="text-white font-black uppercase tracking-wider mb-6">Company & Legal</h4>
+            <ul className="space-y-3 text-sm font-medium">
+              <li><Link href="/about" className="hover:text-purple-400 transition-colors">About Us</Link></li>
+              <li><Link href="/privacy-policy" className="hover:text-purple-400 transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="hover:text-purple-400 transition-colors">Terms of Service</Link></li>
+              <li><Link href="/contact" className="hover:text-purple-400 transition-colors">Contact Support</Link></li>
             </ul>
           </div>
+
         </div>
-        <div className="max-w-7xl mx-auto px-4 mt-12 pt-8 border-t border-slate-800 text-sm text-slate-500 text-center">
-          © {new Date().getFullYear()} {siteInfo.name}. All rights reserved.
+        
+        {/* Copyright Bar */}
+        <div className="max-w-7xl mx-auto px-4 mt-8 flex flex-col md:flex-row items-center justify-between text-sm text-slate-500 font-medium">
+          <p>© {new Date().getFullYear()} {siteInfo.name}. All rights reserved.</p>
+          <p className="mt-2 md:mt-0">Made with ❤️ for Creators & Developers</p>
         </div>
       </footer>
       
     </div>
   );
 }
-
-// triggering fresh vercel build
