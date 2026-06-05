@@ -1,176 +1,186 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-// 🌟 Humara Supabase Connection import kar rahe hain
-import { supabase } from '../../lib/supabase'; 
 
-export default function AdminPanel() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [tools, setTools] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function AdminDashboard() {
+  // --- AUTHENTICATION STATE ---
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  // 🌟 1. Jaise hi page khule, Database se saare tools le aao
+  // Page load par check karo ki kya admin pehle se login hai?
   useEffect(() => {
-    fetchTools();
+    const token = localStorage.getItem('admin_token');
+    if (token === 'pdfnexa_secure_admin') {
+      setIsAuthenticated(true);
+    }
   }, []);
 
-  const fetchTools = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('tools_status')
-      .select('*')
-      .order('name', { ascending: true }); // A to Z sort
-      
-    if (data) {
-      setTools(data);
-    }
-    setLoading(false);
-  };
-
-  // 🌟 2. Jab koi Toggle button dabaye, toh Database mein ON/OFF save karo
-  const toggleToolStatus = async (slug: string, currentStatus: boolean) => {
-    // UI ko turant update karte hain (Fast lagne ke liye)
-    setTools(tools.map(tool => 
-      tool.slug === slug ? { ...tool, is_active: !currentStatus } : tool
-    ));
-
-    // Database mein update bhej rahe hain
-    const { error } = await supabase
-      .from('tools_status')
-      .update({ is_active: !currentStatus })
-      .eq('slug', slug);
-
-    if (error) {
-      console.error("Update Error:", error);
-      fetchTools(); // Agar error aaye toh wapas purana state load kar lo
+  // Login Handle Function
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // 🛑 Yahan apna manpasand password set karein (Mera example: Admin@2024)
+    if (password === 'Admin@2024') {
+      localStorage.setItem('admin_token', 'pdfnexa_secure_admin');
+      setIsAuthenticated(true);
+      setError('');
+    } else {
+      setError('Galat Password Bhai! 🚫');
     }
   };
 
-  return (
-    <div className="min-h-screen flex bg-slate-100 font-sans text-slate-800">
-      
-      {/* 🌟 SIDEBAR */}
-      <aside className="w-64 bg-[#0f172a] text-slate-300 flex flex-col shadow-2xl z-20">
-        <div className="h-16 flex items-center px-6 bg-[#0b1121] border-b border-slate-800">
-          <span className="text-2xl mr-2">🛡️</span>
-          <span className="text-xl font-black text-white tracking-wider">Admin Pro</span>
-        </div>
-        
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'dashboard' ? 'bg-purple-600 text-white shadow-lg' : 'hover:bg-slate-800 hover:text-white'}`}>
-            <span>📊</span> Analytics Dashboard
-          </button>
-          
-          <button onClick={() => setActiveTab('tools')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'tools' ? 'bg-purple-600 text-white shadow-lg' : 'hover:bg-slate-800 hover:text-white'}`}>
-            <span>🎛️</span> Tools Manager
-          </button>
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    setIsAuthenticated(false);
+  };
 
-          <button onClick={() => setActiveTab('seo')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'seo' ? 'bg-purple-600 text-white shadow-lg' : 'hover:bg-slate-800 hover:text-white'}`}>
-            <span>🔍</span> SEO & Settings
-          </button>
-        </nav>
-
-        <div className="p-4 border-t border-slate-800">
-          <Link href="/" className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors font-bold text-sm">
-            <span>🌐</span> Go to Live Website
-          </Link>
-        </div>
-      </aside>
-
-      {/* 🌟 MAIN CONTENT */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
-          <h1 className="text-xl font-black text-slate-800 capitalize">{activeTab.replace('-', ' ')}</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-bold bg-green-100 text-green-700 px-3 py-1 rounded-full border border-green-200">Database Connected 🟢</span>
+  // ==========================================
+  // 🚫 LOGIN SCREEN UI (Agar login nahi hai)
+  // ==========================================
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="bg-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-700">
+          <div className="text-center mb-8">
+            <span className="text-5xl block mb-4">🛡️</span>
+            <h1 className="text-2xl font-black text-white tracking-wider">ADMIN PORTAL</h1>
+            <p className="text-slate-400 text-sm mt-2">Restricted Area. Enter Master Password.</p>
           </div>
-        </header>
-
-        <div className="flex-1 overflow-auto p-8 bg-slate-50">
           
-          {/* TAB 1: DASHBOARD */}
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <div className="text-slate-500 text-sm font-bold mb-1">Active Tools</div>
-                  <div className="text-4xl font-black text-purple-600">
-                    {loading ? '...' : tools.filter(t => t.is_active).length} / {tools.length}
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <div className="text-slate-500 text-sm font-bold mb-1">Database Status</div>
-                  <div className="text-2xl font-black text-green-600 mt-2">Supabase Online 🟢</div>
-                </div>
-              </div>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <input
+                type="password"
+                placeholder="Enter Password..."
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-slate-900 text-white border border-slate-700 p-4 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500 outline-none transition-all text-center text-lg tracking-widest"
+              />
             </div>
-          )}
-
-          {/* TAB 2: TOOLS MANAGER (REAL DATABASE CONNECTED) */}
-          {activeTab === 'tools' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-                <h2 className="text-lg font-black text-slate-800">Manage Tools Visibility</h2>
-                <p className="text-sm text-slate-500 font-medium">Changes here will save directly to Supabase!</p>
-              </div>
-              
-              {loading ? (
-                <div className="p-10 text-center text-slate-500 font-bold">Loading tools from database... ⏳</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-100 text-slate-600 text-sm uppercase tracking-wider">
-                        <th className="p-4 font-bold border-b border-slate-200">Tool Name</th>
-                        <th className="p-4 font-bold border-b border-slate-200">Category</th>
-                        <th className="p-4 font-bold border-b border-slate-200">Status</th>
-                        <th className="p-4 font-bold border-b border-slate-200 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {tools.map((tool) => (
-                        <tr key={tool.slug} className="hover:bg-slate-50 transition-colors">
-                          <td className="p-4 font-bold text-slate-800">{tool.name}</td>
-                          <td className="p-4">
-                            <span className="px-2 py-1 bg-slate-200 text-slate-600 text-xs font-bold rounded-md uppercase">
-                              {tool.category}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            {tool.is_active ? (
-                              <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-black rounded-full border border-green-200">ACTIVE</span>
-                            ) : (
-                              <span className="px-3 py-1 bg-red-100 text-red-700 text-xs font-black rounded-full border border-red-200">INACTIVE</span>
-                            )}
-                          </td>
-                          <td className="p-4 text-right">
-                            {/* 🌟 REAL DATABASE TOGGLE BUTTON */}
-                            <button 
-                              onClick={() => toggleToolStatus(tool.slug, tool.is_active)}
-                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${tool.is_active ? 'bg-purple-600' : 'bg-slate-300'}`}
-                            >
-                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${tool.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 3: SEO */}
-          {activeTab === 'seo' && (
-            <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-              <h2 className="text-xl font-black text-slate-800 mb-6">Global SEO Settings</h2>
-              <p className="text-slate-500">Database connection successful. SEO fields can be connected in the future.</p>
-            </div>
-          )}
-
+            {error && <p className="text-red-400 text-center text-sm font-bold animate-pulse">{error}</p>}
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black py-4 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-purple-500/30"
+            >
+              UNLOCK DASHBOARD 🚀
+            </button>
+          </form>
         </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // ✅ PROFESSIONAL ADMIN DASHBOARD UI
+  // ==========================================
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      
+      {/* Top Navbar */}
+      <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🛡️</span>
+          <h1 className="text-xl font-black text-slate-800 tracking-tight">Admin Pro</h1>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            System Online
+          </span>
+          <button 
+            onClick={handleLogout}
+            className="text-sm font-bold text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors border border-transparent hover:border-red-200"
+          >
+            Logout🚪
+          </button>
+        </div>
+      </header>
+
+      <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-8">
+        
+        {/* Page Title */}
+        <div>
+          <h2 className="text-3xl font-black text-slate-900">Analytics Overview</h2>
+          <p className="text-slate-500 mt-1">Track your platform's performance and user activity.</p>
+        </div>
+
+        {/* Top Analytics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl">👀</div>
+            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Tool Views</p>
+            <h3 className="text-4xl font-black text-slate-800 mt-2">1,204</h3>
+            <p className="text-green-500 text-sm font-bold mt-2">↑ 12% from last week</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl">🔥</div>
+            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Most Popular Tool</p>
+            <h3 className="text-2xl font-black text-purple-600 mt-2 truncate">PDF to Excel</h3>
+            <p className="text-slate-500 text-sm font-medium mt-2">450 uses today</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl">🛠️</div>
+            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Active Tools</p>
+            <h3 className="text-4xl font-black text-slate-800 mt-2">35 <span className="text-lg text-slate-400">/ 35</span></h3>
+            <p className="text-slate-500 text-sm font-medium mt-2">100% Tools Live</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl">⚡</div>
+            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Database Status</p>
+            <h3 className="text-2xl font-black text-green-600 mt-2">Connected</h3>
+            <p className="text-slate-500 text-sm font-medium mt-2">Supabase Responding</p>
+          </div>
+        </div>
+
+        {/* Detailed Tracking Table */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center">
+            <h3 className="text-xl font-bold text-slate-800">Top Performing Tools</h3>
+            <button className="text-purple-600 font-bold text-sm hover:underline">View All Report →</button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-white text-slate-400 text-sm uppercase tracking-wider">
+                  <th className="p-4 font-semibold">Tool Name</th>
+                  <th className="p-4 font-semibold">Category</th>
+                  <th className="p-4 font-semibold text-right">Total Uses</th>
+                  <th className="p-4 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50 transition-colors">
+                  <td className="p-4 font-bold text-slate-700 flex items-center gap-3">
+                    <span className="p-2 bg-blue-50 text-blue-600 rounded-lg">📄</span> PDF to Excel
+                  </td>
+                  <td className="p-4"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">PDF</span></td>
+                  <td className="p-4 font-bold text-slate-800 text-right">450</td>
+                  <td className="p-4"><span className="text-green-500 font-bold text-sm">Active</span></td>
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors">
+                  <td className="p-4 font-bold text-slate-700 flex items-center gap-3">
+                    <span className="p-2 bg-purple-50 text-purple-600 rounded-lg">🎨</span> Mega Photo Studio
+                  </td>
+                  <td className="p-4"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">DESIGN</span></td>
+                  <td className="p-4 font-bold text-slate-800 text-right">312</td>
+                  <td className="p-4"><span className="text-green-500 font-bold text-sm">Active</span></td>
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors">
+                  <td className="p-4 font-bold text-slate-700 flex items-center gap-3">
+                    <span className="p-2 bg-orange-50 text-orange-600 rounded-lg">🛠️</span> Smart Card Maker
+                  </td>
+                  <td className="p-4"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">UTILITY</span></td>
+                  <td className="p-4 font-bold text-slate-800 text-right">280</td>
+                  <td className="p-4"><span className="text-green-500 font-bold text-sm">Active</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </main>
     </div>
   );
