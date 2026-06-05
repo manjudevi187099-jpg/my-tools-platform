@@ -1,98 +1,104 @@
 'use client';
 
-import React from 'react';
-import dynamic from 'next/dynamic';
-import { useParams } from 'next/navigation';
+import React, { useState } from 'react';
 
-// 🌟 FIX: toolsRegistry use ho raha hai
-import { toolsRegistry, ToolMetadata } from '../../../../config/siteConfig';
+export default function PdfToWordTool() {
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-const ToolComponents: Record<string, React.ElementType> = {
-  "pdf-merger": dynamic(() => import('../../../tools/pdf-merger'), { ssr: false }),
-  "image-to-pdf": dynamic(() => import('../../../tools/image-to-pdf'), { ssr: false }),
-  "split-pdf": dynamic(() => import('../../../tools/split-pdf'), { ssr: false }),
-  "watermark-pdf": dynamic(() => import('../../../tools/watermark-pdf'), { ssr: false }),
-  "pdf-editor": dynamic(() => import('../../../tools/pdf-editor'), { ssr: false }),
-  "compress-pdf": dynamic(() => import('../../../tools/compress-pdf'), { ssr: false }),
-  "unlock-pdf": dynamic(() => import('../../../tools/unlock-pdf'), { ssr: false }),
-  "protect-pdf": dynamic(() => import('../../../tools/protect-pdf'), { ssr: false }),
-  "invert-pdf": dynamic(() => import('../../../tools/pdf-invert-colors'), { ssr: false }),
-  "remove-watermark": dynamic(() => import('../../../tools/remove-watermark'), { ssr: false }),
-  "pdf-stamper": dynamic(() => import('../../../tools/pdf-stamper'), { ssr: false }),
-  "add-name-date": dynamic(() => import('../../../tools/add-name-date'), { ssr: false }),
-  "photo-signature-joiner": dynamic(() => import('../../../tools/photo-signature-joiner'), { ssr: false }),
-  "age-calculator": dynamic(() => import('../../../tools/age-calculator'), { ssr: false }),
-  "signature-on-photo": dynamic(() => import('../../../tools/signature-on-photo'), { ssr: false }),
-  "image-resizer": dynamic(() => import('../../../tools/image-resizer'), { ssr: false }),
-  "passport-psd-maker": dynamic(() => import('../../../tools/passport-psd-maker'), { ssr: false }),
-  "smart-card-maker": dynamic(() => import('../../../tools/smart-card-maker'), { ssr: false }),
-  "omr-sheet-maker": dynamic(() => import('../../../tools/omr-sheet-maker'), { ssr: false }),
-  "typing-speed-test": dynamic(() => import('../../../tools/typing-speed-test'), { ssr: false }),
-  "resume-builder": dynamic(() => import('../../../tools/resume-builder'), { ssr: false }),
-  "biodata-maker": dynamic(() => import('../../../tools/biodata-maker'), { ssr: false }),
-  "muslim-biodata-maker": dynamic(() => import('../../../tools/muslim-biodata-maker'), { ssr: false }),
-  "experience-letter-maker": dynamic(() => import('../../../tools/experience-letter-maker'), { ssr: false }),
-  "invoice-maker": dynamic(() => import('../../../tools/invoice-maker'), { ssr: false }),
-  "certificate-maker": dynamic(() => import('../../../tools/certificate-maker'), { ssr: false }),
-  "stamp-maker": dynamic(() => import('../../../tools/stamp-maker'), { ssr: false }),
-  "english-to-hindi-typing": dynamic(() => import('../../../tools/english-to-hindi-typing'), { ssr: false }),
-  "qr-generator": dynamic(() => import('../../../tools/qr-generator'), { ssr: false }),
-  "p2p-share": dynamic(() => import('../../../tools/p2p-share'), { ssr: false }),
-  "timer": dynamic(() => import('../../../tools/timer'), { ssr: false }),
-  "walkie-talkie": dynamic(() => import('../../../tools/walkie-talkie'), { ssr: false }),
-};
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+      setError('');
+    }
+  };
 
-export default function ToolPage() {
-  const params = useParams();
-  const slug = (params?.['tool-slug'] as string) || (params?.slug as string);
+  const handleConvert = async () => {
+    if (!file) {
+      setError('Bhai, pehle ek PDF file toh select karo!');
+      return;
+    }
 
-  if (!slug) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-pulse text-slate-500 font-bold text-lg flex items-center gap-2">
-          <span className="text-2xl">⏳</span> Loading Tool...
-        </div>
-      </div>
-    );
-  }
+    setLoading(true);
+    setError('');
 
-  const toolMeta = toolsRegistry[slug] as ToolMetadata;
-  const ActiveToolComponent = ToolComponents[slug];
+    const formData = new FormData();
+    formData.append('file', file);
 
-  if (!toolMeta || !toolMeta.isActive) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center bg-slate-50 px-4 text-center">
-        <div className="text-6xl mb-4">⚠️</div>
-        <h2 className="text-2xl font-black text-slate-800">Tool Not Found</h2>
-        <p className="text-slate-500 mt-2 max-w-md">
-          The tool "{slug}" is currently unavailable, under maintenance, or does not exist.
-        </p>
-      </div>
-    );
-  }
+    try {
+      const response = await fetch('/api/pdf-to-word', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Server mein kuch issue aa gaya.');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name.replace('.pdf', '_converted.docx'); 
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-12">
-      <div className="bg-white border-b py-10 px-4 text-center shadow-sm">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">{toolMeta.name}</h1>
-        <p className="text-slate-500 mt-3 max-w-2xl mx-auto text-sm md:text-base">
-          {toolMeta.description}
-        </p>
-      </div>
-      
-      <div className="mt-8 px-4">
-        {ActiveToolComponent ? (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <ActiveToolComponent />
+    <div className="min-h-screen bg-slate-50 py-20 px-4 font-sans">
+      <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+        
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-10 text-center">
+          <span className="text-5xl mb-4 block">📄</span>
+          <h1 className="text-3xl font-black text-white">PDF to Word Converter</h1>
+          <p className="text-blue-100 mt-2 font-medium">Extract text and paragraphs into an editable Word document instantly.</p>
+        </div>
+        
+        <div className="p-10 text-center space-y-8">
+          
+          <div className="border-2 border-dashed border-blue-300 rounded-3xl p-12 bg-blue-50 hover:bg-blue-100 transition-colors">
+            <input 
+              type="file" 
+              accept=".pdf" 
+              onChange={handleFileChange} 
+              className="block w-full text-sm text-slate-500 mx-auto
+                file:mr-4 file:py-3 file:px-8
+                file:rounded-full file:border-0
+                file:text-sm file:font-black
+                file:bg-blue-600 file:text-white
+                hover:file:bg-blue-700 file:cursor-pointer cursor-pointer transition-colors"
+            />
           </div>
-        ) : (
-          <div className="text-center p-20">
-            <div className="inline-block bg-red-50 text-red-600 px-6 py-4 rounded-xl border border-red-200 font-bold shadow-sm">
-              ⚠️ Warning: Component not linked. Please check ToolComponents map for "{slug}"
+
+          {error && (
+            <div className="p-4 bg-red-50 text-red-700 font-bold rounded-xl border border-red-200">
+               ❌ {error}
             </div>
-          </div>
-        )}
+          )}
+
+          <button
+            onClick={handleConvert}
+            disabled={!file || loading}
+            className={`w-full py-5 rounded-2xl font-black text-xl transition-all duration-300 ${
+              !file || loading 
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                : 'bg-slate-900 hover:bg-black text-white shadow-2xl hover:shadow-blue-500/20 hover:-translate-y-1'
+            }`}
+          >
+            {loading ? '⚙️ Processing... (Magic happens here)' : '🚀 Convert to Word Now'}
+          </button>
+          
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
