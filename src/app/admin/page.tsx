@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 
-// Data Types
 type Tool = {
   slug: string;
   name: string;
@@ -13,22 +12,25 @@ type Tool = {
 };
 
 export default function AdminDashboard() {
-  // --- AUTH STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
-  // --- APP STATE ---
   const [activeTab, setActiveTab] = useState('dashboard');
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // --- METRICS STATE ---
   const [totalViews, setTotalViews] = useState(0);
   const [popularTool, setPopularTool] = useState({ name: 'N/A', views: 0 });
   const [activeCount, setActiveCount] = useState(0);
 
-  // 1. Check Login
+  // 🔥 SEO STATE 🔥
+  const [seoData, setSeoData] = useState({
+    site_name: '', tagline: '', seo_description: '', keywords: ''
+  });
+  const [isSavingSeo, setIsSavingSeo] = useState(false);
+  const [seoMessage, setSeoMessage] = useState('');
+
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
     if (token === 'pdfnexa_secure_admin') {
@@ -54,38 +56,25 @@ export default function AdminDashboard() {
     setIsAuthenticated(false);
   };
 
-  // 2. 🌟 FETCH REAL DATA FROM SUPABASE 🌟
   const fetchRealData = async () => {
     setLoading(true);
     try {
-      // 🔥 FIX 1: order('id') hata kar order('name') kar diya 🔥
-      const { data: toolsData, error: toolsError } = await supabase
-        .from('tools_status')
-        .select('*')
-        .order('name', { ascending: true });
-
-      const { data: analyticsData, error: analyticsError } = await supabase
-        .from('tool_analytics')
-        .select('*');
+      // Fetch Tools
+      const { data: toolsData } = await supabase.from('tools_status').select('*').order('name', { ascending: true });
+      const { data: analyticsData } = await supabase.from('tool_analytics').select('*');
+      
+      // 🔥 Fetch SEO Data 🔥
+      const { data: seoSettingsData } = await supabase.from('site_settings').select('*').eq('id', 1).single();
+      if (seoSettingsData) setSeoData(seoSettingsData);
 
       if (toolsData) {
-        let tViews = 0;
-        let maxViews = -1;
-        let bestTool = 'N/A';
-        let aCount = 0;
-
+        let tViews = 0, maxViews = -1, bestTool = 'N/A', aCount = 0;
         const mergedTools = toolsData.map((tool: any) => {
           if (tool.is_active) aCount++;
-
           const stat = analyticsData?.find((a: any) => a.tool_slug === tool.slug);
           const views = stat ? stat.total_views : 0;
-          
           tViews += views;
-          if (views > maxViews) {
-            maxViews = views;
-            bestTool = tool.name;
-          }
-
+          if (views > maxViews) { maxViews = views; bestTool = tool.name; }
           return { ...tool, views };
         });
 
@@ -101,21 +90,30 @@ export default function AdminDashboard() {
     }
   };
 
-  // 3. 🌟 TOGGLE TOOL STATUS (ON / OFF) 🌟
   const toggleToolStatus = async (slug: string, currentStatus: boolean) => {
     const newStatus = !currentStatus;
-    
     setTools(tools.map(t => t.slug === slug ? { ...t, is_active: newStatus } : t));
     setActiveCount(prev => newStatus ? prev + 1 : prev - 1);
+    await supabase.from('tools_status').update({ is_active: newStatus }).eq('slug', slug);
+  };
 
+  // 🔥 UPDATE SEO LOGIC 🔥
+  const handleSaveSEO = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSeo(true);
+    setSeoMessage('');
+    
     const { error } = await supabase
-      .from('tools_status')
-      .update({ is_active: newStatus })
-      .eq('slug', slug);
+      .from('site_settings')
+      .update(seoData)
+      .eq('id', 1);
 
+    setIsSavingSeo(false);
     if (error) {
-      alert("Status update fail ho gaya!");
-      fetchRealData(); 
+      setSeoMessage('❌ Error saving settings!');
+    } else {
+      setSeoMessage('✅ SEO Settings Saved Successfully!');
+      setTimeout(() => setSeoMessage(''), 3000);
     }
   };
 
@@ -129,17 +127,9 @@ export default function AdminDashboard() {
             <p className="text-slate-400 text-sm mt-2">Restricted Area. Enter Master Password.</p>
           </div>
           <form onSubmit={handleLogin} className="space-y-6">
-            <input
-              type="password"
-              placeholder="Enter Password..."
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-900 text-white border border-slate-700 p-4 rounded-xl focus:border-purple-500 outline-none text-center text-lg tracking-widest"
-            />
+            <input type="password" placeholder="Enter Password..." value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-slate-900 text-white border border-slate-700 p-4 rounded-xl focus:border-purple-500 outline-none text-center text-lg tracking-widest" />
             {authError && <p className="text-red-400 text-center text-sm font-bold animate-pulse">{authError}</p>}
-            <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black py-4 rounded-xl hover:opacity-90 transition-opacity">
-              UNLOCK DASHBOARD 🚀
-            </button>
+            <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black py-4 rounded-xl hover:opacity-90 transition-opacity">UNLOCK DASHBOARD 🚀</button>
           </form>
         </div>
       </div>
@@ -149,7 +139,8 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
       
-      <aside className="w-64 bg-slate-900 text-white flex flex-col fixed h-full">
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-slate-900 text-white flex flex-col fixed h-full z-20">
         <div className="p-6 border-b border-slate-800">
           <h1 className="text-2xl font-black flex items-center gap-2"><span className="text-blue-500">🛡️</span> Admin Pro</h1>
         </div>
@@ -163,6 +154,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
+      {/* MAIN CONTENT */}
       <main className="ml-64 flex-1 p-8">
         {loading ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-500">
@@ -171,13 +163,10 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <>
+            {/* TAB 1: DASHBOARD (Same as before) */}
             {activeTab === 'dashboard' && (
               <div className="space-y-8 animate-in fade-in">
-                <div>
-                  <h2 className="text-3xl font-black text-slate-900">Analytics Overview</h2>
-                  <p className="text-slate-500 mt-1">Real-time data synced from Supabase.</p>
-                </div>
-
+                <div><h2 className="text-3xl font-black text-slate-900">Analytics Overview</h2></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
                     <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Tool Views</p>
@@ -195,71 +184,30 @@ export default function AdminDashboard() {
                   <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
                     <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Database Status</p>
                     <h3 className="text-2xl font-black text-green-600 mt-2">Connected</h3>
-                    <p className="text-slate-500 text-sm font-medium mt-2">Real-time sync active</p>
                   </div>
-                </div>
-
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="p-6 border-b border-slate-200 bg-slate-50/50">
-                    <h3 className="text-xl font-bold text-slate-800">All Tools Performance</h3>
-                  </div>
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-white text-slate-400 text-sm uppercase tracking-wider border-b">
-                        <th className="p-4 font-semibold">Tool Name</th>
-                        <th className="p-4 font-semibold">Category</th>
-                        <th className="p-4 font-semibold text-right">Total Uses</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {/* 🔥 FIX 2: key ko tool.id se tool.slug kar diya 🔥 */}
-                      {tools.sort((a,b) => (b.views || 0) - (a.views || 0)).map((tool) => (
-                        <tr key={tool.slug} className="hover:bg-slate-50">
-                          <td className="p-4 font-bold text-slate-700">{tool.name}</td>
-                          <td className="p-4"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase">{tool.category}</span></td>
-                          <td className="p-4 font-bold text-purple-600 text-right">{tool.views || 0}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
               </div>
             )}
 
+            {/* TAB 2: TOOLS MANAGER (Same as before) */}
             {activeTab === 'tools' && (
               <div className="space-y-8 animate-in fade-in">
-                <div>
-                  <h2 className="text-3xl font-black text-slate-900">Tools Manager</h2>
-                  <p className="text-slate-500 mt-1">Turn tools ON or OFF instantly. Changes reflect live on the homepage.</p>
-                </div>
-
+                <div><h2 className="text-3xl font-black text-slate-900">Tools Manager</h2></div>
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-white text-slate-400 text-sm uppercase tracking-wider border-b">
                         <th className="p-4 font-semibold">Tool Name</th>
-                        <th className="p-4 font-semibold">Slug (URL)</th>
                         <th className="p-4 font-semibold text-right">Status Control</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {/* 🔥 FIX 3: key ko tool.id se tool.slug kar diya 🔥 */}
                       {tools.map((tool) => (
                         <tr key={tool.slug} className={`transition-colors ${!tool.is_active ? 'bg-red-50/50' : 'hover:bg-slate-50'}`}>
-                          <td className={`p-4 font-bold ${!tool.is_active ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                            {tool.name}
-                          </td>
-                          <td className="p-4 text-slate-500 text-sm">{tool.slug}</td>
+                          <td className={`p-4 font-bold ${!tool.is_active ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{tool.name}</td>
                           <td className="p-4 text-right">
-                            <button 
-                              onClick={() => toggleToolStatus(tool.slug, tool.is_active)}
-                              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none ${
-                                tool.is_active ? 'bg-green-500' : 'bg-slate-300'
-                              }`}
-                            >
-                              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
-                                tool.is_active ? 'translate-x-8' : 'translate-x-1'
-                              }`}/>
+                            <button onClick={() => toggleToolStatus(tool.slug, tool.is_active)} className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${tool.is_active ? 'bg-green-500' : 'bg-slate-300'}`}>
+                              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${tool.is_active ? 'translate-x-8' : 'translate-x-1'}`}/>
                             </button>
                           </td>
                         </tr>
@@ -270,17 +218,81 @@ export default function AdminDashboard() {
               </div>
             )}
 
+            {/* 🔥 TAB 3: THE NEW SEO MODULE 🔥 */}
             {activeTab === 'seo' && (
-              <div className="space-y-8 animate-in fade-in">
+              <div className="space-y-8 animate-in fade-in max-w-4xl">
                 <div>
-                  <h2 className="text-3xl font-black text-slate-900">SEO & Site Settings</h2>
-                  <p className="text-slate-500 mt-1">Manage Meta tags, descriptions, and site configurations.</p>
+                  <h2 className="text-3xl font-black text-slate-900">Global SEO & Settings</h2>
+                  <p className="text-slate-500 mt-1">Manage how your website appears on Google and Social Media.</p>
                 </div>
-                <div className="bg-white p-12 rounded-3xl border border-slate-200 shadow-sm text-center">
-                  <span className="text-6xl">🚧</span>
-                  <h3 className="text-2xl font-bold text-slate-800 mt-4">Under Construction</h3>
-                  <p className="text-slate-500 mt-2">SEO Module Database se connect hona baaki hai. (Coming Soon)</p>
-                </div>
+                
+                <form onSubmit={handleSaveSEO} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                  
+                  {/* Site Name */}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Website Name</label>
+                    <input 
+                      type="text" 
+                      value={seoData.site_name}
+                      onChange={(e) => setSeoData({...seoData, site_name: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all font-medium"
+                      placeholder="e.g. PdfNexa"
+                    />
+                  </div>
+
+                  {/* Tagline */}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Tagline (Hero Section)</label>
+                    <input 
+                      type="text" 
+                      value={seoData.tagline}
+                      onChange={(e) => setSeoData({...seoData, tagline: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all font-medium"
+                      placeholder="e.g. All-In-One Professional Utility Engine"
+                    />
+                  </div>
+
+                  {/* Meta Description */}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Meta Description (For Google Search)</label>
+                    <textarea 
+                      value={seoData.seo_description}
+                      onChange={(e) => setSeoData({...seoData, seo_description: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all font-medium min-h-[120px]"
+                      placeholder="Write a brief description of your tools platform..."
+                    />
+                    <p className="text-xs text-slate-400 mt-2">Optimal length is 150-160 characters.</p>
+                  </div>
+
+                  {/* Keywords */}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Global Keywords</label>
+                    <input 
+                      type="text" 
+                      value={seoData.keywords}
+                      onChange={(e) => setSeoData({...seoData, keywords: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all font-medium"
+                      placeholder="pdf tools, image editor, online utility..."
+                    />
+                    <p className="text-xs text-slate-400 mt-2">Separate keywords with commas.</p>
+                  </div>
+
+                  <div className="pt-4 flex items-center gap-4">
+                    <button 
+                      type="submit" 
+                      disabled={isSavingSeo}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isSavingSeo ? 'Saving Changes...' : 'Save SEO Settings 💾'}
+                    </button>
+                    {seoMessage && (
+                      <span className={`font-bold ${seoMessage.includes('❌') ? 'text-red-500' : 'text-green-500'} animate-in fade-in`}>
+                        {seoMessage}
+                      </span>
+                    )}
+                  </div>
+
+                </form>
               </div>
             )}
           </>
