@@ -92,6 +92,14 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["pdf to word", "pdf to doc", "convert pdf to word"],
     isActive: true,
   },
+  // 🌟 FIX: YAHAN PDF TO EXCEL ADD KIYA HAI 🌟
+  "pdf-to-excel": {
+    name: "PDF to Excel Converter",
+    description: "Convert PDF tables to Excel spreadsheets easily.",
+    category: "pdf",
+    keywords: ["pdf to excel", "convert pdf to excel", "pdf to xlsx"],
+    isActive: true,
+  },
 
   // --- UTILITY / IMAGE TOOLS ---
   "add-name-date": {
@@ -136,13 +144,6 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["image resizer", "photo resizer", "signature resizer", "resize to cm", "resize pixels"],
     isActive: true,
   },
-  "passport-psd-maker": {
-    name: "A4 Passport PSD Maker",
-    description: "A4 paper par 6x7 (42 photos) ka passport size format banayein aur seedha .PSD file download karein.",
-    category: "design",
-    keywords: ["passport size photo maker", "psd generator", "a4 photo format", "studio photo grid"],
-    isActive: true,
-  },
   "smart-card-maker": {
     name: "Smart Card A4 PSD Maker",
     description: "PAN, Aadhaar, Voter ID jaise documents ko crop karein aur seedha A4 print sheet par perfectly arrange karke PSD download karein.",
@@ -185,34 +186,6 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["muslim biodata", "islamic marriage profile", "shaadi biodata", "matrimonial profile generator"],
     isActive: true,
   },
-  "experience-letter-maker": {
-    name: "Experience Letter Maker",
-    description: "Generate professional Experience & Relieving Letters with company letterhead formatting and PDF export.",
-    category: "business",
-    keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
-    isActive: true,
-  },
-  "invoice-maker": {
-    name: "Pro Invoice Maker",
-    description: "Generate professional business invoices with auto-calculated taxes, discounts, and HD PDF export.",
-    category: "business",
-    keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
-    isActive: true,
-  },
-  "certificate-maker": {
-    name: "Pro Certificate Generator",
-    description: "Generate authentic, high-quality landscape certificates for courses and events with PDF/PNG export.",
-    category: "design",
-    keywords: ["certificate maker", "certificate generator", "award certificate", "course certificate", "event certificate"],
-    isActive: true,
-  },
-  "stamp-maker": {
-    name: "Digital Stamp & Seal Maker",
-    description: "Generate professional round seals and rectangle rubber stamps. Download as transparent PNG or printable PDF.",
-    category: "design",
-    keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
-    isActive: true,
-  },
   "qr-generator": {
     name: "Mega QR Studio",
     description: "Generate URL, Text, WiFi, and VCard (Contact) QR Codes instantly in High Quality.",
@@ -234,13 +207,58 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["timer", "stopwatch", "countdown timer", "browser timer", "alarm timer", "study timer"],
     isActive: true,
   },
-
-  // 🔥 YAHAN NAYA WALKIE TALKIE TOOL ADD KIYA HAI 🔥
   "walkie-talkie": {
     name: "Walkie Talkie P2P",
     description: "Free, private, push-to-talk voice chat directly in your browser. No signup required.",
     category: "utility",
     keywords: ["walkie talkie", "voice chat", "push to talk", "p2p audio", "browser radio"],
+    isActive: true,
+  },
+
+  // --- DESIGN TOOLS ---
+  "passport-psd-maker": {
+    name: "A4 Passport PSD Maker",
+    description: "A4 paper par 6x7 (42 photos) ka passport size format banayein aur seedha .PSD file download karein.",
+    category: "design",
+    keywords: ["passport size photo maker", "psd generator", "a4 photo format", "studio photo grid"],
+    isActive: true,
+  },
+  "certificate-maker": {
+    name: "Pro Certificate Generator",
+    description: "Generate authentic, high-quality landscape certificates for courses and events with PDF/PNG export.",
+    category: "design",
+    keywords: ["certificate maker", "certificate generator", "award certificate", "course certificate", "event certificate"],
+    isActive: true,
+  },
+  "stamp-maker": {
+    name: "Digital Stamp & Seal Maker",
+    description: "Generate professional round seals and rectangle rubber stamps. Download as transparent PNG or printable PDF.",
+    category: "design",
+    keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
+    isActive: true,
+  },
+  // 🌟 FIX: YAHAN PHOTO STUDIO ADD KIYA HAI 🌟
+  "photo-studio": {
+    name: "Mega Photo Studio",
+    description: "Crop, resize, and arrange photos for printing.",
+    category: "design",
+    keywords: ["photo studio", "crop photo", "resize image", "photo printing"],
+    isActive: true,
+  },
+
+  // --- BUSINESS TOOLS ---
+  "experience-letter-maker": {
+    name: "Experience Letter Maker",
+    description: "Generate professional Experience & Relieving Letters with company letterhead formatting and PDF export.",
+    category: "business",
+    keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
+    isActive: true,
+  },
+  "invoice-maker": {
+    name: "Pro Invoice Maker",
+    description: "Generate professional business invoices with auto-calculated taxes, discounts, and HD PDF export.",
+    category: "business",
+    keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
     isActive: true,
   }
 };
