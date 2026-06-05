@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-// 🌟 FIX: Apna Supabase ka sahi path check karein (Agar error aaye toh '@/' ya '../../' use karein)
-import { supabase } from '../lib/supabase';
+// 🌟 FIX 1: Path ko update kar diya (../../lib/supabase)
+import { supabase } from '../../lib/supabase';
 
 // Data Types
 type Tool = {
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
     const token = localStorage.getItem('admin_token');
     if (token === 'pdfnexa_secure_admin') {
       setIsAuthenticated(true);
-      fetchRealData(); // Login hote hi data laao
+      fetchRealData(); 
     }
   }, []);
 
@@ -60,13 +60,11 @@ export default function AdminDashboard() {
   const fetchRealData = async () => {
     setLoading(true);
     try {
-      // Tools status le aao
       const { data: toolsData, error: toolsError } = await supabase
         .from('tools_status')
         .select('*')
         .order('id', { ascending: true });
 
-      // Analytics le aao
       const { data: analyticsData, error: analyticsError } = await supabase
         .from('tool_analytics')
         .select('*');
@@ -77,11 +75,12 @@ export default function AdminDashboard() {
         let bestTool = 'N/A';
         let aCount = 0;
 
-        // Dono tables ko merge kar rahe hain
-        const mergedTools = toolsData.map((tool) => {
+        // 🌟 FIX 2: TypeScript ke liye '(tool: any)' lagaya
+        const mergedTools = toolsData.map((tool: any) => {
           if (tool.is_active) aCount++;
 
-          const stat = analyticsData?.find((a) => a.tool_slug === tool.slug);
+          // 🌟 FIX 3: TypeScript ke liye '(a: any)' lagaya
+          const stat = analyticsData?.find((a: any) => a.tool_slug === tool.slug);
           const views = stat ? stat.total_views : 0;
           
           tViews += views;
@@ -109,11 +108,9 @@ export default function AdminDashboard() {
   const toggleToolStatus = async (slug: string, currentStatus: boolean) => {
     const newStatus = !currentStatus;
     
-    // UI mein turant update dikhane ke liye
     setTools(tools.map(t => t.slug === slug ? { ...t, is_active: newStatus } : t));
     setActiveCount(prev => newStatus ? prev + 1 : prev - 1);
 
-    // Database mein update bhejna
     const { error } = await supabase
       .from('tools_status')
       .update({ is_active: newStatus })
@@ -121,7 +118,7 @@ export default function AdminDashboard() {
 
     if (error) {
       alert("Status update fail ho gaya!");
-      fetchRealData(); // Error aaya toh purana data wapas le aao
+      fetchRealData(); 
     }
   };
 
@@ -246,7 +243,6 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {/* Views ke hisaab se sort karke dikha rahe hain */}
                       {tools.sort((a,b) => (b.views || 0) - (a.views || 0)).map((tool) => (
                         <tr key={tool.id} className="hover:bg-slate-50">
                           <td className="p-4 font-bold text-slate-700">{tool.name}</td>
@@ -285,7 +281,6 @@ export default function AdminDashboard() {
                           </td>
                           <td className="p-4 text-slate-500 text-sm">{tool.slug}</td>
                           <td className="p-4 text-right">
-                            {/* 🔥 THE MAGIC TOGGLE BUTTON 🔥 */}
                             <button 
                               onClick={() => toggleToolStatus(tool.slug, tool.is_active)}
                               className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none ${
