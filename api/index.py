@@ -9,8 +9,16 @@ from pdf2docx import Converter
 from PIL import Image
 import base64
 from rembg import remove
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Iska matlab har website se request aane do
+    allow_credentials=True,
+    allow_methods=["*"],  # GET, POST sab allow karo
+    allow_headers=["*"],
+)
 
 # ==========================================
 # 1. PDF TO EXCEL ENGINE
