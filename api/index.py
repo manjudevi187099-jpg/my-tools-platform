@@ -8,6 +8,7 @@ import pdfplumber
 from pdf2docx import Converter
 from PIL import Image
 import base64
+from rembg import remove
 
 app = FastAPI()
 
@@ -89,21 +90,31 @@ async def mega_preview(
     hd_upgrade: str = Form("false"),
     enhance: str = Form("false")
 ):
-    # Frontend se base64 image aayegi, use read karna
-    image_data = base64.b64decode(cropped_image.split(",")[1])
-    image = Image.open(io.BytesIO(image_data)).convert("RGBA")
-    
-    # Yahan AI Background removal aur color change ka code aayega
-    # (Abhi ke liye basic processing kar rahe hain taaki Vercel par crash na ho)
-    if bg_color != "transparent":
-        bg = Image.new("RGBA", image.size, bg_color)
-        image = Image.alpha_composite(bg, image)
+    try:
+        # Frontend se image aayi
+        image_data = base64.b64decode(cropped_image.split(",")[1])
+        original_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
+        
+        # 🪄 ASLI AI MAGIC: Background Remove karna
+        no_bg_image = remove(original_image)
 
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='PNG')
-    img_byte_arr.seek(0)
-    
-    return Response(content=img_byte_arr.getvalue(), media_type="image/png")
+        # Naya background color lagana
+        if bg_color != "transparent":
+            # Naya color ka background banaya
+            bg = Image.new("RGBA", no_bg_image.size, bg_color)
+            # Bina background wali photo ko naye color par paste kiya
+            bg.paste(no_bg_image, (0, 0), no_bg_image)
+            final_image = bg
+        else:
+            final_image = no_bg_image
+
+        img_byte_arr = io.BytesIO()
+        final_image.save(img_byte_arr, format='PNG')
+        img_byte_arr.seek(0)
+        
+        return Response(content=img_byte_arr.getvalue(), media_type="image/png")
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.post("/api/mega-sheet")
 async def mega_sheet(
@@ -112,18 +123,17 @@ async def mega_sheet(
     quantity: int = Form(...),
     add_border: str = Form("false")
 ):
-    # A4 Sheet (2480 x 3508 pixels) banane ka logic
+    # A4 Sheet (2480 x 3508 pixels)
     img_bytes = await processed_image.read()
     single_photo = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     
-    # Ek blank A4 white canvas banana
     a4_sheet = Image.new("RGB", (2480, 3508), "white")
     
-    # (Yahan grid mein photo paste karne ka loop aayega depending on quantity)
-    a4_sheet.paste(single_photo, (100, 100)) # Demo paste
+    # Abhi ke liye demo paste
+    a4_sheet.paste(single_photo, (100, 100)) 
     
     psd_buffer = io.BytesIO()
-    a4_sheet.save(psd_buffer, format='PNG') # Browser support ke liye PNG as output
+    a4_sheet.save(psd_buffer, format='PNG') 
     psd_buffer.seek(0)
     
     return Response(content=psd_buffer.getvalue(), media_type="image/png")

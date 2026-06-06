@@ -4,4 +4,5 @@ pdfplumber
 pandas
 openpyxl
 pdf2docx
-Pillow
+rembg
+pillow
