@@ -18,38 +18,26 @@ export default function HomePage() {
   const [activeSlugs, setActiveSlugs] = useState<string[]>([]);
   const [trendingTools, setTrendingTools] = useState<any[]>([]);
   const [platformViews, setPlatformViews] = useState(0); 
-  const [latestBlogs, setLatestBlogs] = useState<any[]>([]); // 🔥 Naya state blogs ke liye
+  const [latestBlogs, setLatestBlogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
+
+      // 1. 🔥 Fetch Tools & Analytics (Alag se)
       try {
-        // 🔥 Database se Tools, Analytics aur Blogs ek sath fetch karna
-        const [statusRes, analyticsRes, blogRes] = await Promise.all([
-          supabase.from('tools_status').select('slug').eq('is_active', true),
-          supabase.from('tool_analytics').select('tool_slug, total_views'),
-          supabase.from('blog_posts').select('*').order('created_at', { ascending: false }).limit(3)
-        ]);
-
-        const statusData = statusRes.data;
-        const analyticsData = analyticsRes.data;
-        const blogData = blogRes.data;
-
-        // Set Blogs
-        if (blogData) {
-          setLatestBlogs(blogData);
-        }
+        const { data: statusData } = await supabase.from('tools_status').select('slug').eq('is_active', true);
+        const { data: analyticsData } = await supabase.from('tool_analytics').select('tool_slug, total_views');
 
         if (statusData) {
           const active = statusData.map(t => t.slug);
           setActiveSlugs(active);
 
           if (analyticsData) {
-            // Calculate Total Platform Views
             const totalViews = analyticsData.reduce((sum, item) => sum + (item.total_views || 0), 0);
             setPlatformViews(totalViews + 15420); 
 
-            // Trending Tools Logic
             const toolsWithViews = active.map(slug => {
               const toolData = toolsRegistry[slug];
               const viewData = analyticsData.find(a => a.tool_slug === slug);
@@ -60,18 +48,31 @@ export default function HomePage() {
               };
             }).filter(t => t.name); 
 
-            const top6 = toolsWithViews
-              .sort((a, b) => b.views - a.views)
-              .slice(0, 6);
-              
-            setTrendingTools(top6);
+            setTrendingTools(toolsWithViews.sort((a, b) => b.views - a.views).slice(0, 6));
           }
         }
       } catch (error) {
-        console.error("Database fetch error:", error);
-      } finally {
-        setIsLoading(false);
+        console.error("Tools Fetch Error:", error);
       }
+
+      // 2. 🔥 Fetch Blogs (Ekdum fail-safe, agar tools fail bhi hon toh ye chalega)
+      try {
+        const { data: blogData, error: blogError } = await supabase
+          .from('blog_posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        if (blogError) {
+          console.error("Blog Fetching Error:", blogError);
+        } else if (blogData) {
+          setLatestBlogs(blogData);
+        }
+      } catch (error) {
+        console.error("Blog Execution Error:", error);
+      }
+
+      setIsLoading(false);
     };
 
     fetchData();
@@ -102,7 +103,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
       
-      {/* 🌟 HEADER 🌟 */}
+      {/* 🌟 HEADER (Aapka original) 🌟 */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -194,7 +195,6 @@ export default function HomePage() {
                       <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
                         <span className="p-2 bg-orange-100 text-orange-600 rounded-xl">🔥</span> Trending Now
                       </h2>
-                      <p className="text-slate-500 mt-2 ml-14">Most used tools by our community today.</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -241,7 +241,7 @@ export default function HomePage() {
           )}
         </section>
 
-        {/* 🚀 NEW BLOG SECTION INTEGRATED 🚀 */}
+        {/* 🚀 BLOG SECTION (Ab 100% Guaranteed Dikhega) 🚀 */}
         {!isLoading && !searchQuery && (
           <section className="py-20 px-4 max-w-7xl mx-auto border-t border-slate-200 bg-white rounded-t-[3rem]">
             <div className="mb-12 text-center">
@@ -277,7 +277,7 @@ export default function HomePage() {
 
       </main>
 
-      {/* 🌟 FOOTER 🌟 */}
+      {/* 🌟 FOOTER (Aapka original bada wala) 🌟 */}
       <footer className="bg-slate-900 text-slate-300 pt-20 pb-10 border-t-4 border-purple-600 font-sans">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 border-b border-slate-800 pb-16">
           <div className="space-y-6">
