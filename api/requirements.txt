@@ -1,8 +1,9 @@
 fastapi
+uvicorn
 python-multipart
-pdfplumber
 pandas
 openpyxl
+pdfplumber
 pdf2docx
+Pillow
 rembg
-pillow
