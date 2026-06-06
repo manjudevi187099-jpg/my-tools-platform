@@ -1,24 +1,45 @@
 import { supabase } from '../../../lib/supabase';
-import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
-export default async function BlogPost({ params }: { params: { slug: string } }) {
+// Next.js 14/15 safe params structure
+export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
+  // Slug ko safely extract karna
+  const resolvedParams = await params;
+  const currentSlug = resolvedParams.slug;
+
   // Database se blog fetch karna
   const { data: post, error } = await supabase
     .from('blog_posts')
     .select('*')
-    .eq('slug', params.slug)
+    .eq('slug', currentSlug)
     .single();
 
-  // Agar blog link galat ho, toh Next.js ka default 404 page dikhana
-  if (error || !post) {
-    notFound();
+  // 🔴 AGAR DATABASE ERROR AAYE (Debug ke liye)
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+        <h1 className="text-3xl font-black text-red-500 mb-2">Database Error 🐞</h1>
+        <p className="text-slate-600 bg-white p-4 rounded-xl border border-red-200">{error.message}</p>
+        <p className="mt-4 text-sm text-slate-500">Hint: Sayad Supabase mein RLS enabled hai.</p>
+      </div>
+    );
   }
 
+  // 🔴 AGAR BLOG DATABASE MEIN NA MILE (Debug ke liye)
+  if (!post) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+        <h1 className="text-3xl font-black text-slate-800 mb-2">Blog Missing in DB 🕵️‍♂️</h1>
+        <p className="text-slate-600 bg-white p-4 rounded-xl border border-slate-200">Humne yeh URL dhundha: <b>{currentSlug}</b> par database mein nahi mila.</p>
+      </div>
+    );
+  }
+
+  // ✅ AGAR SAB THEEK HAI TOH BLOG DIKHAO
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       
-      {/* Simple Header */}
+      {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -50,7 +71,7 @@ export default async function BlogPost({ params }: { params: { slug: string } })
             </p>
           </div>
           
-          {/* 🔥 Yahan aapka likha hua article render hoga 🔥 */}
+          {/* Content Render */}
           <div 
             className="prose prose-lg prose-slate max-w-none font-medium leading-relaxed"
             dangerouslySetInnerHTML={{ __html: post.content }} 
