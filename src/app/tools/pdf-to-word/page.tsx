@@ -27,10 +27,10 @@ export default function PdfToWordTool() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/pdf-to-word', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/pdf-to-word`, {
+  method: "POST",
+  body: formData,
+});
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));

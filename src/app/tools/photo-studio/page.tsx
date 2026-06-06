@@ -91,10 +91,10 @@ export default function MegaPhotoStudio() {
     formData.append('add_border', addBorder.toString());
 
     try {
-      const response = await fetch('/api/mega-sheet', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/photo-studio`, {
+  method: "POST",
+  body: formData,
+});
 
       if (!response.ok) {
         const errData = await response.json();

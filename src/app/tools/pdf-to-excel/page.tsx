@@ -31,10 +31,10 @@ export default function PdfToExcelTool() {
 
     try {
       // 🚀 Hamare Python Engine (Port 8000) ko parcel bhej rahe hain
-      const response = await fetch('/api/pdf-to-excel', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/pdf-to-excel`, {
+  method: "POST",
+  body: formData,
+});
 
       if (!response.ok) {
         const errData = await response.json();
