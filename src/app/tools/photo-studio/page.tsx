@@ -2,29 +2,30 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Cropper, { ReactCropperElement } from 'react-cropper';
+import { Client } from "@gradio/client"; 
 
 export default function MegaPhotoStudio() {
+  // 🔥 TypeScript ke hisaab se States ko update kiya gaya hai
   const [file, setFile] = useState<File | null>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   
-  // Settings (Flowchart ke anusaar)
-  const [bgColor, setBgColor] = useState('transparent');
-  const [hdUpgrade, setHdUpgrade] = useState(false);
-  const [enhance, setEnhance] = useState(false);
-  const [photoSize, setPhotoSize] = useState('passport'); // 6x7, passport
-  const [quantity, setQuantity] = useState(42); // Default perfect grid size
-  const [addBorder, setAddBorder] = useState(false);
+  const [bgColor, setBgColor] = useState<string>('transparent');
+  const [hdUpgrade, setHdUpgrade] = useState<boolean>(false);
+  const [enhance, setEnhance] = useState<boolean>(false);
+  const [photoSize, setPhotoSize] = useState<string>('passport');
+  const [quantity, setQuantity] = useState<number>(42);
+  const [addBorder, setAddBorder] = useState<boolean>(false);
   
-  // AI Preview States
   const [aiPreviewBlob, setAiPreviewBlob] = useState<Blob | null>(null);
   const [aiPreviewUrl, setAiPreviewUrl] = useState<string | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
+  // Cropper ke type ko define kiya
   const cropperRef = useRef<ReactCropperElement>(null);
 
-  // 1. UPLOAD PHOTO
+  // 1. UPLOAD PHOTO (Event type add kiya)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
@@ -43,38 +44,43 @@ export default function MegaPhotoStudio() {
     }
   };
 
-  // 3. AUTO-SYNC LIVE PREVIEW MAGIC
+  // 3. 🚀 AUTO-SYNC LIVE PREVIEW 
   useEffect(() => {
     const fetchLivePreview = async () => {
       if (!croppedImage) return;
       
       setPreviewLoading(true);
-      const formData = new FormData();
-      formData.append('cropped_image', croppedImage);
-      formData.append('bg_color', bgColor);
-      formData.append('hd_upgrade', hdUpgrade.toString());
-      formData.append('enhance', enhance.toString());
-
       try {
-        const response = await fetch('/api/mega-preview', {
-          method: 'POST',
-          body: formData,
+        const base64Response = await fetch(croppedImage);
+        const imageBlob = await base64Response.blob();
+
+        const client = await Client.connect("dhamakatools/bg-remover");
+        const result = await client.predict("/predict", {
+            input_image: imageBlob,
+            bg_color: bgColor,
+            hd_upgrade: hdUpgrade,
+            enhance: enhance
         });
 
-        if (response.ok) {
-          const blob = await response.blob();
-          setAiPreviewBlob(blob);
-          setAiPreviewUrl(window.URL.createObjectURL(blob));
-        }
-      } catch (err) {
-        console.error("Preview Error:", err);
+        // Error fix: 'unknown' data type ko bataya ki yeh array hai
+        const cleanImageUrl = (result.data as any[])[0].url;
+        
+        const hfResponse = await fetch(cleanImageUrl);
+        const hfBlob = await hfResponse.blob();
+
+        setAiPreviewBlob(hfBlob);
+        setAiPreviewUrl(cleanImageUrl);
+
+      } catch (err: any) { // Error ko 'any' type diya
+        console.error("Hugging Face API Error:", err);
+        alert("Bhai, AI Engine connect nahi ho paya!");
       } finally {
         setPreviewLoading(false);
       }
     };
 
     fetchLivePreview();
-  }, [croppedImage, bgColor, hdUpgrade, enhance]);
+  }, [croppedImage, bgColor, hdUpgrade, enhance]); 
 
   // 4. FINAL: GENERATE & DOWNLOAD .PSD FILE
   const handleGenerate = async () => {
@@ -92,26 +98,25 @@ export default function MegaPhotoStudio() {
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/photo-studio`, {
-  method: "POST",
-  body: formData,
-});
+        method: "POST",
+        body: formData,
+      });
 
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.error || 'Server error.');
       }
 
-      // 🔥 ASLI .PSD File download karwayenge
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `A4_Photo_Sheet_${quantity}pcs.psd`; // Extension changed to .psd
+      a.download = `A4_Photo_Sheet_${quantity}pcs.psd`; 
       document.body.appendChild(a);
       a.click();
       a.remove();
       
-    } catch (err: any) {
+    } catch (err: any) { // Error ko 'any' type diya
       alert(err.message);
     } finally {
       setLoading(false);
