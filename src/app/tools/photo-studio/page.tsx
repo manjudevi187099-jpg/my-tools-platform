@@ -55,7 +55,7 @@ export default function MegaPhotoStudio() {
         const client = await Client.connect("dhamakatools/bg-remover");
         
         // 🔥 YAHAN FIX KIYA GAYA HAI - Object {} ki jagah Array [] lagaya hai
-        const result = await client.predict("/predict", [
+        const result = await client.predict(0, [
             imageBlob,      // 1st input: image
             bgColor,        // 2nd input: background color
             hdUpgrade,      // 3rd input: hd upgrade
