@@ -5,7 +5,6 @@ import Cropper, { ReactCropperElement } from 'react-cropper';
 import { Client } from "@gradio/client"; 
 
 export default function MegaPhotoStudio() {
-  // 🔥 TypeScript ke hisaab se States ko update kiya gaya hai
   const [file, setFile] = useState<File | null>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
@@ -22,10 +21,9 @@ export default function MegaPhotoStudio() {
   const [previewLoading, setPreviewLoading] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Cropper ke type ko define kiya
   const cropperRef = useRef<ReactCropperElement>(null);
 
-  // 1. UPLOAD PHOTO (Event type add kiya)
+  // 1. UPLOAD PHOTO
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
@@ -44,7 +42,7 @@ export default function MegaPhotoStudio() {
     }
   };
 
-  // 3. 🚀 AUTO-SYNC LIVE PREVIEW 
+  // 3. 🚀 AUTO-SYNC LIVE PREVIEW (FIXED FOR GRADIO ARRAY FORMAT)
   useEffect(() => {
     const fetchLivePreview = async () => {
       if (!croppedImage) return;
@@ -55,14 +53,15 @@ export default function MegaPhotoStudio() {
         const imageBlob = await base64Response.blob();
 
         const client = await Client.connect("dhamakatools/bg-remover");
-        const result = await client.predict("/predict", {
-            input_image: imageBlob,
-            bg_color: bgColor,
-            hd_upgrade: hdUpgrade,
-            enhance: enhance
-        });
+        
+        // 🔥 YAHAN FIX KIYA GAYA HAI - Object {} ki jagah Array [] lagaya hai
+        const result = await client.predict("/predict", [
+            imageBlob,      // 1st input: image
+            bgColor,        // 2nd input: background color
+            hdUpgrade,      // 3rd input: hd upgrade
+            enhance         // 4th input: enhance
+        ]);
 
-        // Error fix: 'unknown' data type ko bataya ki yeh array hai
         const cleanImageUrl = (result.data as any[])[0].url;
         
         const hfResponse = await fetch(cleanImageUrl);
@@ -71,9 +70,9 @@ export default function MegaPhotoStudio() {
         setAiPreviewBlob(hfBlob);
         setAiPreviewUrl(cleanImageUrl);
 
-      } catch (err: any) { // Error ko 'any' type diya
+      } catch (err: any) { 
         console.error("Hugging Face API Error:", err);
-        alert("Bhai, AI Engine connect nahi ho paya!");
+        alert("Bhai, AI Engine connect nahi ho paya! Console error check karein.");
       } finally {
         setPreviewLoading(false);
       }
@@ -116,7 +115,7 @@ export default function MegaPhotoStudio() {
       a.click();
       a.remove();
       
-    } catch (err: any) { // Error ko 'any' type diya
+    } catch (err: any) { 
       alert(err.message);
     } finally {
       setLoading(false);
