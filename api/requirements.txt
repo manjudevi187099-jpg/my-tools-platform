@@ -6,4 +6,5 @@ openpyxl
 pdfplumber
 pdf2docx
 Pillow
-rembg
+onnxruntime
+rembg[cpu]
