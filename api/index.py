@@ -10,6 +10,7 @@ from PIL import Image
 import base64
 from rembg import remove
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn  # Naya import add kiya gaya hai
 
 app = FastAPI()
 app.add_middleware(
@@ -145,3 +146,10 @@ async def mega_sheet(
     psd_buffer.seek(0)
     
     return Response(content=psd_buffer.getvalue(), media_type="image/png")
+
+# ==========================================
+# RUN SERVER (RENDER PORT BINDING FIX)
+# ==========================================
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000)) # Render automatic PORT assign karta hai
+    uvicorn.run("api.index:app", host="0.0.0.0", port=port, reload=False)
