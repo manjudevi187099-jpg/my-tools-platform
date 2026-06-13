@@ -58,12 +58,12 @@ export default function MegaPhotoStudio() {
 
         const client = await Client.connect("dhamakatools/bg-remover");
         
-        const result = await client.predict(0, [
-            handle_file(imageFile),      
-            bgColor,        
-            hdUpgrade,      
-            enhance         
-        ]);
+        const result = await client.predict("/predict", [
+    croppedImage,   // Text
+    bgColor,        
+    hdUpgrade,      
+    enhance         
+]);
 
         const cleanImageUrl = (result.data as any[])[0].url;
         
