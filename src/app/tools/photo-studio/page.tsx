@@ -42,24 +42,27 @@ export default function MegaPhotoStudio() {
     }
   };
 
-  // 3. 🚀 AUTO-SYNC LIVE PREVIEW (FIXED FOR GRADIO ARRAY FORMAT)
+  // 3. 🚀 AUTO-SYNC LIVE PREVIEW (FILE FORMAT FIX)
   useEffect(() => {
     const fetchLivePreview = async () => {
       if (!croppedImage) return;
       
       setPreviewLoading(true);
       try {
+        // Base64 ko File format mein badalna
         const base64Response = await fetch(croppedImage);
         const imageBlob = await base64Response.blob();
+        
+        // 🔥 YAHI HAI ASLI JADOO: Blob ko proper 'File' mein convert kiya
+        const imageFile = new File([imageBlob], "photo.png", { type: "image/png" });
 
         const client = await Client.connect("dhamakatools/bg-remover");
         
-        // 🔥 YAHAN FIX KIYA GAYA HAI - Object {} ki jagah Array [] lagaya hai
         const result = await client.predict(0, [
-            imageBlob,      // 1st input: image
-            bgColor,        // 2nd input: background color
-            hdUpgrade,      // 3rd input: hd upgrade
-            enhance         // 4th input: enhance
+            imageFile,      // 👈 Yahan imageBlob ki jagah imageFile bhej diya
+            bgColor,        
+            hdUpgrade,      
+            enhance         
         ]);
 
         const cleanImageUrl = (result.data as any[])[0].url;
