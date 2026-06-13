@@ -1,15 +1,12 @@
 from fastapi import FastAPI, File, UploadFile, BackgroundTasks, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse, Response
-import pdfplumber
-import pandas as pd
 import io
 import os
 import sys
 import uuid
 import base64
 import subprocess
-from pdf2docx import Converter
 
 # ==========================================
 # 🚀 INDESTRUCTIBLE BRAMHASTRA FIX 🚀
@@ -30,8 +27,6 @@ for mod_name, mod in sys.modules.items():
     if mod_name.startswith('pytoshop'):
         setattr(mod, 'packbits', packbits)
 
-# 🔥 AI PHOTO STUDIO IMPORTS 🔥
-from rembg import remove, new_session
 from PIL import Image, ImageEnhance, ImageOps
 
 app = FastAPI(title="PdfNexa Engine")
@@ -44,18 +39,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔥 FIX: AI Model ko Start hone se pehle rok diya (Lazy Load)
-ai_session = None
-
 @app.get("/")
 def home():
-    return {"status": "success", "message": "Engine is running perfectly! 🚀"}
+    return {"status": "success", "message": "Engine is running perfectly! 🚀 (Low RAM Mode)"}
 
 # ==========================================
-# 🔥 TOOL 1: PDF TO EXCEL 
+# 🔥 TOOL 1: PDF TO EXCEL (Lazy Loading for RAM)
 # ==========================================
 @app.post("/api/pdf-to-excel")
 async def convert_pdf_to_excel(file: UploadFile = File(...)):
+    import pdfplumber
+    import pandas as pd
     try:
         pdf_bytes = await file.read()
         pdf_file = io.BytesIO(pdf_bytes)
@@ -86,7 +80,7 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
 
 
 # ==========================================
-# 🔥 TOOL 2: PDF TO WORD 
+# 🔥 TOOL 2: PDF TO WORD (Lazy Loading for RAM)
 # ==========================================
 def remove_temp_files(path1: str, path2: str):
     if os.path.exists(path1): os.remove(path1)
@@ -94,6 +88,7 @@ def remove_temp_files(path1: str, path2: str):
 
 @app.post("/api/pdf-to-word")
 async def convert_pdf_to_word(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    from pdf2docx import Converter
     try:
         file_id = str(uuid.uuid4())
         temp_pdf_path = f"temp_{file_id}.pdf"
@@ -119,7 +114,7 @@ async def convert_pdf_to_word(background_tasks: BackgroundTasks, file: UploadFil
 
 
 # ==========================================
-# 🔥 TOOL 3: AI LIVE PREVIEW (SUPER FAST AUTO-SYNC)
+# 🔥 TOOL 3: AI LIVE PREVIEW (SUPER LOW RAM HACK)
 # ==========================================
 @app.post("/api/mega-preview")
 async def process_mega_preview(
@@ -128,16 +123,19 @@ async def process_mega_preview(
     hd_upgrade: str = Form("false"),
     enhance: str = Form("false")
 ):
-    global ai_session
+    # 🔥 RAM Fix: Import rembg ONLY when the button is clicked!
+    from rembg import remove, new_session
+    import gc
     try:
-        # 🔥 Lazy Loading: Jab pehli photo aayegi, tabhi model load hoga!
-        if ai_session is None:
-            print("Loading AI Engine now...")
-            ai_session = new_session()
+        print("Loading AI Engine into RAM...")
+        ai_session = new_session()
 
         image_data = base64.b64decode(cropped_image.split(',')[1])
         input_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
         
+        # Free up memory before heavy processing
+        gc.collect()
+
         output_image = remove(input_image, session=ai_session)
         
         if bg_color != "transparent":
@@ -156,6 +154,11 @@ async def process_mega_preview(
         img_byte_arr = io.BytesIO()
         final_image.save(img_byte_arr, format='PNG')
         img_byte_arr = img_byte_arr.getvalue()
+        
+        # 🔥 Clear RAM immediately after processing
+        del ai_session
+        del output_image
+        gc.collect()
         
         return Response(content=img_byte_arr, media_type="image/png")
     except Exception as e:
