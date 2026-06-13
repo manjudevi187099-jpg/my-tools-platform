@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Cropper, { ReactCropperElement } from 'react-cropper';
-import { Client } from "@gradio/client"; 
+import { Client, handle_file } from "@gradio/client"; 
 
 export default function MegaPhotoStudio() {
   const [file, setFile] = useState<File | null>(null);
@@ -59,7 +59,7 @@ export default function MegaPhotoStudio() {
         const client = await Client.connect("dhamakatools/bg-remover");
         
         const result = await client.predict(0, [
-            imageFile,      // 👈 Yahan imageBlob ki jagah imageFile bhej diya
+            handle_file(imageFile),      
             bgColor,        
             hdUpgrade,      
             enhance         
