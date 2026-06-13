@@ -14,7 +14,6 @@ from pdf2docx import Converter
 # ==========================================
 # 🚀 INDESTRUCTIBLE BRAMHASTRA FIX 🚀
 # ==========================================
-# 1. Khud check karega aur sahi jagah auto-install karega
 try:
     import packbits
 except ImportError:
@@ -27,7 +26,6 @@ from pytoshop.user import nested_layers
 from pytoshop import enums
 import numpy as np
 
-# 2. Pytoshop library ke dimaag mein packbits zabardasti daalna:
 for mod_name, mod in sys.modules.items():
     if mod_name.startswith('pytoshop'):
         setattr(mod, 'packbits', packbits)
@@ -46,9 +44,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==========================================
-# 🚀 SPEED FIX: AI MODEL KO MEMORY MEIN LOCK KAR DIYA 🚀
-# ==========================================
 print("Engine is loading AI Model into RAM for Instant Speed...")
 ai_session = new_session()
 print("AI Model Ready!")
@@ -138,10 +133,8 @@ async def process_mega_preview(
         image_data = base64.b64decode(cropped_image.split(',')[1])
         input_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
         
-        # 1. AI Background Remove
         output_image = remove(input_image, session=ai_session)
         
-        # 2. Color Change
         if bg_color != "transparent":
             background = Image.new("RGBA", output_image.size, bg_color)
             background.paste(output_image, (0, 0), output_image)
@@ -149,7 +142,6 @@ async def process_mega_preview(
         else:
             final_image = output_image.convert("RGBA")
 
-        # 3. Enhance Quality
         if enhance == "true" or hd_upgrade == "true":
             enhancer = ImageEnhance.Color(final_image)
             final_image = enhancer.enhance(1.2)
@@ -166,7 +158,7 @@ async def process_mega_preview(
 
 
 # ==========================================
-# 🔥 TOOL 4: A4 ASLI PSD BUILDER (6x7 Grid = 42 Photos)
+# 🔥 TOOL 4: A4 ASLI PSD BUILDER (FIXED FOR PHOTOSHOP)
 # ==========================================
 @app.post("/api/mega-sheet")
 async def process_mega_sheet(
@@ -177,11 +169,10 @@ async def process_mega_sheet(
 ):
     try:
         image_bytes = await processed_image.read()
+        # Convert to RGB directly to prevent channel mess up
         final_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         
-        # PERFECT 6x7 GRID MATH FOR A4 (300 DPI)
         target_w, target_h = (380, 480) 
-        
         final_image = final_image.resize((target_w, target_h), Image.Resampling.LANCZOS)
         
         if add_border == "true":
@@ -189,7 +180,8 @@ async def process_mega_sheet(
             final_image = final_image.resize((target_w, target_h), Image.Resampling.LANCZOS)
 
         a4_w, a4_h = 2480, 3508
-        canvas = Image.new("RGBA", (a4_w, a4_h), "white")
+        # 🔥 FIX 1: Canvas ko proper RGB format diya takki Photoshop decode kar sake
+        canvas = Image.new("RGB", (a4_w, a4_h), "white")
         
         start_x = 70  
         start_y = 40  
@@ -210,7 +202,7 @@ async def process_mega_sheet(
             canvas.paste(final_image, (current_x, current_y))
             current_x += target_w + spacing_x
 
-        # ASLI .PSD BUILDER
+        # 🔥 FIX 2: Channels se Alpha (-1) hata diya aur perfect RGB block pack kiya
         img_arr = np.array(canvas) 
         
         layer = nested_layers.Image(
@@ -218,7 +210,6 @@ async def process_mega_sheet(
             visible=True,
             top=0, left=0, bottom=a4_h, right=a4_w,
             channels={
-                -1: np.ascontiguousarray(img_arr[:, :, 3]), # Alpha Channel
                  0: np.ascontiguousarray(img_arr[:, :, 0]), # Red
                  1: np.ascontiguousarray(img_arr[:, :, 1]), # Green
                  2: np.ascontiguousarray(img_arr[:, :, 2])  # Blue
@@ -229,8 +220,14 @@ async def process_mega_sheet(
         
         img_byte_arr = io.BytesIO()
         psd.write(img_byte_arr)
-        img_byte_arr = img_byte_arr.getvalue()
+        img_byte_arr.seek(0)
         
-        return Response(content=img_byte_arr, media_type="image/vnd.adobe.photoshop")
+        # 🔥 FIX 3: StreamingResponse with correct headers so file saves perfectly
+        return StreamingResponse(
+            img_byte_arr, 
+            media_type="application/x-photoshop",
+            headers={"Content-Disposition": f"attachment; filename=A4_Photo_Sheet_{quantity}pcs.psd"}
+        )
+        
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
