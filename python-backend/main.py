@@ -208,16 +208,21 @@ async def process_mega_sheet(
             canvas.paste(final_image, (current_x, current_y))
             current_x += target_w + spacing_x
 
-        img_arr = np.array(canvas) 
+        # 🔥 Fix: Data ko forcefully uint8 banaya
+        img_arr = np.array(canvas, dtype=np.uint8) 
         
+        # 🔥 Fix: Photoshop ko khush karne ke liye ek Solid Alpha Channel banaya
+        alpha_channel = np.full((a4_h, a4_w), 255, dtype=np.uint8)
+
         layer = nested_layers.Image(
             name=f"{quantity} Photos Print Sheet",
             visible=True,
             top=0, left=0, bottom=a4_h, right=a4_w,
             channels={
-                 0: np.ascontiguousarray(img_arr[:, :, 0]), # Red
-                 1: np.ascontiguousarray(img_arr[:, :, 1]), # Green
-                 2: np.ascontiguousarray(img_arr[:, :, 2])  # Blue
+                 -1: alpha_channel, # Alpha (Transparency mask)
+                  0: np.ascontiguousarray(img_arr[:, :, 0]), # Red
+                  1: np.ascontiguousarray(img_arr[:, :, 1]), # Green
+                  2: np.ascontiguousarray(img_arr[:, :, 2])  # Blue
             }
         )
         
