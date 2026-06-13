@@ -44,9 +44,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("Engine is loading AI Model into RAM for Instant Speed...")
-ai_session = new_session()
-print("AI Model Ready!")
+# 🔥 FIX: AI Model ko Start hone se pehle rok diya (Lazy Load)
+ai_session = None
 
 @app.get("/")
 def home():
@@ -129,7 +128,13 @@ async def process_mega_preview(
     hd_upgrade: str = Form("false"),
     enhance: str = Form("false")
 ):
+    global ai_session
     try:
+        # 🔥 Lazy Loading: Jab pehli photo aayegi, tabhi model load hoga!
+        if ai_session is None:
+            print("Loading AI Engine now...")
+            ai_session = new_session()
+
         image_data = base64.b64decode(cropped_image.split(',')[1])
         input_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
         
@@ -169,7 +174,6 @@ async def process_mega_sheet(
 ):
     try:
         image_bytes = await processed_image.read()
-        # Convert to RGB directly to prevent channel mess up
         final_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         
         target_w, target_h = (380, 480) 
@@ -180,7 +184,6 @@ async def process_mega_sheet(
             final_image = final_image.resize((target_w, target_h), Image.Resampling.LANCZOS)
 
         a4_w, a4_h = 2480, 3508
-        # 🔥 FIX 1: Canvas ko proper RGB format diya takki Photoshop decode kar sake
         canvas = Image.new("RGB", (a4_w, a4_h), "white")
         
         start_x = 70  
@@ -202,7 +205,6 @@ async def process_mega_sheet(
             canvas.paste(final_image, (current_x, current_y))
             current_x += target_w + spacing_x
 
-        # 🔥 FIX 2: Channels se Alpha (-1) hata diya aur perfect RGB block pack kiya
         img_arr = np.array(canvas) 
         
         layer = nested_layers.Image(
@@ -222,7 +224,6 @@ async def process_mega_sheet(
         psd.write(img_byte_arr)
         img_byte_arr.seek(0)
         
-        # 🔥 FIX 3: StreamingResponse with correct headers so file saves perfectly
         return StreamingResponse(
             img_byte_arr, 
             media_type="application/x-photoshop",
