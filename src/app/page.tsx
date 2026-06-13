@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { toolsRegistry } from '../../config/siteConfig';
 import { supabase } from '../lib/supabase';
 
+// 🔥 NAYA BRAND NAME YAHAN UPDATE KIYA HAI 🔥
 const siteInfo = {
-  name: "PdfNexa",
+  name: "DhamakaTools",
   tagline: "All-In-One Professional Utility Engine",
   description: "Free, secure, and blazing-fast web tools built for developers, designers, and power users.",
 };
@@ -25,7 +26,7 @@ export default function HomePage() {
     const fetchData = async () => {
       setIsLoading(true);
 
-      // 1. 🔥 Fetch Tools & Analytics (Alag se)
+      // 1. 🔥 Fetch Tools & Analytics
       try {
         const { data: statusData } = await supabase.from('tools_status').select('slug').eq('is_active', true);
         const { data: analyticsData } = await supabase.from('tool_analytics').select('tool_slug, total_views');
@@ -55,7 +56,7 @@ export default function HomePage() {
         console.error("Tools Fetch Error:", error);
       }
 
-      // 2. 🔥 Fetch Blogs (Ekdum fail-safe, agar tools fail bhi hon toh ye chalega)
+      // 2. 🔥 Fetch Blogs
       try {
         const { data: blogData, error: blogError } = await supabase
           .from('blog_posts')
@@ -103,7 +104,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
       
-      {/* 🌟 HEADER (Aapka original) 🌟 */}
+      {/* 🌟 HEADER 🌟 */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -241,7 +242,7 @@ export default function HomePage() {
           )}
         </section>
 
-        {/* 🚀 BLOG SECTION (Ab 100% Guaranteed Dikhega) 🚀 */}
+        {/* 🚀 BLOG SECTION */}
         {!isLoading && !searchQuery && (
           <section className="py-20 px-4 max-w-7xl mx-auto border-t border-slate-200 bg-white rounded-t-[3rem]">
             <div className="mb-12 text-center">
@@ -277,7 +278,7 @@ export default function HomePage() {
 
       </main>
 
-      {/* 🌟 FOOTER (Aapka original bada wala) 🌟 */}
+      {/* 🌟 FOOTER 🌟 */}
       <footer className="bg-slate-900 text-slate-300 pt-20 pb-10 border-t-4 border-purple-600 font-sans">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 border-b border-slate-800 pb-16">
           <div className="space-y-6">
