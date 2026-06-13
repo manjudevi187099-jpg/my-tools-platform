@@ -1,3 +1,6 @@
+import requests
+import time
+import base64
 from fastapi import FastAPI, File, UploadFile, BackgroundTasks, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse, Response
@@ -238,5 +241,60 @@ async def process_mega_sheet(
             headers={"Content-Disposition": f"attachment; filename=A4_Photo_Sheet_{quantity}pcs.psd"}
         )
         
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+        # ==========================================
+# ==========================================
+# 🔥 TOOL 5: AI PHOTO ENHANCER (REMINI CLONE VIA REPLICATE API)
+# ==========================================
+@app.post("/api/enhance-photo")
+async def enhance_photo(file: UploadFile = File(...)):
+    try:
+        # 🔥 SECURE HACK: Render Dashboard se Token uthayega (GitHub block nahi karega)
+        REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN")
+        
+        if not REPLICATE_API_TOKEN:
+            return JSONResponse(status_code=500, content={"error": "API Token missing! Kripya Render Environment Variables mein check karein."})
+        
+        # 1. Photo ko Base64 mein convert karein
+        image_bytes = await file.read()
+        encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+        image_uri = f"data:{file.content_type};base64,{encoded_image}"
+
+        # 2. Replicate API (GFPGAN Model) ko call karein
+        headers = {
+            "Authorization": f"Token {REPLICATE_API_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "version": "9283608cb6f7e4dd336ec880b9ab96f9cc6c8c49cc3a328e3b5e43a9b138ff91", 
+            "input": {
+                "img": image_uri,
+                "scale": 2, 
+                "version": "v1.4"
+            }
+        }
+
+        start_response = requests.post("https://api.replicate.com/v1/predictions", headers=headers, json=data)
+        
+        if start_response.status_code != 201:
+            return JSONResponse(status_code=500, content={"error": "API Limit khatam ho gayi hai ya Token galat hai."})
+
+        prediction_url = start_response.json()["urls"]["get"]
+
+        # 3. Supercomputer ka wait karein (Max 15-20 seconds)
+        for _ in range(15):
+            time.sleep(2) 
+            check_response = requests.get(prediction_url, headers=headers).json()
+            
+            if check_response["status"] == "succeeded":
+                return {"status": "success", "enhanced_image_url": check_response["output"]}
+            elif check_response["status"] == "failed":
+                return JSONResponse(status_code=500, content={"error": "AI model photo ko enhance nahi kar paya."})
+
+        return JSONResponse(status_code=504, content={"error": "Timeout! Photo badi thi, time zyada lag gaya."})
+
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})

@@ -92,7 +92,6 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["pdf to word", "pdf to doc", "convert pdf to word"],
     isActive: true,
   },
-  // 🌟 FIX: YAHAN PDF TO EXCEL ADD KIYA HAI 🌟
   "pdf-to-excel": {
     name: "PDF to Excel Converter",
     description: "Convert PDF tables to Excel spreadsheets easily.",
@@ -237,7 +236,6 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
     isActive: true,
   },
-  // 🌟 FIX: YAHAN PHOTO STUDIO ADD KIYA HAI 🌟
   "photo-studio": {
     name: "Mega Photo Studio",
     description: "Crop, resize, and arrange photos for printing.",
@@ -260,5 +258,14 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "business",
     keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
     isActive: true,
-  }
+  },
+  
+  // 🌟 FIX: Photo Enhancer mein Keywords aur isActive add kar diya 🌟
+  "photo-enhancer": {
+    name: "AI Photo Enhancer",
+    description: "Purani, blur ya pixelated photos ko 1-click mein HD banayein.",
+    category: "design",
+    keywords: ["ai enhancer", "hd photo", "remini clone", "clear image", "restore face"],
+    isActive: true
+  },
 };
