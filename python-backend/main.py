@@ -305,7 +305,10 @@ async def get_video_info(request: VideoRequest):
             'quiet': True,
             'no_warnings': True,
             'noplaylist': True,
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            # 🔥 THE NINJA HACK: Pretend to be an Android App instead of a Web Browser
+            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+            # 🔥 FAKE MOBILE USER AGENT
+            'user_agent': 'Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36',
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
