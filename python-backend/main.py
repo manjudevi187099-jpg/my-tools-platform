@@ -1,54 +1,55 @@
-import requests
-import time
-import base64
-from fastapi import FastAPI, File, UploadFile, BackgroundTasks, Form
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse, FileResponse, Response
 import io
 import os
 import sys
-import uuid
 import base64
 import subprocess
+import requests
+import time
+from fastapi import FastAPI, File, UploadFile, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse, JSONResponse, Response
 from pydantic import BaseModel
+from PIL import Image, ImageEnhance, ImageOps
+import numpy as np
 
 # ==========================================
-# 🚀 INDESTRUCTIBLE BRAMHASTRA FIX 🚀
+# 🚀 PYTOSHOP AUTO-INSTALLER & SETUP
 # ==========================================
 try:
     import packbits
 except ImportError:
-    print("Missing packbits! Auto-installing in the exact server environment...")
+    print("Missing packbits! Auto-installing...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "packbits"])
     import packbits
 
 import pytoshop
 from pytoshop.user import nested_layers
 from pytoshop import enums
-import numpy as np
 
 for mod_name, mod in sys.modules.items():
     if mod_name.startswith('pytoshop'):
         setattr(mod, 'packbits', packbits)
 
-from PIL import Image, ImageEnhance, ImageOps
+# ==========================================
+# 🚀 FASTAPI ENGINE & CORS SETUP
+# ==========================================
+app = FastAPI(title="DhamakaTools Ultimate Engine")
 
-app = FastAPI(title="PdfNexa Engine")
-
+# 🔥 Strict CORS Fix (Zero Browser Restriction)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 @app.get("/")
 def home():
-    return {"status": "success", "message": "Engine is running perfectly! 🚀 (Low RAM Mode)"}
+    return {"status": "success", "message": "DhamakaTools 6-in-1 Engine is Online! 🚀"}
 
 # ==========================================
-# 🔥 TOOL 1: PDF TO EXCEL (Lazy Loading for RAM)
+# 🔥 TOOL 1: PDF TO EXCEL
 # ==========================================
 @app.post("/api/pdf-to-excel")
 async def convert_pdf_to_excel(file: UploadFile = File(...)):
@@ -82,48 +83,36 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-
 # ==========================================
-# 🔥 TOOL 2: PDF TO WORD (WITH XML SANITIZER HACK)
+# 🔥 TOOL 2: PDF TO WORD
 # ==========================================
 @app.post("/api/pdf-to-word")
 async def convert_pdf_to_word(file: UploadFile = File(...)):
     from pdf2docx import Converter
-    import os
     import tempfile
-    from fastapi.responses import Response, JSONResponse
-
+    import docx
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_pdf_path = os.path.join(temp_dir, "input.pdf")
             temp_docx_path = os.path.join(temp_dir, "output.docx")
             
-            # 1. PDF ko save karein
             with open(temp_pdf_path, "wb") as f:
                 f.write(await file.read())
                 
-            # 2. PDF se Word banayein
             cv = Converter(temp_pdf_path)
             cv.convert(temp_docx_path)
             cv.close()
             
-            # 3. 🔥 THE SANITIZER HACK (Broken XML ko theek karne ki koshish)
             try:
-                import docx
-                # Ye broken Word file ko khol kar wapas save karega taaki XML clean ho jaye
                 doc = docx.Document(temp_docx_path)
                 doc.save(temp_docx_path)
-            except Exception as e:
-                print(f"Sanitization Failed: {e}")
-                # Agar file itni kharab hai ki theek na ho paye, toh hum aage badh jayenge
+            except Exception:
+                pass
             
-            # 4. Poori Word file ko RAM mein padh lein
             with open(temp_docx_path, "rb") as f:
                 file_data = f.read()
                 
         original_name = file.filename.replace('.pdf', '')
-        
-        # 5. Direct Response bhejein (Exact size ke sath)
         return Response(
             content=file_data, 
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -132,11 +121,11 @@ async def convert_pdf_to_word(file: UploadFile = File(...)):
                 "Content-Length": str(len(file_data))
             }
         )
-        
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
 # ==========================================
-# 🔥 TOOL 3: AI LIVE PREVIEW (SUPER LOW RAM HACK)
+# 🔥 TOOL 3: AI LIVE PREVIEW (Background Remover)
 # ==========================================
 @app.post("/api/mega-preview")
 async def process_mega_preview(
@@ -145,19 +134,14 @@ async def process_mega_preview(
     hd_upgrade: str = Form("false"),
     enhance: str = Form("false")
 ):
-    # 🔥 RAM Fix: Import rembg ONLY when the button is clicked!
     from rembg import remove, new_session
     import gc
     try:
-        print("Loading AI Engine into RAM...")
         ai_session = new_session()
-
         image_data = base64.b64decode(cropped_image.split(',')[1])
         input_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
         
-        # Free up memory before heavy processing
         gc.collect()
-
         output_image = remove(input_image, session=ai_session)
         
         if bg_color != "transparent":
@@ -177,7 +161,6 @@ async def process_mega_preview(
         final_image.save(img_byte_arr, format='PNG')
         img_byte_arr = img_byte_arr.getvalue()
         
-        # 🔥 Clear RAM immediately after processing
         del ai_session
         del output_image
         gc.collect()
@@ -186,9 +169,8 @@ async def process_mega_preview(
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-
 # ==========================================
-# 🔥 TOOL 4: A4 ASLI PSD BUILDER (FIXED FOR PHOTOSHOP)
+# 🔥 TOOL 4: A4 PSD BUILDER
 # ==========================================
 @app.post("/api/mega-sheet")
 async def process_mega_sheet(
@@ -211,13 +193,9 @@ async def process_mega_sheet(
         a4_w, a4_h = 2480, 3508
         canvas = Image.new("RGB", (a4_w, a4_h), "white")
         
-        start_x = 70  
-        start_y = 40  
-        spacing_x = 12 
-        spacing_y = 12
-        
-        current_x = start_x
-        current_y = start_y
+        start_x, start_y = 70, 40  
+        spacing_x, spacing_y = 12, 12
+        current_x, current_y = start_x, start_y
         
         for i in range(quantity):
             if current_x + target_w > a4_w - 50: 
@@ -230,10 +208,7 @@ async def process_mega_sheet(
             canvas.paste(final_image, (current_x, current_y))
             current_x += target_w + spacing_x
 
-        # 🔥 Fix: Data ko forcefully uint8 banaya
         img_arr = np.array(canvas, dtype=np.uint8) 
-        
-        # 🔥 Fix: Photoshop ko khush karne ke liye ek Solid Alpha Channel banaya
         alpha_channel = np.full((a4_h, a4_w), 255, dtype=np.uint8)
 
         layer = nested_layers.Image(
@@ -241,15 +216,14 @@ async def process_mega_sheet(
             visible=True,
             top=0, left=0, bottom=a4_h, right=a4_w,
             channels={
-                 -1: alpha_channel, # Alpha (Transparency mask)
-                  0: np.ascontiguousarray(img_arr[:, :, 0]), # Red
-                  1: np.ascontiguousarray(img_arr[:, :, 1]), # Green
-                  2: np.ascontiguousarray(img_arr[:, :, 2])  # Blue
+                 -1: alpha_channel, 
+                  0: np.ascontiguousarray(img_arr[:, :, 0]), 
+                  1: np.ascontiguousarray(img_arr[:, :, 1]), 
+                  2: np.ascontiguousarray(img_arr[:, :, 2])  
             }
         )
         
         psd = nested_layers.nested_layers_to_psd([layer], color_mode=enums.ColorMode.rgb)
-        
         img_byte_arr = io.BytesIO()
         psd.write(img_byte_arr)
         img_byte_arr.seek(0)
@@ -259,42 +233,31 @@ async def process_mega_sheet(
             media_type="application/x-photoshop",
             headers={"Content-Disposition": f"attachment; filename=A4_Photo_Sheet_{quantity}pcs.psd"}
         )
-        
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-        # ==========================================
 # ==========================================
-# # ==========================================
-# ==========================================
-# 🔥 TOOL 5: AI PHOTO ENHANCER (SMART AUTO-RESIZE)
+# 🔥 TOOL 5: AI PHOTO ENHANCER 
 # ==========================================
 @app.post("/api/enhance-photo")
 async def enhance_photo(file: UploadFile = File(...)):
     try:
         REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN")
-        
         if not REPLICATE_API_TOKEN:
             return JSONResponse(status_code=500, content={"error": "API Token missing!"})
         
-        # 1. Photo ko read karein
         image_bytes = await file.read()
-        
-        # 🔥 SMART RESIZE LOGIC (Badi photo ko Replicate limit ke andar lana)
         img = Image.open(io.BytesIO(image_bytes))
         if img.mode != 'RGB':
             img = img.convert('RGB')
             
-        # Agar photo badi hai, toh longest side ko 1024 pixels tak compress karein
         img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
         
-        # Wapas Base64 mein convert karein
         buffered = io.BytesIO()
         img.save(buffered, format="JPEG", quality=95)
         encoded_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
         image_uri = f"data:image/jpeg;base64,{encoded_image}"
 
-        # 2. Replicate API (Real-ESRGAN Model) ko call karein
         headers = {
             "Authorization": f"Bearer {REPLICATE_API_TOKEN}",
             "Content-Type": "application/json"
@@ -310,30 +273,24 @@ async def enhance_photo(file: UploadFile = File(...)):
         }
 
         start_response = requests.post("https://api.replicate.com/v1/predictions", headers=headers, json=data)
-        
         if start_response.status_code != 201:
-            asli_error = start_response.json().get('detail', start_response.text)
-            return JSONResponse(status_code=500, content={"error": f"Replicate Error: {asli_error}"})
+            return JSONResponse(status_code=500, content={"error": start_response.text})
 
         prediction_url = start_response.json()["urls"]["get"]
 
-        # 3. Supercomputer ka wait karein
         for _ in range(15):
             time.sleep(2) 
             check_response = requests.get(prediction_url, headers=headers).json()
-            
             if check_response["status"] == "succeeded":
                 return {"status": "success", "enhanced_image_url": check_response["output"]}
             elif check_response["status"] == "failed":
-                ai_error = check_response.get("error", "Unknown AI Crash")
-                return JSONResponse(status_code=500, content={"error": f"AI Crash: {ai_error}"})
+                return JSONResponse(status_code=500, content={"error": "AI Engine failure"})
 
-        return JSONResponse(status_code=504, content={"error": "Timeout! Photo badi thi, time zyada lag gaya."})
-
+        return JSONResponse(status_code=504, content={"error": "Timeout! Try again."})
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-        # ==========================================
+# ==========================================
 # 🔥 TOOL 6: SOCIAL MEDIA VIDEO DOWNLOADER
 # ==========================================
 class VideoRequest(BaseModel):
@@ -343,19 +300,16 @@ class VideoRequest(BaseModel):
 async def get_video_info(request: VideoRequest):
     import yt_dlp
     try:
-        # yt-dlp ki settings (Sirf info nikalni hai, download nahi karna)
         ydl_opts = {
-            'format': 'best', # Sabse achi quality
+            'format': 'best',
             'quiet': True,
             'no_warnings': True,
             'noplaylist': True,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # Video ka data extract karo
             info = ydl.extract_info(request.url, download=False)
-            
-            # Agar direct URL nahi mili toh format list se pehli URL utha lo
             video_url = info.get('url') or (info.get('formats')[0].get('url') if info.get('formats') else None)
             
             if not video_url:
@@ -368,6 +322,5 @@ async def get_video_info(request: VideoRequest):
                 "video_url": video_url,
                 "platform": info.get('extractor', 'Unknown')
             }
-            
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"Link galat hai ya platform support nahi kar raha: {str(e)}"})
