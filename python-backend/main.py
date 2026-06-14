@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from PIL import Image, ImageEnhance, ImageOps
 import numpy as np
 
-# 🔥 SUPABASE CONNECTION SETUP (Naya Add Kiya)
+# 🔥 SUPABASE CONNECTION SETUP
 from supabase import create_client, Client
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -83,7 +83,9 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
                     all_tables.extend(table)
         
         if not all_tables:
-            return JSONResponse(status_code=400, content={"error": "Is PDF mein table ke borders nahi mile!"})
+            error_msg = "Is PDF mein table ke borders nahi mile!"
+            log_tool_error("PDF to Excel", error_msg) # 🔥 Fixed: Custom error logged
+            return JSONResponse(status_code=400, content={"error": error_msg})
 
         df = pd.DataFrame(all_tables)
         excel_io = io.BytesIO()
@@ -98,7 +100,7 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
             headers={"Content-Disposition": f'attachment; filename="{original_name}_converted.xlsx"'}
         )
     except Exception as e:
-        log_tool_error("PDF to Excel", str(e)) # 🔥 Error Logged
+        log_tool_error("PDF to Excel", str(e)) 
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
@@ -140,7 +142,7 @@ async def convert_pdf_to_word(file: UploadFile = File(...)):
             }
         )
     except Exception as e:
-        log_tool_error("PDF to Word", str(e)) # 🔥 Error Logged
+        log_tool_error("PDF to Word", str(e)) 
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
@@ -186,7 +188,7 @@ async def process_mega_preview(
         
         return Response(content=img_byte_arr, media_type="image/png")
     except Exception as e:
-        log_tool_error("AI Live Preview", str(e)) # 🔥 Error Logged
+        log_tool_error("AI Live Preview", str(e)) 
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
@@ -254,7 +256,7 @@ async def process_mega_sheet(
             headers={"Content-Disposition": f"attachment; filename=A4_Photo_Sheet_{quantity}pcs.psd"}
         )
     except Exception as e:
-        log_tool_error("A4 PSD Builder", str(e)) # 🔥 Error Logged
+        log_tool_error("A4 PSD Builder", str(e)) 
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
@@ -265,7 +267,9 @@ async def enhance_photo(file: UploadFile = File(...)):
     try:
         REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN")
         if not REPLICATE_API_TOKEN:
-            return JSONResponse(status_code=500, content={"error": "API Token missing!"})
+            error_msg = "API Token missing!"
+            log_tool_error("AI Photo Enhancer", error_msg) # 🔥 Fixed
+            return JSONResponse(status_code=500, content={"error": error_msg})
         
         image_bytes = await file.read()
         img = Image.open(io.BytesIO(image_bytes))
@@ -295,7 +299,9 @@ async def enhance_photo(file: UploadFile = File(...)):
 
         start_response = requests.post("https://api.replicate.com/v1/predictions", headers=headers, json=data)
         if start_response.status_code != 201:
-            return JSONResponse(status_code=500, content={"error": start_response.text})
+            error_msg = start_response.text
+            log_tool_error("AI Photo Enhancer", error_msg) # 🔥 Fixed
+            return JSONResponse(status_code=500, content={"error": error_msg})
 
         prediction_url = start_response.json()["urls"]["get"]
 
@@ -305,11 +311,15 @@ async def enhance_photo(file: UploadFile = File(...)):
             if check_response["status"] == "succeeded":
                 return {"status": "success", "enhanced_image_url": check_response["output"]}
             elif check_response["status"] == "failed":
-                return JSONResponse(status_code=500, content={"error": "AI Engine failure"})
+                error_msg = "AI Engine failure"
+                log_tool_error("AI Photo Enhancer", error_msg) # 🔥 Fixed
+                return JSONResponse(status_code=500, content={"error": error_msg})
 
-        return JSONResponse(status_code=504, content={"error": "Timeout! Try again."})
+        error_msg = "Timeout! Try again."
+        log_tool_error("AI Photo Enhancer", error_msg) # 🔥 Fixed
+        return JSONResponse(status_code=504, content={"error": error_msg})
     except Exception as e:
-        log_tool_error("AI Photo Enhancer", str(e)) # 🔥 Error Logged
+        log_tool_error("AI Photo Enhancer", str(e)) 
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
@@ -336,7 +346,9 @@ async def get_video_info(request: VideoRequest):
             video_url = info.get('url') or (info.get('formats')[0].get('url') if info.get('formats') else None)
             
             if not video_url:
-                return JSONResponse(status_code=400, content={"error": "Is link se video nahi nikal payi."})
+                error_msg = "Is link se video nahi nikal payi."
+                log_tool_error("Video Downloader", error_msg) # 🔥 Fixed: Custom error logged
+                return JSONResponse(status_code=400, content={"error": error_msg})
 
             return {
                 "status": "success",
@@ -346,5 +358,5 @@ async def get_video_info(request: VideoRequest):
                 "platform": info.get('extractor', 'Unknown')
             }
     except Exception as e:
-        log_tool_error("Video Downloader", str(e)) # 🔥 Error Logged
+        log_tool_error("Video Downloader", str(e)) 
         return JSONResponse(status_code=500, content={"error": f"Link galat hai ya platform support nahi kar raha: {str(e)}"})
