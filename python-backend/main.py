@@ -10,6 +10,7 @@ import sys
 import uuid
 import base64
 import subprocess
+from pydantic import BaseModel
 
 # ==========================================
 # 🚀 INDESTRUCTIBLE BRAMHASTRA FIX 🚀
@@ -331,3 +332,42 @@ async def enhance_photo(file: UploadFile = File(...)):
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+        # ==========================================
+# 🔥 TOOL 6: SOCIAL MEDIA VIDEO DOWNLOADER
+# ==========================================
+class VideoRequest(BaseModel):
+    url: str
+
+@app.post("/api/video-downloader")
+async def get_video_info(request: VideoRequest):
+    import yt_dlp
+    try:
+        # yt-dlp ki settings (Sirf info nikalni hai, download nahi karna)
+        ydl_opts = {
+            'format': 'best', # Sabse achi quality
+            'quiet': True,
+            'no_warnings': True,
+            'noplaylist': True,
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # Video ka data extract karo
+            info = ydl.extract_info(request.url, download=False)
+            
+            # Agar direct URL nahi mili toh format list se pehli URL utha lo
+            video_url = info.get('url') or (info.get('formats')[0].get('url') if info.get('formats') else None)
+            
+            if not video_url:
+                return JSONResponse(status_code=400, content={"error": "Is link se video nahi nikal payi."})
+
+            return {
+                "status": "success",
+                "title": info.get('title', 'Dhamaka_Video'),
+                "thumbnail": info.get('thumbnail', ''),
+                "video_url": video_url,
+                "platform": info.get('extractor', 'Unknown')
+            }
+            
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Link galat hai ya platform support nahi kar raha: {str(e)}"})
