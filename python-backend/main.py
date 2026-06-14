@@ -83,47 +83,52 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
 
 
 # ==========================================
-# ==========================================
-# ==========================================
-# 🔥 TOOL 2: PDF TO WORD (100% CORRUPTION-FREE FIX)
+# 🔥 TOOL 2: PDF TO WORD (WITH XML SANITIZER HACK)
 # ==========================================
 @app.post("/api/pdf-to-word")
 async def convert_pdf_to_word(file: UploadFile = File(...)):
     from pdf2docx import Converter
     import os
     import tempfile
-    from fastapi.responses import Response
+    from fastapi.responses import Response, JSONResponse
 
     try:
-        # 1. Ek safe temporary folder banayenge jo kaam hote hi apne aap delete ho jayega
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_pdf_path = os.path.join(temp_dir, "input.pdf")
             temp_docx_path = os.path.join(temp_dir, "output.docx")
             
-            # PDF ko us folder mein save karein
+            # 1. PDF ko save karein
             with open(temp_pdf_path, "wb") as f:
                 f.write(await file.read())
                 
-            # PDF se Word banayein
+            # 2. PDF se Word banayein
             cv = Converter(temp_pdf_path)
             cv.convert(temp_docx_path)
             cv.close()
             
-            # 2. 🔥 THE MAGIC: Poori Word file ko RAM mein padh lein
+            # 3. 🔥 THE SANITIZER HACK (Broken XML ko theek karne ki koshish)
+            try:
+                import docx
+                # Ye broken Word file ko khol kar wapas save karega taaki XML clean ho jaye
+                doc = docx.Document(temp_docx_path)
+                doc.save(temp_docx_path)
+            except Exception as e:
+                print(f"Sanitization Failed: {e}")
+                # Agar file itni kharab hai ki theek na ho paye, toh hum aage badh jayenge
+            
+            # 4. Poori Word file ko RAM mein padh lein
             with open(temp_docx_path, "rb") as f:
                 file_data = f.read()
                 
-        # Jaise hi ye line cross hogi, Python khud us temporary folder aur files ko uda dega!
-        
         original_name = file.filename.replace('.pdf', '')
         
-        # 3. Direct Response bhejein (Browser ko exact size bata kar)
+        # 5. Direct Response bhejein (Exact size ke sath)
         return Response(
             content=file_data, 
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
                 "Content-Disposition": f'attachment; filename="{original_name}_converted.docx"',
-                "Content-Length": str(len(file_data)) # Browser ab beech mein download nahi rokega!
+                "Content-Length": str(len(file_data))
             }
         )
         
