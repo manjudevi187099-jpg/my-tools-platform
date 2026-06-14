@@ -3,14 +3,12 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 export default function PhotoEnhancerPage() {
-  // 🔥 FIX 2: TypeScript ko bataya ki inme khali(null) ya text(string/File) aa sakta hai
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [enhancedUrl, setEnhancedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // 🔥 FIX 1: 'e' ko bataya ki ye ek HTML File Input hai
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
@@ -43,10 +41,34 @@ export default function PhotoEnhancerPage() {
 
       setEnhancedUrl(data.enhanced_image_url);
     } catch (err: any) { 
-      // 🔥 FIX 3: err ko 'any' type de diya taaki TypeScript pareshaan na kare
       setError(err.message || 'Server se connect nahi ho paya!');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 🔥 Naya Force Download Function
+  const handleDownload = async () => {
+    if (!enhancedUrl) return;
+    try {
+      // Photo ko background mein fetch karenge
+      const response = await fetch(enhancedUrl);
+      const blob = await response.blob();
+      
+      // Ek temporary local link banayenge
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'DhamakaTools_HD_Photo.jpg'; // File ka naam
+      document.body.appendChild(a);
+      a.click(); // Zabardasti click karwayenge
+      
+      // Safai (Memory free)
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download failed:", error);
+      window.open(enhancedUrl, '_blank'); // Agar fail hua toh naye tab mein khol dega
     }
   };
 
@@ -56,7 +78,7 @@ export default function PhotoEnhancerPage() {
       
       <div className="max-w-4xl mx-auto bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
         <h1 className="text-4xl font-black text-slate-900 mb-2">✨ AI Photo Enhancer</h1>
-        <p className="text-slate-500 mb-8 font-medium">Purani, blur ya pixelated photos ko 1-click mein HD banayein (Powered by GFPGAN).</p>
+        <p className="text-slate-500 mb-8 font-medium">Purani, blur ya pixelated photos ko 1-click mein HD banayein.</p>
 
         <div className="border-2 border-dashed border-purple-200 bg-purple-50 p-8 rounded-2xl text-center mb-8">
           <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="photo-upload" />
@@ -87,9 +109,10 @@ export default function PhotoEnhancerPage() {
               ) : enhancedUrl ? (
                 <>
                   <img src={enhancedUrl} alt="Enhanced" className="rounded-2xl w-full h-auto object-cover shadow-lg mb-4" />
-                  <a href={enhancedUrl} download="DhamakaTools_HD_Photo.jpg" target="_blank" rel="noreferrer" className="bg-green-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-600 w-full">
+                  {/* 🔥 Naya Download Button Yahan Hai */}
+                  <button onClick={handleDownload} className="bg-green-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-600 w-full transition">
                     ⬇️ Download HD Photo
-                  </a>
+                  </button>
                 </>
               ) : (
                 <button onClick={handleEnhance} className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-xl font-black text-lg hover:opacity-90 shadow-lg hover:shadow-xl transition-all hover:scale-105">
