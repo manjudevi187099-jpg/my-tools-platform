@@ -8,3 +8,5 @@ pdf2docx
 Pillow
 requests
 yt-dlp
+pytoshop
+numpy
