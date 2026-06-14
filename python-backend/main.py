@@ -12,6 +12,24 @@ from pydantic import BaseModel
 from PIL import Image, ImageEnhance, ImageOps
 import numpy as np
 
+# 🔥 SUPABASE CONNECTION SETUP (Naya Add Kiya)
+from supabase import create_client, Client
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+def log_tool_error(tool_name: str, error_msg: str):
+    """Ye function kisi bhi tool ke crash hone par uska error Supabase me save karega."""
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            supabase.table("tool_errors").insert({
+                "tool_name": tool_name, 
+                "error_message": str(error_msg)
+            }).execute()
+        except Exception as e:
+            print(f"Supabase error logging failed for {tool_name}: {e}")
+
 # ==========================================
 # 🚀 PYTOSHOP AUTO-INSTALLER & SETUP
 # ==========================================
@@ -35,7 +53,6 @@ for mod_name, mod in sys.modules.items():
 # ==========================================
 app = FastAPI(title="DhamakaTools Ultimate Engine")
 
-# 🔥 Strict CORS Fix (Zero Browser Restriction)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -81,6 +98,7 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
             headers={"Content-Disposition": f'attachment; filename="{original_name}_converted.xlsx"'}
         )
     except Exception as e:
+        log_tool_error("PDF to Excel", str(e)) # 🔥 Error Logged
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
@@ -122,6 +140,7 @@ async def convert_pdf_to_word(file: UploadFile = File(...)):
             }
         )
     except Exception as e:
+        log_tool_error("PDF to Word", str(e)) # 🔥 Error Logged
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
@@ -167,6 +186,7 @@ async def process_mega_preview(
         
         return Response(content=img_byte_arr, media_type="image/png")
     except Exception as e:
+        log_tool_error("AI Live Preview", str(e)) # 🔥 Error Logged
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
@@ -234,6 +254,7 @@ async def process_mega_sheet(
             headers={"Content-Disposition": f"attachment; filename=A4_Photo_Sheet_{quantity}pcs.psd"}
         )
     except Exception as e:
+        log_tool_error("A4 PSD Builder", str(e)) # 🔥 Error Logged
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
@@ -288,6 +309,7 @@ async def enhance_photo(file: UploadFile = File(...)):
 
         return JSONResponse(status_code=504, content={"error": "Timeout! Try again."})
     except Exception as e:
+        log_tool_error("AI Photo Enhancer", str(e)) # 🔥 Error Logged
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
@@ -305,7 +327,6 @@ async def get_video_info(request: VideoRequest):
             'quiet': True,
             'no_warnings': True,
             'noplaylist': True,
-            # 🔥 VIP PASS (COOKIES) KI ENTRY:
             'cookiefile': 'cookies.txt', 
             'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         }
@@ -325,4 +346,5 @@ async def get_video_info(request: VideoRequest):
                 "platform": info.get('extractor', 'Unknown')
             }
     except Exception as e:
+        log_tool_error("Video Downloader", str(e)) # 🔥 Error Logged
         return JSONResponse(status_code=500, content={"error": f"Link galat hai ya platform support nahi kar raha: {str(e)}"})

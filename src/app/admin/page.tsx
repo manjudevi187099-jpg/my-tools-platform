@@ -76,7 +76,7 @@ export default function AdminDashboard() {
         supabase.from('tool_analytics').select('*'),
         supabase.from('site_settings').select('*').eq('id', 1).single(),
         supabase.from('tool_ratings').select('*').order('created_at', { ascending: false }),
-        supabase.from('error_logs').select('*').order('created_at', { ascending: false }),
+        supabase.from('tool_errors').select('*').order('created_at', { ascending: false }),
         // 🔥 NAYA: Blogs fetch kar rahe hain
         supabase.from('blog_posts').select('*').order('created_at', { ascending: false })
       ]);
@@ -302,8 +302,27 @@ export default function AdminDashboard() {
 
             {activeTab === 'errors' && (
               <div className="space-y-8">
-                <div><h2 className="text-3xl font-black text-slate-900">System Error Logs</h2></div>
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">{errors && errors.length > 0 ? (<div className="space-y-4">{errors.map((err: any) => (<div key={err.id} className="p-5 bg-red-50 text-red-700 border border-red-100 rounded-2xl"><div className="font-black mb-1">🐞 {err.tool_slug}</div><p className="font-medium text-red-600/80">{err.error_message}</p></div>))}</div>) : (<p className="text-green-600 font-bold">✅ Zero errors detected.</p>)}</div>
+                <div>
+                  <h2 className="text-3xl font-black text-slate-900">System Error Logs</h2>
+                </div>
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+                  {errors && errors.length > 0 ? (
+                    <div className="space-y-4">
+                      {errors.map((err: any) => (
+                        <div key={err.id} className="p-5 bg-red-50 text-red-700 border border-red-100 rounded-2xl">
+                          {/* Tool ka naam aur error message */}
+                          <div className="font-black mb-1">🐞 {err.tool_name}</div>
+                          <p className="font-medium text-red-600/80">{err.error_message}</p>
+                          <p className="text-xs text-red-400 mt-2">
+                            {new Date(err.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-green-600 font-bold">✅ Zero errors detected.</p>
+                  )}
+                </div>
               </div>
             )}
 
