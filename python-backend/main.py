@@ -246,12 +246,12 @@ async def process_mega_sheet(
 
         # ==========================================
 # ==========================================
-# 🔥 TOOL 5: AI PHOTO ENHANCER (REMINI CLONE VIA REPLICATE API)
+# # ==========================================
+# 🔥 TOOL 5: AI PHOTO ENHANCER (REAL-ESRGAN VIA REPLICATE)
 # ==========================================
 @app.post("/api/enhance-photo")
 async def enhance_photo(file: UploadFile = File(...)):
     try:
-        # 🔥 SECURE HACK: Render Dashboard se Token uthayega (GitHub block nahi karega)
         REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN")
         
         if not REPLICATE_API_TOKEN:
@@ -262,22 +262,23 @@ async def enhance_photo(file: UploadFile = File(...)):
         encoded_image = base64.b64encode(image_bytes).decode('utf-8')
         image_uri = f"data:{file.content_type};base64,{encoded_image}"
 
-        # 2. Replicate API (GFPGAN Model) ko call karein
+        # 2. Replicate API (Real-ESRGAN Model) ko call karein
         headers = {
-            "Authorization": f"Token {REPLICATE_API_TOKEN}",
+            "Authorization": f"Bearer {REPLICATE_API_TOKEN}",
             "Content-Type": "application/json"
         }
         
+        # 🔥 Model change: Real-ESRGAN (Best for HD + Face Enhance)
         data = {
+            "version": "42fed1c4974146d4d2414e2be2c5277c7fcf05fcc3a73abf41610695738c1d7b", 
             "input": {
-                "img": image_uri,
+                "image": image_uri,
                 "scale": 2, 
-                "version": "v1.4"
+                "face_enhance": True
             }
         }
 
-        # 🔥 Smart Call: Bina fixed ID ke, hamesha latest active model chalega
-        start_response = requests.post("https://api.replicate.com/v1/models/tencentarc/gfpgan/predictions", headers=headers, json=data)
+        start_response = requests.post("https://api.replicate.com/v1/predictions", headers=headers, json=data)
         
         if start_response.status_code != 201:
             asli_error = start_response.json().get('detail', start_response.text)
@@ -285,7 +286,7 @@ async def enhance_photo(file: UploadFile = File(...)):
 
         prediction_url = start_response.json()["urls"]["get"]
 
-        # 3. Supercomputer ka wait karein (Max 15-20 seconds)
+        # 3. Supercomputer ka wait karein
         for _ in range(15):
             time.sleep(2) 
             check_response = requests.get(prediction_url, headers=headers).json()
