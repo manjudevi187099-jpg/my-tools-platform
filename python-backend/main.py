@@ -247,7 +247,8 @@ async def process_mega_sheet(
         # ==========================================
 # ==========================================
 # # ==========================================
-# 🔥 TOOL 5: AI PHOTO ENHANCER (REAL-ESRGAN VIA REPLICATE)
+# ==========================================
+# 🔥 TOOL 5: AI PHOTO ENHANCER (SMART AUTO-RESIZE)
 # ==========================================
 @app.post("/api/enhance-photo")
 async def enhance_photo(file: UploadFile = File(...)):
@@ -255,12 +256,24 @@ async def enhance_photo(file: UploadFile = File(...)):
         REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN")
         
         if not REPLICATE_API_TOKEN:
-            return JSONResponse(status_code=500, content={"error": "API Token missing! Kripya Render Environment Variables mein check karein."})
+            return JSONResponse(status_code=500, content={"error": "API Token missing!"})
         
-        # 1. Photo ko Base64 mein convert karein
+        # 1. Photo ko read karein
         image_bytes = await file.read()
-        encoded_image = base64.b64encode(image_bytes).decode('utf-8')
-        image_uri = f"data:{file.content_type};base64,{encoded_image}"
+        
+        # 🔥 SMART RESIZE LOGIC (Badi photo ko Replicate limit ke andar lana)
+        img = Image.open(io.BytesIO(image_bytes))
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+            
+        # Agar photo badi hai, toh longest side ko 1024 pixels tak compress karein
+        img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+        
+        # Wapas Base64 mein convert karein
+        buffered = io.BytesIO()
+        img.save(buffered, format="JPEG", quality=95)
+        encoded_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        image_uri = f"data:image/jpeg;base64,{encoded_image}"
 
         # 2. Replicate API (Real-ESRGAN Model) ko call karein
         headers = {
@@ -268,7 +281,6 @@ async def enhance_photo(file: UploadFile = File(...)):
             "Content-Type": "application/json"
         }
         
-        # 🔥 Model change: Real-ESRGAN (Best for HD + Face Enhance)
         data = {
             "version": "42fed1c4974146d4d2414e2be2c5277c7fcf05fcc3a73abf41610695738c1d7b", 
             "input": {
@@ -295,7 +307,7 @@ async def enhance_photo(file: UploadFile = File(...)):
                 return {"status": "success", "enhanced_image_url": check_response["output"]}
             elif check_response["status"] == "failed":
                 ai_error = check_response.get("error", "Unknown AI Crash")
-                return JSONResponse(status_code=500, content={"error": f"AI model crash ho gaya: {ai_error}"})
+                return JSONResponse(status_code=500, content={"error": f"AI Crash: {ai_error}"})
 
         return JSONResponse(status_code=504, content={"error": "Timeout! Photo badi thi, time zyada lag gaya."})
 
