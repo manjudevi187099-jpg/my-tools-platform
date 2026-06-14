@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+pandas
+openpyxl
+pdfplumber
+pdf2docx
+Pillow
+requests
+yt-dlp
+pytoshop
+numpy
