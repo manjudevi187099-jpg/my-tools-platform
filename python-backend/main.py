@@ -280,7 +280,8 @@ async def enhance_photo(file: UploadFile = File(...)):
         start_response = requests.post("https://api.replicate.com/v1/predictions", headers=headers, json=data)
         
         if start_response.status_code != 201:
-            return JSONResponse(status_code=500, content={"error": "API Limit khatam ho gayi hai ya Token galat hai."})
+            asli_error = start_response.json().get('detail', start_response.text)
+            return JSONResponse(status_code=500, content={"error": f"Replicate Error: {asli_error}"})
 
         prediction_url = start_response.json()["urls"]["get"]
 
