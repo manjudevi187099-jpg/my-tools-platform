@@ -269,7 +269,6 @@ async def enhance_photo(file: UploadFile = File(...)):
         }
         
         data = {
-            "version": "9283608cb6f7e4dd336ec880b9ab96f9cc6c8c49cc3a328e3b5e43a9b138ff91", 
             "input": {
                 "img": image_uri,
                 "scale": 2, 
@@ -277,7 +276,8 @@ async def enhance_photo(file: UploadFile = File(...)):
             }
         }
 
-        start_response = requests.post("https://api.replicate.com/v1/predictions", headers=headers, json=data)
+        # 🔥 Smart Call: Bina fixed ID ke, hamesha latest active model chalega
+        start_response = requests.post("https://api.replicate.com/v1/models/tencentarc/gfpgan/predictions", headers=headers, json=data)
         
         if start_response.status_code != 201:
             asli_error = start_response.json().get('detail', start_response.text)
