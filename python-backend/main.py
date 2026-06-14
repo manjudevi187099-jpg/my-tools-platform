@@ -294,7 +294,8 @@ async def enhance_photo(file: UploadFile = File(...)):
             if check_response["status"] == "succeeded":
                 return {"status": "success", "enhanced_image_url": check_response["output"]}
             elif check_response["status"] == "failed":
-                return JSONResponse(status_code=500, content={"error": "AI model photo ko enhance nahi kar paya."})
+                ai_error = check_response.get("error", "Unknown AI Crash")
+                return JSONResponse(status_code=500, content={"error": f"AI model crash ho gaya: {ai_error}"})
 
         return JSONResponse(status_code=504, content={"error": "Timeout! Photo badi thi, time zyada lag gaya."})
 
