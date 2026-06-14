@@ -83,38 +83,54 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
 
 
 # ==========================================
-# 🔥 TOOL 2: PDF TO WORD (Lazy Loading for RAM)
 # ==========================================
-def remove_temp_files(path1: str, path2: str):
-    if os.path.exists(path1): os.remove(path1)
-    if os.path.exists(path2): os.remove(path2)
-
+# 🔥 TOOL 2: PDF TO WORD (FIXED CORRUPTION BUG)
+# ==========================================
 @app.post("/api/pdf-to-word")
-async def convert_pdf_to_word(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def convert_pdf_to_word(file: UploadFile = File(...)):
     from pdf2docx import Converter
+    import io
+    import os
+    import uuid
+
     try:
         file_id = str(uuid.uuid4())
         temp_pdf_path = f"temp_{file_id}.pdf"
         temp_docx_path = f"temp_{file_id}.docx"
         
+        # 1. PDF ko temporary save karein
         with open(temp_pdf_path, "wb") as f:
             f.write(await file.read())
             
+        # 2. PDF se Word banayein
         cv = Converter(temp_pdf_path)
         cv.convert(temp_docx_path)
         cv.close()
         
-        background_tasks.add_task(remove_temp_files, temp_pdf_path, temp_docx_path)
+        # 3. 🔥 SMART FIX: Word file ko RAM (BytesIO) mein padh lein
+        docx_io = io.BytesIO()
+        with open(temp_docx_path, "rb") as f:
+            docx_io.write(f.read())
+        docx_io.seek(0)
+        
+        # 4. Ab safely temp files delete kar dein (Koi aadhi file nahi kategi)
+        if os.path.exists(temp_pdf_path): os.remove(temp_pdf_path)
+        if os.path.exists(temp_docx_path): os.remove(temp_docx_path)
         
         original_name = file.filename.replace('.pdf', '')
-        return FileResponse(
-            temp_docx_path, 
+        
+        # 5. RAM se seedha user ko bhej dein
+        return StreamingResponse(
+            docx_io, 
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            filename=f"{original_name}_converted.docx"
+            headers={"Content-Disposition": f'attachment; filename="{original_name}_converted.docx"'}
         )
+        
     except Exception as e:
+        # Error aaye toh bhi kachra saaf kar dein
+        if 'temp_pdf_path' in locals() and os.path.exists(temp_pdf_path): os.remove(temp_pdf_path)
+        if 'temp_docx_path' in locals() and os.path.exists(temp_docx_path): os.remove(temp_docx_path)
         return JSONResponse(status_code=500, content={"error": str(e)})
-
 
 # ==========================================
 # 🔥 TOOL 3: AI LIVE PREVIEW (SUPER LOW RAM HACK)
