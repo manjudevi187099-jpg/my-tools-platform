@@ -84,54 +84,51 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
 
 # ==========================================
 # ==========================================
-# 🔥 TOOL 2: PDF TO WORD (FIXED CORRUPTION BUG)
+# ==========================================
+# 🔥 TOOL 2: PDF TO WORD (100% CORRUPTION-FREE FIX)
 # ==========================================
 @app.post("/api/pdf-to-word")
 async def convert_pdf_to_word(file: UploadFile = File(...)):
     from pdf2docx import Converter
-    import io
     import os
-    import uuid
+    import tempfile
+    from fastapi.responses import Response
 
     try:
-        file_id = str(uuid.uuid4())
-        temp_pdf_path = f"temp_{file_id}.pdf"
-        temp_docx_path = f"temp_{file_id}.docx"
-        
-        # 1. PDF ko temporary save karein
-        with open(temp_pdf_path, "wb") as f:
-            f.write(await file.read())
+        # 1. Ek safe temporary folder banayenge jo kaam hote hi apne aap delete ho jayega
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_pdf_path = os.path.join(temp_dir, "input.pdf")
+            temp_docx_path = os.path.join(temp_dir, "output.docx")
             
-        # 2. PDF se Word banayein
-        cv = Converter(temp_pdf_path)
-        cv.convert(temp_docx_path)
-        cv.close()
-        
-        # 3. 🔥 SMART FIX: Word file ko RAM (BytesIO) mein padh lein
-        docx_io = io.BytesIO()
-        with open(temp_docx_path, "rb") as f:
-            docx_io.write(f.read())
-        docx_io.seek(0)
-        
-        # 4. Ab safely temp files delete kar dein (Koi aadhi file nahi kategi)
-        if os.path.exists(temp_pdf_path): os.remove(temp_pdf_path)
-        if os.path.exists(temp_docx_path): os.remove(temp_docx_path)
+            # PDF ko us folder mein save karein
+            with open(temp_pdf_path, "wb") as f:
+                f.write(await file.read())
+                
+            # PDF se Word banayein
+            cv = Converter(temp_pdf_path)
+            cv.convert(temp_docx_path)
+            cv.close()
+            
+            # 2. 🔥 THE MAGIC: Poori Word file ko RAM mein padh lein
+            with open(temp_docx_path, "rb") as f:
+                file_data = f.read()
+                
+        # Jaise hi ye line cross hogi, Python khud us temporary folder aur files ko uda dega!
         
         original_name = file.filename.replace('.pdf', '')
         
-        # 5. RAM se seedha user ko bhej dein
-        return StreamingResponse(
-            docx_io, 
+        # 3. Direct Response bhejein (Browser ko exact size bata kar)
+        return Response(
+            content=file_data, 
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={"Content-Disposition": f'attachment; filename="{original_name}_converted.docx"'}
+            headers={
+                "Content-Disposition": f'attachment; filename="{original_name}_converted.docx"',
+                "Content-Length": str(len(file_data)) # Browser ab beech mein download nahi rokega!
+            }
         )
         
     except Exception as e:
-        # Error aaye toh bhi kachra saaf kar dein
-        if 'temp_pdf_path' in locals() and os.path.exists(temp_pdf_path): os.remove(temp_pdf_path)
-        if 'temp_docx_path' in locals() and os.path.exists(temp_docx_path): os.remove(temp_docx_path)
         return JSONResponse(status_code=500, content={"error": str(e)})
-
 # ==========================================
 # 🔥 TOOL 3: AI LIVE PREVIEW (SUPER LOW RAM HACK)
 # ==========================================
