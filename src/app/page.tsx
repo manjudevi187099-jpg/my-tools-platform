@@ -107,19 +107,13 @@ export default function HomePage() {
       {/* 🌟 HEADER 🌟 */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            {/* 🔥 SIRF 'D' WALA ICON YAHAN LAGA HAI 🔥 */}
-            <img src="/logo-icon.png" alt="DhamakaTools Icon" className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-sm" />
-            
-            {/* 🔥 ICON KE THEEK BAAJU MEIN BADA NAAM LIKH DIYA HAI 🔥 */}
-            <div className="flex flex-col">
-              <span className="text-2xl md:text-3xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-none tracking-tight">
-                DhamakaTools
-              </span>
-              <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                Pro Tools
-              </span>
+            <span className="text-3xl bg-slate-100 p-2 rounded-xl border border-slate-200 shadow-sm">🛠️</span>
+            <div>
+              <h1 className="text-2xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-none">
+                {siteInfo.name}
+              </h1>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Pro Tools</span>
             </div>
           </Link>
 
@@ -130,10 +124,11 @@ export default function HomePage() {
             <Link href="/contact" className="hover:text-purple-600 transition-colors">Support</Link>
           </nav>
 
-          {/* 🔥 ADMIN BUTTON HATA HUA HAI 🔥 */}
           <div className="flex items-center gap-4">
+            <Link href="/admin" className="bg-slate-900 text-white text-sm font-bold px-6 py-2.5 rounded-full hover:bg-black transition-colors shadow-md hover:shadow-lg">
+              Admin Area 🛡️
+            </Link>
           </div>
-          
         </div>
       </header>
 
