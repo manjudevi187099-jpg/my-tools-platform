@@ -9,6 +9,9 @@ type Tool = {
   category: string;
   is_active: boolean;
   views?: number;
+  today?: number;
+  week?: number;
+  month?: number;
 };
 
 export default function AdminDashboard() {
@@ -22,8 +25,9 @@ export default function AdminDashboard() {
   const [ratings, setRatings] = useState<any[]>([]);
   const [errors, setErrors] = useState<any[]>([]);
   
-  // 🔥 NAYA STATE: Blogs store karne ke liye
+  // 🔥 Blogs & Analytics State
   const [blogs, setBlogs] = useState<any[]>([]);
+  const [analyticsReport, setAnalyticsReport] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [totalViews, setTotalViews] = useState(0);
@@ -71,42 +75,62 @@ export default function AdminDashboard() {
   const fetchRealData = async () => {
     setLoading(true);
     try {
-      const [tData, aData, sData, rData, eData, bData] = await Promise.all([
+      const [tData, aData, sData, rData, eData, bData, pData] = await Promise.all([
         supabase.from('tools_status').select('*').order('name', { ascending: true }),
         supabase.from('tool_analytics').select('*'),
         supabase.from('site_settings').select('*').eq('id', 1).single(),
         supabase.from('tool_ratings').select('*').order('created_at', { ascending: false }),
         supabase.from('tool_errors').select('*').order('created_at', { ascending: false }),
-        // 🔥 NAYA: Blogs fetch kar rahe hain
-        supabase.from('blog_posts').select('*').order('created_at', { ascending: false })
+        supabase.from('blog_posts').select('*').order('created_at', { ascending: false }),
+        supabase.from('tool_pageviews').select('tool_slug, created_at') // 🔥 NAYA API CALL
       ]);
 
       if (sData.data) setSeoData(sData.data);
       if (rData.data) setRatings(rData.data);
       if (eData.data) setErrors(eData.data);
-      if (bData.data) setBlogs(bData.data); // Blogs state mein set kiye
+      if (bData.data) setBlogs(bData.data);
 
       if (tData.data) {
         let tViews = 0, maxViews = -1, bestTool = 'N/A', aCount = 0;
+        const now = new Date();
+
         const mergedTools = tData.data.map((tool: any) => {
           if (tool.is_active) aCount++;
           const stat = aData.data?.find((a: any) => a.tool_slug === tool.slug);
           const views = stat ? stat.total_views : 0;
-          
           tViews += views;
           if (views > maxViews) { maxViews = views; bestTool = tool.name; }
-          return { ...tool, views };
+
+          // 🔥 TIME-BASED CALCULATION LOGIC
+          let today = 0, week = 0, month = 0;
+          if (pData.data) {
+            pData.data.forEach((pv: any) => {
+              if (pv.tool_slug === tool.slug) {
+                const diffTime = Math.abs(now.getTime() - new Date(pv.created_at).getTime());
+                const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                if (diffDays <= 1) today++;
+                if (diffDays <= 7) week++;
+                if (diffDays <= 30) month++;
+              }
+            });
+          }
+
+          return { ...tool, views, today, week, month };
         });
 
+        // Report ko highest views ke hisaab se sort karna
+        const sortedReport = [...mergedTools].sort((a, b) => (b.views || 0) - (a.views || 0));
+
         setTools(mergedTools);
+        setAnalyticsReport(sortedReport); // 🔥 Save to state
         setTotalViews(tViews);
         setActiveCount(aCount);
         setPopularTool({ name: bestTool !== 'N/A' ? bestTool : 'No data yet', views: maxViews > -1 ? maxViews : 0 });
       }
-    } catch (error) {
-      console.error("Data Fetch Error:", error);
-    } finally {
-      setLoading(false);
+    } catch (error) { 
+      console.error("Data Fetch Error:", error); 
+    } finally { 
+      setLoading(false); 
     }
   };
 
@@ -131,7 +155,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // SAVE BLOG LOGIC
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
     setBlogTitle(title);
@@ -154,12 +177,11 @@ export default function AdminDashboard() {
     } else {
       setBlogMessage('✅ Blog Published Successfully! 🎉');
       setBlogTitle(''); setBlogSlug(''); setBlogContent('');
-      fetchRealData(); // 🔄 Naya blog list mein dikhane ke liye reload
+      fetchRealData(); 
       setTimeout(() => setBlogMessage(''), 4000);
     }
   };
 
-  // 🔥 DELETE BLOG LOGIC 🔥
   const deleteBlog = async (id: number) => {
     if(confirm("Are you sure you want to delete this blog?")) {
       await supabase.from('blog_posts').delete().eq('id', id);
@@ -252,6 +274,38 @@ export default function AdminDashboard() {
                   <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden"><p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Active Tools</p><h3 className="text-4xl font-black text-slate-800 mt-2">{activeCount} <span className="text-lg text-slate-400">/ {tools.length}</span></h3></div>
                   <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden"><p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Database Status</p><h3 className="text-2xl font-black text-green-600 mt-2">Connected</h3><p className="text-slate-500 text-sm font-medium mt-2">{errors.length} System Errors</p></div>
                 </div>
+
+                {/* 🔥 NAYA DETAILED TRAFFIC REPORT TABLE 🔥 */}
+                <div className="mt-12">
+                  <h3 className="text-2xl font-black text-slate-900 mb-6">Detailed Traffic Report 📈</h3>
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-xs tracking-wider">
+                        <tr>
+                          <th className="p-5 font-bold">Tool Name</th>
+                          <th className="p-5 font-bold text-center text-blue-600">Today (24h)</th>
+                          <th className="p-5 font-bold text-center text-purple-600">Last 7 Days</th>
+                          <th className="p-5 font-bold text-center text-orange-600">Last 30 Days</th>
+                          <th className="p-5 font-bold text-center text-slate-800">All Time Views</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {analyticsReport.map((tool) => (
+                          <tr key={tool.slug} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-5 font-bold text-slate-800 flex items-center gap-3">
+                              {tool.name}
+                              {(tool.today || 0) > 10 && <span className="px-2 py-1 bg-red-100 text-red-600 text-[10px] uppercase rounded-full animate-pulse">🔥 Trending</span>}
+                            </td>
+                            <td className="p-5 text-center font-black text-blue-600 text-lg">{tool.today || 0}</td>
+                            <td className="p-5 text-center font-bold text-purple-600">{tool.week || 0}</td>
+                            <td className="p-5 text-center font-bold text-orange-600">{tool.month || 0}</td>
+                            <td className="p-5 text-center font-black text-slate-800">{tool.views || 0}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -310,7 +364,6 @@ export default function AdminDashboard() {
                     <div className="space-y-4">
                       {errors.map((err: any) => (
                         <div key={err.id} className="p-5 bg-red-50 text-red-700 border border-red-100 rounded-2xl">
-                          {/* Tool ka naam aur error message */}
                           <div className="font-black mb-1">🐞 {err.tool_name}</div>
                           <p className="font-medium text-red-600/80">{err.error_message}</p>
                           <p className="text-xs text-red-400 mt-2">
@@ -326,11 +379,8 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* 🔥 TAB 6: THE UPDATED BLOG CMS (FORM + LIST) 🔥 */}
             {activeTab === 'blog' && (
               <div className="space-y-12 max-w-5xl">
-                
-                {/* WRITE BLOG FORM */}
                 <div>
                   <h2 className="text-3xl font-black text-slate-900">Write a New Blog Post</h2>
                   <form onSubmit={handleSaveBlog} className="mt-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
@@ -355,7 +405,6 @@ export default function AdminDashboard() {
                   </form>
                 </div>
 
-                {/* PUBLISHED BLOGS LIST */}
                 <div>
                   <h2 className="text-3xl font-black text-slate-900 mb-6">Published Blogs ({blogs.length})</h2>
                   <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -383,7 +432,6 @@ export default function AdminDashboard() {
                     )}
                   </div>
                 </div>
-
               </div>
             )}
 

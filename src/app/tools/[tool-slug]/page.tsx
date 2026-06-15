@@ -53,7 +53,7 @@ export default function ToolPage() {
       if (!slug) return;
       
       try {
-        // Pehle check karte hain ki kya tool database mein pehle se hai?
+        // 1. Purana logic: Total views me +1 karna
         const { data } = await supabase
           .from('tool_analytics')
           .select('total_views')
@@ -61,7 +61,6 @@ export default function ToolPage() {
           .single();
 
         if (data) {
-          // Agar hai, toh Views mein +1 kar do
           await supabase
             .from('tool_analytics')
             .update({ 
@@ -70,11 +69,16 @@ export default function ToolPage() {
             })
             .eq('tool_slug', slug);
         } else {
-          // Agar nahi hai, toh nayi entry (row) bana do views = 1 ke sath
           await supabase
             .from('tool_analytics')
             .insert({ tool_slug: slug, total_views: 1 });
         }
+
+        // 2. 🔥 NAYA LOGIC: 'tool_pageviews' table mein time ke sath entry karna
+        await supabase
+          .from('tool_pageviews')
+          .insert({ tool_slug: slug });
+
       } catch (error) {
         console.error("Tracking Error:", error);
       }
@@ -82,7 +86,6 @@ export default function ToolPage() {
 
     trackToolView();
   }, [slug]);
-
   if (!slug) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
