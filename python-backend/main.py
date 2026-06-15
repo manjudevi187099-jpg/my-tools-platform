@@ -380,33 +380,38 @@ async def get_video_info(request: VideoRequest):
         return JSONResponse(status_code=500, content={"error": f"Link galat hai ya platform support nahi kar raha: {str(e)}"})
 
 # ==========================================
-# 🔥 TOOL 7: AI SUIT CHANGER (Hugging Face IDM-VTON)
+# ==========================================
+# 🔥 TOOL 7: PREMIUM AI SUIT CHANGER (Updated for 10 Suits)
 # ==========================================
 @app.post("/api/generate-suit")
-async def generate_suit(image: UploadFile = File(...)):
+async def generate_suit(image: UploadFile = File(...), suit_id: str = Form("1")):
     if not hf_client:
-        error_msg = "Hugging Face client is not initialized on the server."
+        error_msg = "AI Server is currently initializing."
         log_tool_error("AI Suit Changer", error_msg)
         return JSONResponse(status_code=500, content={"error": error_msg})
 
-    user_img_path = f"temp_{image.filename}"
+    # Save User WebP Image
+    user_img_path = f"temp_user_{image.filename}"
     with open(user_img_path, "wb") as buffer:
         shutil.copyfileobj(image.file, buffer)
 
-    # Note: Ensure you have a nice 'suit.jpg' uploaded to your backend folder!
-    suit_img_path = "suit.jpg" 
+    # 🔥 Find corresponding suit image (suit1.jpg, suit2.jpg ... suit10.jpg)
+    suit_img_path = f"suits/suit{suit_id}.jpg" 
     
+    # Agar specific suit nahi milta, toh default 'suit1.jpg' le lega
     if not os.path.exists(suit_img_path):
-        error_msg = "Bhai, backend mein suit.jpg file nahi mili! Pehle ek suit ki photo folder mein daalo."
-        log_tool_error("AI Suit Changer", error_msg)
-        return JSONResponse(status_code=500, content={"error": error_msg})
+        suit_img_path = "suits/suit1.jpg"
+        if not os.path.exists(suit_img_path):
+            error_msg = "Backend Error: Suits directory or images missing!"
+            log_tool_error("AI Suit Changer", error_msg)
+            return JSONResponse(status_code=500, content={"error": error_msg})
 
     try:
-        print("Sending to Hugging Face IDM-VTON... ⏳")
+        print(f"Applying Suit #{suit_id} via AI... ⏳")
         result = hf_client.predict(
             dict({"background": handle_file(user_img_path), "layers": [], "composite": None}),
             handle_file(suit_img_path),
-            "A highly detailed professional business suit, high quality",
+            "A highly detailed professional business suit, studio lighting, photorealistic",
             True,
             True,
             30,
@@ -419,7 +424,7 @@ async def generate_suit(image: UploadFile = File(...)):
 
     except Exception as e:
         log_tool_error("AI Suit Changer", str(e))
-        return JSONResponse(status_code=500, content={"error": f"AI Model queue full ya error hai: {str(e)}"})
+        return JSONResponse(status_code=500, content={"error": "Line is currently busy. Try again in 1 minute!"})
         
     finally:
         if os.path.exists(user_img_path):
