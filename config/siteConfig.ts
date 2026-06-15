@@ -4,6 +4,7 @@ export interface ToolMetadata {
   category: "pdf" | "dev" | "utility" | "design" | "business";
   keywords: string[];
   isActive: boolean;
+  icon: string; // 🔥 NAYA: Icon property add ki
 }
 
 export const toolsRegistry: Record<string, ToolMetadata> = {
@@ -14,6 +15,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["pdf merger", "combine pdf", "join pdf tools"],
     isActive: true,
+    icon: "🔗", // 🔥 NAYA
   },
   "split-pdf": {
     name: "Split PDF Pro",
@@ -21,6 +23,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["split pdf", "extract pages", "cut pdf"],
     isActive: true,
+    icon: "✂️", // 🔥 NAYA
   },
   "compress-pdf": {
     name: "PDF Compressor Engine",
@@ -28,6 +31,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["compress pdf", "reduce pdf size", "shrink pdf"],
     isActive: true,
+    icon: "🗜️", // 🔥 NAYA
   },
   "unlock-pdf": {
     name: "Unlock PDF",
@@ -35,6 +39,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["unlock pdf", "remove password", "decrypt pdf"],
     isActive: true,
+    icon: "🔓", // 🔥 NAYA
   },
   "protect-pdf": {
     name: "Protect PDF",
@@ -42,6 +47,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["protect pdf", "encrypt pdf", "add password pdf"],
     isActive: true,
+    icon: "🔒", // 🔥 NAYA
   },
   "image-to-pdf": {
     name: "Image to PDF",
@@ -49,6 +55,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["image to pdf", "jpg to pdf", "png to pdf", "convert images"],
     isActive: true,
+    icon: "🖼️", // 🔥 NAYA
   },
   "watermark-pdf": {
     name: "Add PDF Watermark",
@@ -56,6 +63,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["watermark pdf", "add text watermark", "secure pdf"],
     isActive: true,
+    icon: "©️", // 🔥 NAYA
   },
   "invert-pdf": {
     name: "Invert PDF Colors",
@@ -63,6 +71,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["invert pdf", "white background", "pdf color fix"],
     isActive: true,
+    icon: "☯️", // 🔥 NAYA
   },
   "remove-watermark": {
     name: "Remove PDF Watermark",
@@ -70,6 +79,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["remove watermark", "delete watermark"],
     isActive: true,
+    icon: "🧹", // 🔥 NAYA
   }, 
   "pdf-stamper": {
     name: "PDF Stamper",
@@ -77,6 +87,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["pdf stamper", "add stamp", "verified stamp", "custom pdf stamp"],
     isActive: true,
+    icon: "💮", // 🔥 NAYA
   },
   "pdf-editor": {
     name: "Advanced PDF Editor",
@@ -84,20 +95,23 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["pdf editor", "whiteout pdf", "add text to pdf", "edit pdf online"],
     isActive: true,
+    icon: "✍️", // 🔥 NAYA
   },
   "pdf-to-word": {
     name: "PDF to Word Converter",
-    description: "Extract text and paragraphs into an editable DOC file. 100% Free & Secure.",
+    description: "Convert PDF documents to editable Word files.",
     category: "pdf",
     keywords: ["pdf to word", "pdf to doc", "convert pdf to word"],
     isActive: true,
+    icon: "📝", // 🔥 NAYA
   },
   "pdf-to-excel": {
-    name: "PDF to Excel Converter",
+    name: "PDF to Excel",
     description: "Convert PDF tables to Excel spreadsheets easily.",
     category: "pdf",
     keywords: ["pdf to excel", "convert pdf to excel", "pdf to xlsx"],
     isActive: true,
+    icon: "📊", // 🔥 NAYA
   },
 
   // --- UTILITY / IMAGE TOOLS ---
@@ -107,6 +121,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["add name on photo", "photo editor", "date on photo", "form photo"],
     isActive: true,
+    icon: "📅", // 🔥 NAYA
   },
   "photo-signature-joiner": {
     name: "Photo Signature Joiner",
@@ -114,6 +129,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["join photo signature", "merge image", "exam form photo"],
     isActive: true,
+    icon: "🖇️", // 🔥 NAYA
   },
   "english-to-hindi-typing": {
     name: "English to Hindi Typing",
@@ -121,6 +137,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["english to hindi typing", "hindi transliteration", "hindi typing online"],
     isActive: true,
+    icon: "🔠", // 🔥 NAYA
   },
   "age-calculator": {
     name: "Age Calculator",
@@ -128,6 +145,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["age calculator", "calculate age", "dob calculator", "form age"],
     isActive: true,
+    icon: "🎂", // 🔥 NAYA
   },
   "signature-on-photo": {
     name: "Signature On Photo",
@@ -135,6 +153,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["signature on photo", "overlay signature", "watermark signature", "self attest"],
     isActive: true,
+    icon: "🖋️", // 🔥 NAYA
   },
   "image-resizer": {
     name: "Photo & Signature Resizer",
@@ -142,6 +161,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["image resizer", "photo resizer", "signature resizer", "resize to cm", "resize pixels"],
     isActive: true,
+    icon: "📐", // 🔥 NAYA
   },
   "smart-card-maker": {
     name: "Smart Card A4 PSD Maker",
@@ -149,6 +169,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["id card maker", "aadhaar print", "pan card print", "a4 smart card", "cr80 print format"],
     isActive: true,
+    icon: "🪪", // 🔥 NAYA
   },
   "omr-sheet-maker": {
     name: "A4 OMR Sheet Generator",
@@ -156,6 +177,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["omr maker", "omr sheet generator", "mock test sheet", "print omr a4", "bubble sheet"],
     isActive: true,
+    icon: "✅", // 🔥 NAYA
   },
   "typing-speed-test": {
     name: "Typing Speed Test Engine",
@@ -163,6 +185,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["typing test", "wpm checker", "typing speed calculator", "ssc typing test", "english typing"],
     isActive: true,
+    icon: "⌨️", // 🔥 NAYA
   },
   "resume-builder": {
     name: "Smart Resume / CV Builder",
@@ -170,6 +193,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["resume maker", "cv builder", "pdf resume", "job resume generator", "ats friendly cv"],
     isActive: true,
+    icon: "📄", // 🔥 NAYA
   },
   "biodata-maker": {
     name: "Marriage Biodata Maker",
@@ -177,6 +201,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["biodata maker", "marriage profile", "shaadi biodata", "matrimonial profile generator"],
     isActive: true,
+    icon: "💍", // 🔥 NAYA
   },
   "muslim-biodata-maker": {
     name: "Muslim Biodata Maker",
@@ -184,6 +209,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["muslim biodata", "islamic marriage profile", "shaadi biodata", "matrimonial profile generator"],
     isActive: true,
+    icon: "🕌", // 🔥 NAYA
   },
   "qr-generator": {
     name: "Mega QR Studio",
@@ -191,6 +217,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["qr generator", "qr code maker", "wifi qr", "vcard qr", "mega qr studio", "barcode maker"],
     isActive: true,
+    icon: "📱", // 🔥 NAYA
   },
   "p2p-share": {
     name: "P2P Secure Share",
@@ -198,6 +225,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["p2p share", "file transfer", "send large files", "direct transfer", "webrtc"],
     isActive: true,
+    icon: "🚀", // 🔥 NAYA
   },
   "timer": {
     name: "Stopwatch & Timer",
@@ -205,13 +233,15 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["timer", "stopwatch", "countdown timer", "browser timer", "alarm timer", "study timer"],
     isActive: true,
+    icon: "⏱️", // 🔥 NAYA
   },
   "walkie-talkie": {
     name: "Walkie Talkie P2P",
     description: "Free, private, push-to-talk voice chat directly in your browser. No signup required.",
     category: "utility",
-    keywords: ["walkie talkie", "voice chat", "push to talk", "p2p audio", "browser radio"],
+    keywords: ["walkie talkie", "p2p voice chat", "real-time communication", "browser voice chat"],
     isActive: true,
+    icon: "📻", // 🔥 NAYA
   },
 
   // --- DESIGN TOOLS ---
@@ -221,6 +251,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "design",
     keywords: ["passport size photo maker", "psd generator", "a4 photo format", "studio photo grid"],
     isActive: true,
+    icon: "📸", // 🔥 NAYA
   },
   "certificate-maker": {
     name: "Pro Certificate Generator",
@@ -228,6 +259,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "design",
     keywords: ["certificate maker", "certificate generator", "award certificate", "course certificate", "event certificate"],
     isActive: true,
+    icon: "🎓", // 🔥 NAYA
   },
   "stamp-maker": {
     name: "Digital Stamp & Seal Maker",
@@ -235,6 +267,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "design",
     keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
     isActive: true,
+    icon: "🏵️", // 🔥 NAYA
   },
   "photo-studio": {
     name: "Mega Photo Studio",
@@ -242,6 +275,15 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "design",
     keywords: ["photo studio", "crop photo", "resize image", "photo printing"],
     isActive: true,
+    icon: "🖼️", // 🔥 NAYA
+  },
+  "photo-enhancer": {
+    name: "AI Photo Enhancer",
+    description: "Purani, blur ya pixelated photos ko 1-click mein HD banayein.",
+    category: "design",
+    keywords: ["ai enhancer", "hd photo", "remini clone", "clear image", "restore face"],
+    isActive: true,
+    icon: "✨", // 🔥 NAYA
   },
 
   // --- BUSINESS TOOLS ---
@@ -251,6 +293,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "business",
     keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
     isActive: true,
+    icon: "📜", // 🔥 NAYA
   },
   "invoice-maker": {
     name: "Pro Invoice Maker",
@@ -258,14 +301,6 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "business",
     keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
     isActive: true,
-  },
-  
-  // 🌟 FIX: Photo Enhancer mein Keywords aur isActive add kar diya 🌟
-  "photo-enhancer": {
-    name: "AI Photo Enhancer",
-    description: "Purani, blur ya pixelated photos ko 1-click mein HD banayein.",
-    category: "design",
-    keywords: ["ai enhancer", "hd photo", "remini clone", "clear image", "restore face"],
-    isActive: true
-  },
+    icon: "🧾", // 🔥 NAYA
+  }
 };
