@@ -302,5 +302,13 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
     isActive: true,
     icon: "🧾", // 🔥 NAYA
-  }
+  },
+  "ai-suit-changer": {
+    name: "AI Suit Changer",
+    description: "Upload your photo and let AI automatically dress you in a professional suit or formal attire.",
+    category: "design",
+    keywords: ["ai suit changer", "photo suit editor", "idm vton", "ai outfit changer"],
+    isActive: true,
+    icon: "👔",
+  },
 };

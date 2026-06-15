@@ -152,10 +152,10 @@ export default function ToolPage() {
                 <a href="https://whatsapp.com/channel/0029VbD1pyt3LdQTNaRDD121" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex justify-center items-center gap-2 bg-[#25D366] text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all">
                   <span className="text-xl">💬</span> Join WhatsApp
                 </a>
-                <a href="https://facebook.com/AAPKA_PAGE" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex justify-center items-center gap-2 bg-[#1877F2] text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all">
+                <a href="https://www.facebook.com/share/1DZdEzXwRf/" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex justify-center items-center gap-2 bg-[#1877F2] text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all">
                   <span className="text-xl">📘</span> Facebook Page
                 </a>
-                <a href="https://instagram.com/AAPKA_PAGE" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex justify-center items-center gap-2 bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all">
+                <a href="https://www.instagram.com/dhamakatools?igsh=MWtoeWltajRmOWtpaw==" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex justify-center items-center gap-2 bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all">
                   <span className="text-xl">📸</span> Instagram
                 </a>
               </div>

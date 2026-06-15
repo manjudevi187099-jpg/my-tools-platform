@@ -5,9 +5,10 @@ import base64
 import subprocess
 import requests
 import time
-from fastapi import FastAPI, File, UploadFile, Form
+import shutil
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse, Response
+from fastapi.responses import StreamingResponse, JSONResponse, Response, FileResponse
 from pydantic import BaseModel
 from PIL import Image, ImageEnhance, ImageOps
 import numpy as np
@@ -49,6 +50,16 @@ for mod_name, mod in sys.modules.items():
         setattr(mod, 'packbits', packbits)
 
 # ==========================================
+# 🚀 GRADIO CLIENT AUTO-INSTALLER (For Suit Changer)
+# ==========================================
+try:
+    from gradio_client import Client, handle_file
+except ImportError:
+    print("Missing gradio_client! Auto-installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "gradio-client"])
+    from gradio_client import Client, handle_file
+
+# ==========================================
 # 🚀 FASTAPI ENGINE & CORS SETUP
 # ==========================================
 app = FastAPI(title="DhamakaTools Ultimate Engine")
@@ -61,9 +72,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 🔥 Hugging Face Client Setup (Connecting to IDM-VTON)
+try:
+    hf_client = Client("yisol/IDM-VTON")
+except Exception as e:
+    print(f"Hugging Face IDM-VTON client load error: {e}")
+    hf_client = None
+
 @app.get("/")
 def home():
-    return {"status": "success", "message": "DhamakaTools 6-in-1 Engine is Online! 🚀"}
+    return {"status": "success", "message": "DhamakaTools 7-in-1 Engine is Online! 🚀"}
 
 # ==========================================
 # 🔥 TOOL 1: PDF TO EXCEL
@@ -84,7 +102,7 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
         
         if not all_tables:
             error_msg = "Is PDF mein table ke borders nahi mile!"
-            log_tool_error("PDF to Excel", error_msg) # 🔥 Fixed: Custom error logged
+            log_tool_error("PDF to Excel", error_msg) 
             return JSONResponse(status_code=400, content={"error": error_msg})
 
         df = pd.DataFrame(all_tables)
@@ -268,7 +286,7 @@ async def enhance_photo(file: UploadFile = File(...)):
         REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN")
         if not REPLICATE_API_TOKEN:
             error_msg = "API Token missing!"
-            log_tool_error("AI Photo Enhancer", error_msg) # 🔥 Fixed
+            log_tool_error("AI Photo Enhancer", error_msg) 
             return JSONResponse(status_code=500, content={"error": error_msg})
         
         image_bytes = await file.read()
@@ -300,7 +318,7 @@ async def enhance_photo(file: UploadFile = File(...)):
         start_response = requests.post("https://api.replicate.com/v1/predictions", headers=headers, json=data)
         if start_response.status_code != 201:
             error_msg = start_response.text
-            log_tool_error("AI Photo Enhancer", error_msg) # 🔥 Fixed
+            log_tool_error("AI Photo Enhancer", error_msg) 
             return JSONResponse(status_code=500, content={"error": error_msg})
 
         prediction_url = start_response.json()["urls"]["get"]
@@ -312,11 +330,11 @@ async def enhance_photo(file: UploadFile = File(...)):
                 return {"status": "success", "enhanced_image_url": check_response["output"]}
             elif check_response["status"] == "failed":
                 error_msg = "AI Engine failure"
-                log_tool_error("AI Photo Enhancer", error_msg) # 🔥 Fixed
+                log_tool_error("AI Photo Enhancer", error_msg) 
                 return JSONResponse(status_code=500, content={"error": error_msg})
 
         error_msg = "Timeout! Try again."
-        log_tool_error("AI Photo Enhancer", error_msg) # 🔥 Fixed
+        log_tool_error("AI Photo Enhancer", error_msg) 
         return JSONResponse(status_code=504, content={"error": error_msg})
     except Exception as e:
         log_tool_error("AI Photo Enhancer", str(e)) 
@@ -347,7 +365,7 @@ async def get_video_info(request: VideoRequest):
             
             if not video_url:
                 error_msg = "Is link se video nahi nikal payi."
-                log_tool_error("Video Downloader", error_msg) # 🔥 Fixed: Custom error logged
+                log_tool_error("Video Downloader", error_msg) 
                 return JSONResponse(status_code=400, content={"error": error_msg})
 
             return {
@@ -360,3 +378,49 @@ async def get_video_info(request: VideoRequest):
     except Exception as e:
         log_tool_error("Video Downloader", str(e)) 
         return JSONResponse(status_code=500, content={"error": f"Link galat hai ya platform support nahi kar raha: {str(e)}"})
+
+# ==========================================
+# 🔥 TOOL 7: AI SUIT CHANGER (Hugging Face IDM-VTON)
+# ==========================================
+@app.post("/api/generate-suit")
+async def generate_suit(image: UploadFile = File(...)):
+    if not hf_client:
+        error_msg = "Hugging Face client is not initialized on the server."
+        log_tool_error("AI Suit Changer", error_msg)
+        return JSONResponse(status_code=500, content={"error": error_msg})
+
+    user_img_path = f"temp_{image.filename}"
+    with open(user_img_path, "wb") as buffer:
+        shutil.copyfileobj(image.file, buffer)
+
+    # Note: Ensure you have a nice 'suit.jpg' uploaded to your backend folder!
+    suit_img_path = "suit.jpg" 
+    
+    if not os.path.exists(suit_img_path):
+        error_msg = "Bhai, backend mein suit.jpg file nahi mili! Pehle ek suit ki photo folder mein daalo."
+        log_tool_error("AI Suit Changer", error_msg)
+        return JSONResponse(status_code=500, content={"error": error_msg})
+
+    try:
+        print("Sending to Hugging Face IDM-VTON... ⏳")
+        result = hf_client.predict(
+            dict({"background": handle_file(user_img_path), "layers": [], "composite": None}),
+            handle_file(suit_img_path),
+            "A highly detailed professional business suit, high quality",
+            True,
+            True,
+            30,
+            42,
+            api_name="/tryon"
+        )
+        
+        generated_image_path = result[0] if isinstance(result, tuple) else result
+        return FileResponse(generated_image_path, media_type="image/jpeg")
+
+    except Exception as e:
+        log_tool_error("AI Suit Changer", str(e))
+        return JSONResponse(status_code=500, content={"error": f"AI Model queue full ya error hai: {str(e)}"})
+        
+    finally:
+        if os.path.exists(user_img_path):
+            os.remove(user_img_path)

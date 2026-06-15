@@ -11,3 +11,4 @@ yt-dlp
 pytoshop
 numpy
 supabase
+gradio-client
