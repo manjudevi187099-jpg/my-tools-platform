@@ -86,7 +86,7 @@ export default function HomePage() {
       title: tool.name,
       description: tool.description,
       category: (tool.category || 'utility').toUpperCase(),
-      icon: tool.icon // 🔥 NAYA: Ab ye sidha Registry file se icon uthayega
+      icon: tool.category === 'pdf' ? '📄' : tool.category === 'design' ? '🎨' : tool.category === 'business' ? '💼' : '🛠️'
     }));
 
   const filteredTools = toolsList.filter((tool) =>
@@ -108,9 +108,19 @@ export default function HomePage() {
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           
-          <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-            {/* 🔥 NAYA LOGO YAHAN LAGA HAI 🔥 */}
-            <img src="/logo-full.png" alt="DhamakaTools" className="h-10 md:h-14 object-contain" />
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            {/* 🔥 SIRF 'D' WALA ICON YAHAN LAGA HAI 🔥 */}
+            <img src="/logo-icon.png" alt="DhamakaTools Icon" className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-sm" />
+            
+            {/* 🔥 ICON KE THEEK BAAJU MEIN BADA NAAM LIKH DIYA HAI 🔥 */}
+            <div className="flex flex-col">
+              <span className="text-2xl md:text-3xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-none tracking-tight">
+                DhamakaTools
+              </span>
+              <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                Pro Tools
+              </span>
+            </div>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 font-bold text-slate-600">
@@ -120,12 +130,13 @@ export default function HomePage() {
             <Link href="/contact" className="hover:text-purple-600 transition-colors">Support</Link>
           </nav>
 
-          {/* 🔥 ADMIN BUTTON HATA DIYA GAYA HAI 🔥 */}
+          {/* 🔥 ADMIN BUTTON HATA HUA HAI 🔥 */}
           <div className="flex items-center gap-4">
           </div>
           
         </div>
       </header>
+
       <main className="flex-1">
         
         {/* 🌟 HERO SECTION 🌟 */}
@@ -196,12 +207,9 @@ export default function HomePage() {
                     {trendingTools.map((tool) => (
                       <Link key={tool.slug} href={`/tools/${tool.slug}`} className="group flex items-start gap-4 p-6 bg-gradient-to-br from-white to-orange-50/20 border-2 border-orange-100 rounded-3xl hover:border-orange-500 hover:shadow-xl hover:shadow-orange-500/10 transition-all duration-300 relative overflow-hidden">
                         <div className="absolute top-0 right-0 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-black px-4 py-1.5 rounded-bl-2xl z-10 shadow-sm">{tool.views} Uses</div>
-                        
-                        {/* 🔥 NAYA: Trending Tool Icon Update 🔥 */}
                         <div className="text-4xl bg-white p-4 rounded-2xl shadow-sm border border-orange-100 group-hover:scale-110 transition-transform">
-                          {tool.icon}
+                          {tool.category === 'pdf' ? '📄' : tool.category === 'design' ? '🎨' : tool.category === 'business' ? '💼' : '🛠️'}
                         </div>
-                        
                         <div className="flex-1 pt-1 z-10">
                           <h3 className="font-black text-slate-800 text-xl leading-tight group-hover:text-orange-600 transition-colors">{tool.name}</h3>
                           <p className="text-sm text-slate-500 mt-2 line-clamp-2 leading-relaxed font-medium">{tool.description}</p>
@@ -223,17 +231,12 @@ export default function HomePage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                       {tools.map((tool) => (
-                         <Link key={tool.slug} href={`/tools/${tool.slug}`} className="block bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                            
-                            {/* 🔥 NAYA: ILOVEPDF JAISA ICON UI 🔥 */}
-                            <div className="w-16 h-16 bg-purple-50 group-hover:bg-purple-600 rounded-2xl flex items-center justify-center text-3xl mb-5 transition-colors duration-300">
-                              <span className="group-hover:scale-110 transition-transform duration-300">
-                                {tool.icon}
-                              </span>
+                         <Link key={tool.slug} href={`/tools/${tool.slug}`} className="group flex items-start gap-4 p-6 bg-white border border-slate-200 rounded-3xl hover:border-purple-600 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
+                            <div className="text-4xl bg-slate-50 p-4 rounded-2xl border border-slate-100 group-hover:bg-purple-50 group-hover:scale-110 transition-all">{tool.icon}</div>
+                            <div className="flex-1 pt-1">
+                              <h3 className="font-black text-slate-800 text-lg leading-tight group-hover:text-purple-700 transition-colors">{tool.title}</h3>
+                              <p className="text-sm text-slate-500 mt-2 line-clamp-2 font-medium">{tool.description}</p>
                             </div>
-                            
-                            <h3 className="text-xl font-black text-slate-800 group-hover:text-purple-600 transition-colors">{tool.title}</h3>
-                            <p className="text-sm text-slate-500 mt-2 line-clamp-2 leading-relaxed font-medium">{tool.description}</p>
                          </Link>
                       ))}
                     </div>
