@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 
 // 🌟 Config aur Supabase Imports
 import { toolsRegistry, ToolMetadata } from '../../../../config/siteConfig';
-import { supabase } from '../../../lib/supabase'; // Dhyan dein: Apna supabase ka path check kar lein agar error aaye
+import { supabase } from '../../../lib/supabase'; // Apna supabase path check kar lein
 
 const ToolComponents: Record<string, React.ElementType> = {
   "pdf-merger": dynamic(() => import('../../../tools/pdf-merger'), { ssr: false }),
@@ -47,9 +47,12 @@ export default function ToolPage() {
   const params = useParams();
   const slug = (params?.['tool-slug'] as string) || (params?.slug as string);
 
-  // 🔥 YAHAN LAGA HAI HIDDEN TRACKER 🔥
+  // 🔥 NAYA STATE: Tool ka specific blog store karne ke liye
+  const [toolBlog, setToolBlog] = useState<any>(null);
+
+  // 🔥 YAHAN LAGA HAI HIDDEN TRACKER AUR BLOG FETCHER 🔥
   useEffect(() => {
-    const trackToolView = async () => {
+    const trackToolViewAndFetchBlog = async () => {
       if (!slug) return;
       
       try {
@@ -74,18 +77,30 @@ export default function ToolPage() {
             .insert({ tool_slug: slug, total_views: 1 });
         }
 
-        // 2. 🔥 NAYA LOGIC: 'tool_pageviews' table mein time ke sath entry karna
+        // 2. 'tool_pageviews' table mein time ke sath entry karna
         await supabase
           .from('tool_pageviews')
           .insert({ tool_slug: slug });
+
+        // 3. 🔥 FETCH TOOL SPECIFIC BLOG
+        const { data: blogData } = await supabase
+          .from('blog_posts')
+          .select('*')
+          .eq('linked_tool', slug)
+          .single();
+          
+        if (blogData) {
+          setToolBlog(blogData);
+        }
 
       } catch (error) {
         console.error("Tracking Error:", error);
       }
     };
 
-    trackToolView();
+    trackToolViewAndFetchBlog();
   }, [slug]);
+
   if (!slug) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -113,6 +128,7 @@ export default function ToolPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 pb-12">
+      {/* TOOL HEADER */}
       <div className="bg-white border-b py-10 px-4 text-center shadow-sm">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight">{toolMeta.name}</h1>
         <p className="text-slate-500 mt-3 max-w-2xl mx-auto text-sm md:text-base">
@@ -123,7 +139,44 @@ export default function ToolPage() {
       <div className="mt-8 px-4">
         {ActiveToolComponent ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            {/* 1. ASLI TOOL */}
             <ActiveToolComponent />
+
+            {/* 2. SOCIAL MEDIA LINKS (Tool ke theek niche) */}
+            <div className="mt-16 max-w-5xl mx-auto border-t border-slate-200 pt-10">
+              <h3 className="text-center text-slate-500 font-bold uppercase tracking-wider mb-6 text-sm">
+                Join Our Community
+              </h3>
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+                <a href="https://chat.whatsapp.com/AAPKA_LINK" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex justify-center items-center gap-2 bg-[#25D366] text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all">
+                  <span className="text-xl">💬</span> Join WhatsApp
+                </a>
+                <a href="https://facebook.com/AAPKA_PAGE" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex justify-center items-center gap-2 bg-[#1877F2] text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all">
+                  <span className="text-xl">📘</span> Facebook Page
+                </a>
+                <a href="https://instagram.com/AAPKA_PAGE" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex justify-center items-center gap-2 bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all">
+                  <span className="text-xl">📸</span> Instagram
+                </a>
+              </div>
+            </div>
+
+            {/* 3. HOW TO USE / BLOG SECTION (Social media ke niche) */}
+            {toolBlog && (
+              <div className="mt-16 max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-200">
+                <h2 className="text-3xl font-black text-slate-900 mb-2 text-center">
+                  {toolBlog.title || `How to Use ${toolMeta.name}`}
+                </h2>
+                <div className="w-20 h-1 bg-purple-500 mx-auto rounded-full mb-10"></div>
+                
+                {/* Asli Blog Content jo aap admin se likhenge */}
+                <div 
+                  className="prose prose-lg max-w-none text-slate-700 leading-relaxed marker:text-purple-500 prose-h2:text-slate-800 prose-h2:font-black prose-a:text-purple-600 prose-img:rounded-xl" 
+                  dangerouslySetInnerHTML={{ __html: toolBlog.content }} 
+                />
+              </div>
+            )}
+
           </div>
         ) : (
           <div className="text-center p-20">

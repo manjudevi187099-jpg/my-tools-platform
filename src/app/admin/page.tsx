@@ -44,6 +44,7 @@ export default function AdminDashboard() {
   const [blogTitle, setBlogTitle] = useState('');
   const [blogSlug, setBlogSlug] = useState('');
   const [blogContent, setBlogContent] = useState('');
+  const [linkedTool, setLinkedTool] = useState(''); // 🔥 NAYA: Linked Tool state add kiya
   const [isSavingBlog, setIsSavingBlog] = useState(false);
   const [blogMessage, setBlogMessage] = useState('');
 
@@ -167,8 +168,9 @@ export default function AdminDashboard() {
     setIsSavingBlog(true);
     setBlogMessage('');
     
+    // 🔥 NAYA: linked_tool backend ko bhejna
     const { error } = await supabase.from('blog_posts').insert([
-      { title: blogTitle, slug: blogSlug, content: blogContent }
+      { title: blogTitle, slug: blogSlug, content: blogContent, linked_tool: linkedTool || null }
     ]);
 
     setIsSavingBlog(false);
@@ -176,7 +178,7 @@ export default function AdminDashboard() {
       setBlogMessage('❌ Error: ' + error.message);
     } else {
       setBlogMessage('✅ Blog Published Successfully! 🎉');
-      setBlogTitle(''); setBlogSlug(''); setBlogContent('');
+      setBlogTitle(''); setBlogSlug(''); setBlogContent(''); setLinkedTool(''); // 🔥 NAYA: Reset kiya
       fetchRealData(); 
       setTimeout(() => setBlogMessage(''), 4000);
     }
@@ -275,7 +277,7 @@ export default function AdminDashboard() {
                   <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden"><p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Database Status</p><h3 className="text-2xl font-black text-green-600 mt-2">Connected</h3><p className="text-slate-500 text-sm font-medium mt-2">{errors.length} System Errors</p></div>
                 </div>
 
-                {/* 🔥 NAYA DETAILED TRAFFIC REPORT TABLE 🔥 */}
+                {/* 🔥 DETAILED TRAFFIC REPORT TABLE 🔥 */}
                 <div className="mt-12">
                   <h3 className="text-2xl font-black text-slate-900 mb-6">Detailed Traffic Report 📈</h3>
                   <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -306,6 +308,7 @@ export default function AdminDashboard() {
                     </table>
                   </div>
                 </div>
+
               </div>
             )}
 
@@ -394,6 +397,19 @@ export default function AdminDashboard() {
                         <input type="text" required readOnly value={blogSlug} className="w-full bg-slate-100 text-slate-500 border border-slate-200 rounded-xl px-4 py-3 outline-none font-mono" />
                       </div>
                     </div>
+                    
+                    {/* 🔥 NAYA DROPDOWN UI ADD KIYA GAYA 🔥 */}
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Link this blog to a specific tool? (Optional)</label>
+                      <select value={linkedTool} onChange={(e) => setLinkedTool(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 font-medium text-slate-800">
+                        <option value="">General Blog (No specific tool)</option>
+                        {tools.map(t => (
+                          <option key={t.slug} value={t.slug}>{t.name} ({t.slug})</option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-slate-500 mt-2">Agar tool select kiya, toh ye blog direct us tool ke niche dikhega!</p>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-2">Blog Content (Write in text or HTML)</label>
                       <textarea required value={blogContent} onChange={(e) => setBlogContent(e.target.value)} placeholder="<h2>Introduction</h2><p>Start writing here...</p>" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 outline-none focus:border-purple-500 focus:ring-2 font-mono min-h-[300px]" />
@@ -411,7 +427,13 @@ export default function AdminDashboard() {
                     {blogs.length === 0 ? <p className="p-8 text-slate-500 font-medium">No blogs published yet.</p> : (
                       <table className="w-full text-left border-collapse">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-sm">
-                          <tr><th className="p-5 font-bold">Blog Title</th><th className="p-5 font-bold">Live URL</th><th className="p-5 font-bold text-right">Action</th></tr>
+                          <tr>
+                            <th className="p-5 font-bold">Blog Title</th>
+                            <th className="p-5 font-bold">Live URL</th>
+                            {/* 🔥 NAYA TABLE HEADER 🔥 */}
+                            <th className="p-5 font-bold">Linked Tool</th>
+                            <th className="p-5 font-bold text-right">Action</th>
+                          </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {blogs.map((blog) => (
@@ -421,6 +443,14 @@ export default function AdminDashboard() {
                                 <a href={`/blog/${blog.slug}`} target="_blank" className="text-purple-600 hover:underline font-mono text-sm bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-100">
                                   /blog/{blog.slug} ↗
                                 </a>
+                              </td>
+                              {/* 🔥 NAYA TABLE CELL 🔥 */}
+                              <td className="p-5">
+                                {blog.linked_tool ? (
+                                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">{blog.linked_tool}</span>
+                                ) : (
+                                  <span className="text-slate-400 text-sm">General</span>
+                                )}
                               </td>
                               <td className="p-5 text-right">
                                 <button onClick={() => deleteBlog(blog.id)} className="text-red-500 hover:bg-red-50 px-4 py-1.5 rounded-lg font-bold transition-colors">Delete</button>
