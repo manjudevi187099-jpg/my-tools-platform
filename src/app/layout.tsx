@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   
   return {
-    title: settings?.site_name || "PdfNexa - Professional Utility Engine",
+    title: settings?.site_name || "Dhamka Tools - Professional Utility Engine",
     description: settings?.seo_description || "Free, secure, and blazing-fast web tools built for developers, designers, and power users.",
     keywords: settings?.keywords || "pdf tools, online utility, format converter",
   };

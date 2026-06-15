@@ -50,7 +50,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
-    if (token === 'pdfnexa_secure_admin') {
+    if (token === 'Dhamaka Tools_secure_admin') {
       setIsAuthenticated(true);
       fetchRealData(); 
     }
@@ -59,7 +59,7 @@ export default function AdminDashboard() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === 'Admin@2024') {
-      localStorage.setItem('admin_token', 'pdfnexa_secure_admin');
+      localStorage.setItem('admin_token', 'Dhamaka Tools_secure_admin');
       setIsAuthenticated(true);
       setAuthError('');
       fetchRealData();

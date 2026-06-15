@@ -7,7 +7,7 @@ export default function MegaQRStudio() {
   const [qrType, setQrType] = useState('url'); // 'url', 'wifi', 'vcard', 'email', 'sms'
   
   // 1. URL / Text
-  const [text, setText] = useState('https://pdfnexa.com');
+  const [text, setText] = useState('https://dhamakatools.com');
   
   // 2. WiFi
   const [ssid, setSsid] = useState('');
