@@ -17,12 +17,11 @@ const SUIT_OPTIONS = [
   { id: '10', name: 'Pinstripe', emoji: '💼' },
 ];
 
-// 🔥 Photoshop jaise Handle Box ka Design
 const handleStyle = {
   width: '14px',
   height: '14px',
   background: '#ffffff',
-  border: '2px solid #2563eb', // Blue border
+  border: '2px solid #2563eb', 
   borderRadius: '2px',
   boxShadow: '0 0 4px rgba(0,0,0,0.3)',
 };
@@ -31,7 +30,6 @@ export default function ManualSuitFitter() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [selectedSuit, setSelectedSuit] = useState('1');
   
-  // Box State
   const [suitBox, setSuitBox] = useState({
     x: 80,
     y: 150,
@@ -40,7 +38,6 @@ export default function ManualSuitFitter() {
   });
   const [rotation, setRotation] = useState(0); 
 
-  // Eraser State
   const [isEraserMode, setIsEraserMode] = useState(false);
   const [eraserSize, setEraserSize] = useState(20);
   const [isErasing, setIsErasing] = useState(false);
@@ -246,7 +243,6 @@ export default function ManualSuitFitter() {
                   onTouchMove={erase}
                 />
 
-                {/* 🔥 REAL Photoshop 8-Point Box */}
                 {!isEraserMode && (
                   <Rnd
                     size={{ width: suitBox.width, height: suitBox.height }}
@@ -260,14 +256,14 @@ export default function ManualSuitFitter() {
                       });
                     }}
                     bounds="parent"
-                    className="z-20 border-2 border-dashed border-blue-500 hover:border-blue-600"
+                    minWidth={60}  // 🔥 JAADU 1: Box ab isse zyada chhota nahi hoga!
+                    minHeight={60} // 🔥 Box ab kabhi andar nahi ghusega
+                    className="z-20 border-2 border-dashed border-blue-500 hover:border-blue-600 flex items-center justify-center"
                     style={{ transform: `translate(${suitBox.x}px, ${suitBox.y}px) rotate(${rotation}deg)` }}
-                    // 👇 Ye sabse important setting hai jo har side ko active karti hai
                     enableResizing={{
                       top: !isEraserMode, right: !isEraserMode, bottom: !isEraserMode, left: !isEraserMode,
                       topRight: !isEraserMode, bottomRight: !isEraserMode, bottomLeft: !isEraserMode, topLeft: !isEraserMode
                     }}
-                    // 👇 Ye white/blue dब्बे lagati hai exactly kono aur sides par
                     resizeHandleStyles={{
                       topLeft: { ...handleStyle, marginTop: '-7px', marginLeft: '-7px' },
                       topRight: { ...handleStyle, marginTop: '-7px', marginRight: '-7px' },
@@ -286,7 +282,9 @@ export default function ManualSuitFitter() {
                       src={`/suits/suit${selectedSuit}.png`} 
                       alt="Suit"
                       draggable={false}
-                      className="w-full h-full opacity-90 hover:opacity-100 pointer-events-none"
+                      className="opacity-90 hover:opacity-100 pointer-events-none block"
+                      // 🔥 JAADU 2: objectFit fill karne se suit ekdum box ke saath chipak kar khichega
+                      style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
                     />
                   </Rnd>
                 )}
