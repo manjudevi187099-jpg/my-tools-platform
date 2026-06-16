@@ -2,8 +2,8 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
+import { Rnd } from 'react-rnd'; // 🔥 NEW: Photoshop jaisa box!
 
-// 👔 10 Suits
 const SUIT_OPTIONS = [
   { id: '1', name: 'Black Formal', emoji: '🕴️' },
   { id: '2', name: 'Navy Blue Tux', emoji: '👔' },
@@ -21,14 +21,14 @@ export default function ManualSuitFitter() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [selectedSuit, setSelectedSuit] = useState('1');
   
-  // 🔥 NEW: Advanced Suit Adjustments State
-  const [scaleX, setScaleX] = useState(1.2); // Width
-  const [scaleY, setScaleY] = useState(1.2); // Height
-  const [rotation, setRotation] = useState(0); // Angle
-  const [suitPos, setSuitPos] = useState({ x: 100, y: 200 });
-  
-  const [isDraggingSuit, setIsDraggingSuit] = useState(false);
-  const dragStartPos = useRef({ x: 0, y: 0 });
+  // 🔥 Box State (Position & Size)
+  const [suitBox, setSuitBox] = useState({
+    x: 100,
+    y: 150,
+    width: 200,
+    height: 250,
+  });
+  const [rotation, setRotation] = useState(0); 
 
   // Eraser Tool & Undo State
   const [isEraserMode, setIsEraserMode] = useState(false);
@@ -37,7 +37,6 @@ export default function ManualSuitFitter() {
   const [undoHistory, setUndoHistory] = useState<string[]>([]);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const suitImgRef = useRef<HTMLImageElement>(null);
 
   // 1️⃣ Photo Upload
@@ -66,9 +65,7 @@ export default function ManualSuitFitter() {
   const startErasing = (e: any) => {
     if (!isEraserMode) return;
     const canvas = canvasRef.current;
-    if (canvas) {
-      setUndoHistory((prev) => [...prev, canvas.toDataURL()]);
-    }
+    if (canvas) setUndoHistory((prev) => [...prev, canvas.toDataURL()]);
     setIsErasing(true);
     erase(e);
   };
@@ -76,10 +73,7 @@ export default function ManualSuitFitter() {
   const stopErasing = () => {
     setIsErasing(false);
     const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) ctx.beginPath();
-    }
+    if (canvas) canvas.getContext('2d')?.beginPath();
   };
 
   const erase = (e: any) => {
@@ -109,11 +103,9 @@ export default function ManualSuitFitter() {
     if (undoHistory.length === 0) return;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
-    
     if (canvas && ctx) {
       const lastState = undoHistory[undoHistory.length - 1];
       setUndoHistory((prev) => prev.slice(0, -1));
-      
       const img = new Image();
       img.src = lastState;
       img.onload = () => {
@@ -124,28 +116,7 @@ export default function ManualSuitFitter() {
     }
   };
 
-  // 3️⃣ Suit Dragging Logic
-  const handleSuitMouseDown = (e: any) => {
-    if (isEraserMode) return; 
-    setIsDraggingSuit(true);
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    dragStartPos.current = { x: clientX - suitPos.x, y: clientY - suitPos.y };
-  };
-
-  const handleSuitMouseMove = (e: any) => {
-    if (!isDraggingSuit || isEraserMode) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    setSuitPos({
-      x: clientX - dragStartPos.current.x,
-      y: clientY - dragStartPos.current.y,
-    });
-  };
-
-  const handleSuitMouseUp = () => setIsDraggingSuit(false);
-
-  // 4️⃣ Final Merge & Download HD
+  // 3️⃣ Final Merge & Download HD
   const downloadHDPhoto = () => {
     const baseCanvas = canvasRef.current;
     const suitImg = suitImgRef.current;
@@ -157,21 +128,16 @@ export default function ManualSuitFitter() {
       const ctx = finalCanvas.getContext('2d');
       
       if (ctx) {
-        // Draw User Photo first
         ctx.drawImage(baseCanvas, 0, 0);
-        
-        // Draw Suit with Advanced Transformations
         ctx.globalCompositeOperation = 'source-over';
         ctx.save();
         
-        // Move to position, rotate, and scale independently
-        ctx.translate(suitPos.x, suitPos.y);
+        // Calculate center for rotation
+        ctx.translate(suitBox.x + suitBox.width / 2, suitBox.y + suitBox.height / 2);
         ctx.rotate((rotation * Math.PI) / 180);
         
-        const finalWidth = suitImg.width * scaleX;
-        const finalHeight = suitImg.height * scaleY;
-        
-        ctx.drawImage(suitImg, 0, 0, finalWidth, finalHeight);
+        // Draw image stretched to exact box size
+        ctx.drawImage(suitImg, -suitBox.width / 2, -suitBox.height / 2, suitBox.width, suitBox.height);
         ctx.restore();
         
         const link = document.createElement('a');
@@ -188,7 +154,7 @@ export default function ManualSuitFitter() {
         <div className="text-center mb-10">
           <Link href="/" className="text-sm font-bold text-purple-600 mb-4 inline-block">← Back to Tools</Link>
           <h1 className="text-4xl md:text-5xl font-black mb-4">👔 Manual HD Suit Fitter</h1>
-          <p className="text-lg text-slate-500 font-medium">Fit the suit yourself, adjust width/height, erase extra edges, and download HD!</p>
+          <p className="text-lg text-slate-500 font-medium">Drag the corners to stretch and fit the suit exactly like Photoshop!</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border border-slate-100 flex flex-col md:flex-row gap-8">
@@ -213,28 +179,13 @@ export default function ManualSuitFitter() {
                 </div>
 
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
-                  <h3 className="font-bold">3. Pro Adjustments</h3>
+                  <h3 className="font-bold">3. Tools</h3>
                   
-                  {/* Advanced Sliders */}
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
-                        <span>↔️ Chaudai (Width)</span> <span>{Math.round(scaleX * 100)}%</span>
-                      </label>
-                      <input type="range" min="0.5" max="2.5" step="0.01" value={scaleX} onChange={(e) => setScaleX(parseFloat(e.target.value))} className="w-full" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
-                        <span>↕️ Lambaai (Height)</span> <span>{Math.round(scaleY * 100)}%</span>
-                      </label>
-                      <input type="range" min="0.5" max="2.5" step="0.01" value={scaleY} onChange={(e) => setScaleY(parseFloat(e.target.value))} className="w-full" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
-                        <span>🔄 Ghumana (Rotate)</span> <span>{rotation}°</span>
-                      </label>
-                      <input type="range" min="-45" max="45" step="1" value={rotation} onChange={(e) => setRotation(parseInt(e.target.value))} className="w-full" />
-                    </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
+                      <span>🔄 Gardan Ghumana (Rotate)</span> <span>{rotation}°</span>
+                    </label>
+                    <input type="range" min="-45" max="45" step="1" value={rotation} onChange={(e) => setRotation(parseInt(e.target.value))} className="w-full" />
                   </div>
 
                   <div className="pt-2 border-t border-slate-200">
@@ -275,14 +226,11 @@ export default function ManualSuitFitter() {
               <p className="text-slate-400 font-bold">Upload a photo to start tailoring...</p>
             ) : (
               <div 
-                ref={containerRef}
                 className="relative overflow-hidden shadow-2xl bg-white border border-slate-200"
                 style={{ width: 400, height: 500, cursor: isEraserMode ? 'crosshair' : 'default' }}
                 onMouseUp={stopErasing}
                 onMouseLeave={stopErasing}
                 onTouchEnd={stopErasing}
-                onMouseMove={handleSuitMouseMove}
-                onTouchMove={handleSuitMouseMove}
               >
                 <canvas 
                   ref={canvasRef}
@@ -293,30 +241,61 @@ export default function ManualSuitFitter() {
                   onTouchMove={erase}
                 />
 
-                <img 
-                  ref={suitImgRef}
-                  src={`/suits/suit${selectedSuit}.png`} 
-                  alt="Suit"
-                  draggable={false}
-                  className="absolute z-20 hover:outline hover:outline-2 hover:outline-dashed hover:outline-purple-500 cursor-grab active:cursor-grabbing"
-                  style={{
-                    left: `${suitPos.x}px`,
-                    top: `${suitPos.y}px`,
-                    transform: `scaleX(${scaleX}) scaleY(${scaleY}) rotate(${rotation}deg)`,
-                    transformOrigin: 'top left',
-                    pointerEvents: isEraserMode ? 'none' : 'auto',
-                  }}
-                  onMouseDown={handleSuitMouseDown}
-                  onTouchStart={handleSuitMouseDown}
-                  onMouseUp={handleSuitMouseUp}
-                  onTouchEnd={handleSuitMouseUp}
-                />
+                {/* 🔥 Photoshop jaisa Transform Box */}
+                {!isEraserMode && (
+                  <Rnd
+                    size={{ width: suitBox.width, height: suitBox.height }}
+                    position={{ x: suitBox.x, y: suitBox.y }}
+                    onDragStop={(e, d) => setSuitBox((prev) => ({ ...prev, x: d.x, y: d.y }))}
+                    onResizeStop={(e, direction, ref, delta, position) => {
+                      setSuitBox({
+                        width: parseInt(ref.style.width, 10),
+                        height: parseInt(ref.style.height, 10),
+                        ...position,
+                      });
+                    }}
+                    bounds="parent"
+                    className="z-20 border-2 border-dashed border-blue-500 hover:border-blue-600"
+                    style={{ transform: `translate(${suitBox.x}px, ${suitBox.y}px) rotate(${rotation}deg)` }}
+                    enableResizing={!isEraserMode}
+                    disableDragging={isEraserMode}
+                    lockAspectRatio={false} // Khinchne ki aazadi (Stretching allowed)
+                  >
+                    <img 
+                      ref={suitImgRef}
+                      src={`/suits/suit${selectedSuit}.png`} 
+                      alt="Suit"
+                      draggable={false}
+                      className="w-full h-full opacity-90 hover:opacity-100 pointer-events-none"
+                    />
+                    {/* Corner Dots (Design) */}
+                    <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full"></div>
+                    <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full"></div>
+                    <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full"></div>
+                    <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full"></div>
+                  </Rnd>
+                )}
+                
+                {/* Hidden image for erasing mode download reference */}
+                {isEraserMode && (
+                  <img 
+                    ref={suitImgRef}
+                    src={`/suits/suit${selectedSuit}.png`} 
+                    alt="Suit"
+                    className="absolute z-20 opacity-50 pointer-events-none"
+                    style={{
+                      left: `${suitBox.x}px`, top: `${suitBox.y}px`,
+                      width: `${suitBox.width}px`, height: `${suitBox.height}px`,
+                      transform: `rotate(${rotation}deg)`
+                    }}
+                  />
+                )}
               </div>
             )}
             
             {photo && (
               <p className="text-xs text-slate-400 font-bold mt-4">
-                {isEraserMode ? 'Tip: Drag on photo to erase old clothes.' : 'Tip: Drag the suit and use sliders to fit it perfectly.'}
+                Tip: Drag the blue corners to stretch the suit.
               </p>
             )}
           </div>
