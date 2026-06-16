@@ -1,204 +1,277 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 
-// 🔥 10 Premium Suits ka Data
+// 👔 10 Suits (Ab ye TRANSPARENT PNG hone chahiye)
 const SUIT_OPTIONS = [
-  { id: '1', name: 'Black Formal', emoji: '🕴️', color: 'bg-slate-900' },
-  { id: '2', name: 'Navy Blue Tuxedo', emoji: '👔', color: 'bg-blue-900' },
-  { id: '3', name: 'Grey Business', emoji: '🏢', color: 'bg-gray-500' },
-  { id: '4', name: 'White Blazer', emoji: '🧥', color: 'bg-slate-100' },
-  { id: '5', name: 'Maroon Party', emoji: '🍷', color: 'bg-red-900' },
-  { id: '6', name: 'Checkered Suit', emoji: '🏁', color: 'bg-stone-600' },
-  { id: '7', name: 'Cream Casual', emoji: '☕', color: 'bg-amber-100' },
-  { id: '8', name: 'Royal Velvet', emoji: '👑', color: 'bg-purple-900' },
-  { id: '9', name: 'Olive Green', emoji: '🌿', color: 'bg-emerald-900' },
-  { id: '10', name: 'CEO Pinstripe', emoji: '💼', color: 'bg-slate-800' },
+  { id: '1', name: 'Black Formal', emoji: '🕴️' },
+  { id: '2', name: 'Navy Blue Tux', emoji: '👔' },
+  { id: '3', name: 'Grey Business', emoji: '🏢' },
+  { id: '4', name: 'White Blazer', emoji: '🧥' },
+  { id: '5', name: 'Maroon Party', emoji: '🍷' },
+  { id: '6', name: 'Checkered', emoji: '🏁' },
+  { id: '7', name: 'Cream Casual', emoji: '☕' },
+  { id: '8', name: 'Royal Velvet', emoji: '👑' },
+  { id: '9', name: 'Olive Green', emoji: '🌿' },
+  { id: '10', name: 'Pinstripe', emoji: '💼' },
 ];
 
-export default function AiSuitChanger() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function ManualSuitFitter() {
+  const [photo, setPhoto] = useState<string | null>(null);
   const [selectedSuit, setSelectedSuit] = useState('1');
+  
+  // Suit Adjustments State
+  const [suitScale, setSuitScale] = useState(1);
+  const [suitPos, setSuitPos] = useState({ x: 100, y: 150 });
+  const [isDraggingSuit, setIsDraggingSuit] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
 
-  // 🔥 Auto WebP Converter (Quality maintained, size reduced)
-  const convertToWebP = (file: File): Promise<File> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) ctx.drawImage(img, 0, 0);
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const webpFile = new File([blob], file.name.split('.')[0] + '.webp', { type: 'image/webp' });
-              resolve(webpFile);
-            } else {
-              resolve(file); // fallback
-            }
-          }, 'image/webp', 0.9); // 90% quality HD
-        };
-      };
-    });
-  };
+  // Eraser Tool State
+  const [isEraserMode, setIsEraserMode] = useState(false);
+  const [eraserSize, setEraserSize] = useState(20);
+  const [isErasing, setIsErasing] = useState(false);
+  
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const suitImgRef = useRef<HTMLImageElement>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 1️⃣ Photo Upload & Draw to Canvas
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const originalFile = e.target.files[0];
-      setPreviewUrl(URL.createObjectURL(originalFile));
-      setResultUrl(null);
-      setError(null);
+      const url = URL.createObjectURL(e.target.files[0]);
+      setPhoto(url);
       
-      // Convert to WebP instantly in background
-      const webpFile = await convertToWebP(originalFile);
-      setSelectedFile(webpFile);
+      const img = new Image();
+      img.src = url;
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          // Set canvas size fixed for editing (e.g., 400x500)
+          canvas.width = 400;
+          canvas.height = 500;
+          // Draw image covering the canvas
+          ctx?.clearRect(0, 0, canvas.width, canvas.height);
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+      };
     }
   };
 
-  const generateSuit = async () => {
-    if (!selectedFile) return;
-    setIsProcessing(true);
-    setError(null);
+  // 2️⃣ Eraser Logic (Rubbing out old clothes)
+  const startErasing = (e: any) => {
+    if (!isEraserMode) return;
+    setIsErasing(true);
+    erase(e);
+  };
 
-    const formData = new FormData();
-    formData.append('image', selectedFile);
-    formData.append('suit_id', selectedSuit); // Sending chosen suit to backend
+  const stopErasing = () => {
+    setIsErasing(false);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.beginPath(); // Reset path
+    }
+  };
 
-    try {
-      // ⚠️ YAHAN APNA RENDER KA URL DAALEIN
-      const response = await fetch('https://your-fastapi-app.onrender.com/api/generate-suit', {
-        method: 'POST',
-        body: formData,
-      });
+  const erase = (e: any) => {
+    if (!isErasing || !isEraserMode) return;
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      
+      // Support for both mouse and touch
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
 
-      if (!response.ok) throw new Error("Server thoda busy hai, dobara try karein.");
+      if (ctx) {
+        ctx.globalCompositeOperation = 'destination-out'; // Jadoo: Isse erase hota hai!
+        ctx.lineWidth = eraserSize;
+        ctx.lineCap = 'round';
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+      }
+    }
+  };
 
-      const blob = await response.blob();
-      setResultUrl(URL.createObjectURL(blob));
-    } catch (err: any) {
-      setError(err.message || "Kuch technical error aaya bhai.");
-    } finally {
-      setIsProcessing(false);
+  // 3️⃣ Suit Dragging Logic
+  const handleSuitMouseDown = (e: any) => {
+    if (isEraserMode) return; // Erase mode mein drag nahi hoga
+    setIsDraggingSuit(true);
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartPos.current = { x: clientX - suitPos.x, y: clientY - suitPos.y };
+  };
+
+  const handleSuitMouseMove = (e: any) => {
+    if (!isDraggingSuit || isEraserMode) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    setSuitPos({
+      x: clientX - dragStartPos.current.x,
+      y: clientY - dragStartPos.current.y,
+    });
+  };
+
+  const handleSuitMouseUp = () => setIsDraggingSuit(false);
+
+  // 4️⃣ Final Merge & Download HD
+  const downloadHDPhoto = () => {
+    const baseCanvas = canvasRef.current;
+    const suitImg = suitImgRef.current;
+    
+    if (baseCanvas && suitImg) {
+      // Create a temporary canvas to merge both
+      const finalCanvas = document.createElement('canvas');
+      finalCanvas.width = baseCanvas.width;
+      finalCanvas.height = baseCanvas.height;
+      const ctx = finalCanvas.getContext('2d');
+      
+      if (ctx) {
+        // Draw User Photo (with erased parts transparent)
+        ctx.drawImage(baseCanvas, 0, 0);
+        
+        // Draw Suit exactly where user placed it
+        const finalSuitWidth = suitImg.width * suitScale;
+        const finalSuitHeight = suitImg.height * suitScale;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(suitImg, suitPos.x, suitPos.y, finalSuitWidth, finalSuitHeight);
+        
+        // Download
+        const link = document.createElement('a');
+        link.download = 'My_Studio_Photo_HD.png';
+        link.href = finalCanvas.toDataURL('image/png', 1.0);
+        link.click();
+      }
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 font-sans text-slate-900">
       <div className="max-w-5xl mx-auto">
-        
         <div className="text-center mb-10">
-          <Link href="/" className="text-sm font-bold text-purple-600 hover:text-purple-800 mb-4 inline-block">← Back to Tools</Link>
-          <h1 className="text-4xl md:text-5xl font-black mb-4">👔 Premium AI Suit Changer</h1>
-          <p className="text-lg text-slate-500 font-medium">Smart WebP Compression • 10+ Styles • Studio Quality</p>
+          <Link href="/" className="text-sm font-bold text-purple-600 mb-4 inline-block">← Back to Tools</Link>
+          <h1 className="text-4xl md:text-5xl font-black mb-4">👔 Manual HD Suit Fitter</h1>
+          <p className="text-lg text-slate-500 font-medium">Fit the suit yourself, erase extra edges, and download HD instantly!</p>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border border-slate-100">
+        <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border border-slate-100 flex flex-col md:flex-row gap-8">
           
-          {/* 🔥 10 SUITS SELECTOR (Live Visuals) */}
-          <div className="mb-10">
-            <h3 className="text-lg font-black text-slate-800 mb-4">Step 1: Choose Your Style</h3>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-              {SUIT_OPTIONS.map((suit) => (
-                <button
-                  key={suit.id}
-                  onClick={() => setSelectedSuit(suit.id)}
-                  className={`flex-shrink-0 w-32 p-4 rounded-2xl border-2 transition-all snap-center flex flex-col items-center justify-center gap-2 ${
-                    selectedSuit === suit.id ? 'border-purple-600 bg-purple-50 shadow-md scale-105' : 'border-slate-100 bg-white hover:border-purple-200'
-                  }`}
-                >
-                  <div className={`w-12 h-12 rounded-full ${suit.color} flex items-center justify-center text-2xl shadow-inner border border-white/20`}>
-                    {suit.emoji}
-                  </div>
-                  <span className="text-xs font-bold text-center">{suit.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* LEFT SIDE: Controls & Tools */}
+          <div className="w-full md:w-1/3 flex flex-col space-y-6">
             
-            {/* Upload Area */}
-            <div className="flex flex-col space-y-4">
-              <h3 className="text-lg font-black text-slate-800">Step 2: Upload Your Photo</h3>
-              {!previewUrl ? (
-                <label className="flex flex-col items-center justify-center w-full h-72 border-2 border-dashed border-purple-200 rounded-2xl cursor-pointer bg-purple-50/50 hover:bg-purple-100 transition-colors">
-                  <span className="text-5xl mb-3">📸</span>
-                  <p className="mb-2 text-sm text-slate-600 font-bold">Click to Upload</p>
-                  <p className="text-xs text-slate-500 font-medium">Auto-converts to HD WebP</p>
-                  <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                </label>
-              ) : (
-                <div className="relative rounded-2xl overflow-hidden border-2 border-slate-200 shadow-sm">
-                  <img src={previewUrl} alt="Preview" className="w-full h-72 object-cover" />
-                  <button onClick={() => setPreviewUrl(null)} className="absolute top-3 right-3 bg-red-500 text-white p-2.5 rounded-full text-xs font-bold shadow-lg hover:bg-red-600 transition-transform hover:scale-110">✕</button>
-                  <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-white/20">
-                    {selectedFile?.type === 'image/webp' ? '✅ Optimized WebP' : 'Original'}
+            <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
+              <h3 className="font-bold mb-3">1. Upload Photo</h3>
+              <input type="file" accept="image/*" onChange={handlePhotoUpload} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700" />
+            </div>
+
+            {photo && (
+              <>
+                <div>
+                  <h3 className="font-bold mb-3">2. Choose Suit</h3>
+                  <div className="grid grid-cols-5 gap-2">
+                    {SUIT_OPTIONS.map((suit) => (
+                      <button key={suit.id} onClick={() => setSelectedSuit(suit.id)} className={`p-2 text-xl rounded-lg border-2 ${selectedSuit === suit.id ? 'border-purple-600 bg-purple-100' : 'border-slate-100 hover:bg-slate-50'}`} title={suit.name}>
+                        {suit.emoji}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
 
-              {previewUrl && !resultUrl && (
-                <button 
-                  onClick={generateSuit} 
-                  disabled={isProcessing}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black text-lg py-4 rounded-xl hover:shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? 'Tailoring Your Suit...' : `Wear ${SUIT_OPTIONS.find(s => s.id === selectedSuit)?.name} ✨`}
-                </button>
-              )}
-            </div>
-
-            {/* Result Area */}
-            <div className="flex flex-col space-y-4">
-              <h3 className="text-lg font-black text-slate-800">Step 3: Studio Result</h3>
-              
-              <div className="w-full h-72 border-2 border-slate-100 rounded-2xl bg-slate-50 flex items-center justify-center overflow-hidden relative shadow-inner">
-                {isProcessing ? (
-                  <div className="flex flex-col items-center space-y-4 p-6 bg-white rounded-2xl shadow-sm border border-slate-100">
-                    <div className="relative w-16 h-16">
-                      <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-                      <div className="absolute inset-0 border-4 border-purple-600 rounded-full border-t-transparent animate-spin"></div>
-                      <div className="absolute inset-0 flex items-center justify-center text-2xl">✂️</div>
-                    </div>
-                    {/* 🔥 HUGGING FACE TEXT HATA DIYA HAI 🔥 */}
-                    <p className="text-sm font-black text-slate-700">AI Tailor is working...</p>
-                    <p className="text-xs font-bold text-slate-400 animate-pulse text-center max-w-[200px]">
-                      Analyzing body shape & adjusting fabric lighting. Please wait...
-                    </p>
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                  <h3 className="font-bold">3. Adjustments</h3>
+                  
+                  {/* Size Slider */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 mb-1 block">Suit Size: {Math.round(suitScale * 100)}%</label>
+                    <input type="range" min="0.5" max="2" step="0.01" value={suitScale} onChange={(e) => setSuitScale(parseFloat(e.target.value))} className="w-full" />
                   </div>
-                ) : resultUrl ? (
-                  <img src={resultUrl} alt="AI Result" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-center text-slate-400 font-medium flex flex-col items-center">
-                    <span className="text-5xl block mb-4 opacity-50">👔</span>
-                    <p>Your studio-quality photo<br/>will appear here</p>
-                  </div>
-                )}
-              </div>
 
-              {resultUrl && (
-                <a 
-                  href={resultUrl} 
-                  download="DhamakaTools_Studio.webp"
-                  className="w-full block text-center bg-slate-900 text-white font-black py-4 rounded-xl hover:bg-black transition-colors shadow-lg"
-                >
+                  {/* Eraser Toggle */}
+                  <div className="pt-2 border-t border-slate-200">
+                    <button 
+                      onClick={() => setIsEraserMode(!isEraserMode)}
+                      className={`w-full py-2 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${isEraserMode ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                    >
+                      {isEraserMode ? '🧹 Eraser Active (Turn Off to Move Suit)' : '🧹 Erase Extra Clothes'}
+                    </button>
+                    {isEraserMode && (
+                      <div className="mt-3">
+                        <label className="text-xs font-bold text-slate-500 mb-1 block">Eraser Size</label>
+                        <input type="range" min="5" max="50" value={eraserSize} onChange={(e) => setEraserSize(parseInt(e.target.value))} className="w-full" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <button onClick={downloadHDPhoto} className="w-full bg-slate-900 text-white font-black py-4 rounded-xl hover:bg-black transition-colors shadow-lg shadow-slate-900/20 text-lg">
                   ⬇️ Download HD Photo
-                </a>
-              )}
-              {error && <p className="text-red-500 text-sm font-bold text-center bg-red-50 p-3 rounded-xl border border-red-100">{error}</p>}
-            </div>
-
+                </button>
+              </>
+            )}
           </div>
+
+          {/* RIGHT SIDE: The Canvas (Editing Area) */}
+          <div className="w-full md:w-2/3 flex flex-col items-center justify-center bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300 overflow-hidden relative min-h-[500px]">
+            {!photo ? (
+              <p className="text-slate-400 font-bold">Upload a photo to start tailoring...</p>
+            ) : (
+              <div 
+                ref={containerRef}
+                className="relative overflow-hidden shadow-2xl bg-white border border-slate-200"
+                style={{ width: 400, height: 500, cursor: isEraserMode ? 'crosshair' : 'default' }}
+                onMouseUp={stopErasing}
+                onMouseLeave={stopErasing}
+                onTouchEnd={stopErasing}
+                onMouseMove={handleSuitMouseMove}
+                onTouchMove={handleSuitMouseMove}
+              >
+                {/* Layer 1: Base Photo with Erasing Capability */}
+                <canvas 
+                  ref={canvasRef}
+                  className="absolute top-0 left-0 z-10"
+                  onMouseDown={startErasing}
+                  onMouseMove={erase}
+                  onTouchStart={startErasing}
+                  onTouchMove={erase}
+                />
+
+                {/* Layer 2: Draggable Suit */}
+                <img 
+                  ref={suitImgRef}
+                  src={`/suits/suit${selectedSuit}.png`} 
+                  alt="Suit"
+                  draggable={false}
+                  className="absolute z-20 hover:outline hover:outline-2 hover:outline-dashed hover:outline-purple-500 cursor-grab active:cursor-grabbing"
+                  style={{
+                    left: `${suitPos.x}px`,
+                    top: `${suitPos.y}px`,
+                    transform: `scale(${suitScale})`,
+                    transformOrigin: 'top left',
+                    pointerEvents: isEraserMode ? 'none' : 'auto', // Disable dragging while erasing
+                  }}
+                  onMouseDown={handleSuitMouseDown}
+                  onTouchStart={handleSuitMouseDown}
+                  onMouseUp={handleSuitMouseUp}
+                  onTouchEnd={handleSuitMouseUp}
+                />
+              </div>
+            )}
+            
+            {photo && (
+              <p className="text-xs text-slate-400 font-bold mt-4">
+                {isEraserMode ? 'Tip: Drag on photo to erase old clothes.' : 'Tip: Drag the suit to position it perfectly.'}
+              </p>
+            )}
+          </div>
+
         </div>
       </div>
     </div>
