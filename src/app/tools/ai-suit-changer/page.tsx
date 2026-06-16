@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 
-// 👔 10 Suits (Ab ye TRANSPARENT PNG hone chahiye)
+// 👔 10 Suits
 const SUIT_OPTIONS = [
   { id: '1', name: 'Black Formal', emoji: '🕴️' },
   { id: '2', name: 'Navy Blue Tux', emoji: '👔' },
@@ -21,26 +21,31 @@ export default function ManualSuitFitter() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [selectedSuit, setSelectedSuit] = useState('1');
   
-  // Suit Adjustments State
-  const [suitScale, setSuitScale] = useState(1);
-  const [suitPos, setSuitPos] = useState({ x: 100, y: 150 });
+  // 🔥 NEW: Advanced Suit Adjustments State
+  const [scaleX, setScaleX] = useState(1.2); // Width
+  const [scaleY, setScaleY] = useState(1.2); // Height
+  const [rotation, setRotation] = useState(0); // Angle
+  const [suitPos, setSuitPos] = useState({ x: 100, y: 200 });
+  
   const [isDraggingSuit, setIsDraggingSuit] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
 
-  // Eraser Tool State
+  // Eraser Tool & Undo State
   const [isEraserMode, setIsEraserMode] = useState(false);
   const [eraserSize, setEraserSize] = useState(20);
   const [isErasing, setIsErasing] = useState(false);
+  const [undoHistory, setUndoHistory] = useState<string[]>([]);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const suitImgRef = useRef<HTMLImageElement>(null);
 
-  // 1️⃣ Photo Upload & Draw to Canvas
+  // 1️⃣ Photo Upload
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const url = URL.createObjectURL(e.target.files[0]);
       setPhoto(url);
+      setUndoHistory([]);
       
       const img = new Image();
       img.src = url;
@@ -48,10 +53,8 @@ export default function ManualSuitFitter() {
         const canvas = canvasRef.current;
         if (canvas) {
           const ctx = canvas.getContext('2d');
-          // Set canvas size fixed for editing (e.g., 400x500)
           canvas.width = 400;
           canvas.height = 500;
-          // Draw image covering the canvas
           ctx?.clearRect(0, 0, canvas.width, canvas.height);
           ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
         }
@@ -59,9 +62,13 @@ export default function ManualSuitFitter() {
     }
   };
 
-  // 2️⃣ Eraser Logic (Rubbing out old clothes)
+  // 2️⃣ Eraser Logic & Undo
   const startErasing = (e: any) => {
     if (!isEraserMode) return;
+    const canvas = canvasRef.current;
+    if (canvas) {
+      setUndoHistory((prev) => [...prev, canvas.toDataURL()]);
+    }
     setIsErasing(true);
     erase(e);
   };
@@ -71,7 +78,7 @@ export default function ManualSuitFitter() {
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
-      if (ctx) ctx.beginPath(); // Reset path
+      if (ctx) ctx.beginPath();
     }
   };
 
@@ -81,16 +88,13 @@ export default function ManualSuitFitter() {
     if (canvas) {
       const ctx = canvas.getContext('2d');
       const rect = canvas.getBoundingClientRect();
-      
-      // Support for both mouse and touch
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      
       const x = clientX - rect.left;
       const y = clientY - rect.top;
 
       if (ctx) {
-        ctx.globalCompositeOperation = 'destination-out'; // Jadoo: Isse erase hota hai!
+        ctx.globalCompositeOperation = 'destination-out';
         ctx.lineWidth = eraserSize;
         ctx.lineCap = 'round';
         ctx.lineTo(x, y);
@@ -101,9 +105,28 @@ export default function ManualSuitFitter() {
     }
   };
 
+  const handleUndo = () => {
+    if (undoHistory.length === 0) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    
+    if (canvas && ctx) {
+      const lastState = undoHistory[undoHistory.length - 1];
+      setUndoHistory((prev) => prev.slice(0, -1));
+      
+      const img = new Image();
+      img.src = lastState;
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+    }
+  };
+
   // 3️⃣ Suit Dragging Logic
   const handleSuitMouseDown = (e: any) => {
-    if (isEraserMode) return; // Erase mode mein drag nahi hoga
+    if (isEraserMode) return; 
     setIsDraggingSuit(true);
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -128,25 +151,31 @@ export default function ManualSuitFitter() {
     const suitImg = suitImgRef.current;
     
     if (baseCanvas && suitImg) {
-      // Create a temporary canvas to merge both
       const finalCanvas = document.createElement('canvas');
       finalCanvas.width = baseCanvas.width;
       finalCanvas.height = baseCanvas.height;
       const ctx = finalCanvas.getContext('2d');
       
       if (ctx) {
-        // Draw User Photo (with erased parts transparent)
+        // Draw User Photo first
         ctx.drawImage(baseCanvas, 0, 0);
         
-        // Draw Suit exactly where user placed it
-        const finalSuitWidth = suitImg.width * suitScale;
-        const finalSuitHeight = suitImg.height * suitScale;
+        // Draw Suit with Advanced Transformations
         ctx.globalCompositeOperation = 'source-over';
-        ctx.drawImage(suitImg, suitPos.x, suitPos.y, finalSuitWidth, finalSuitHeight);
+        ctx.save();
         
-        // Download
+        // Move to position, rotate, and scale independently
+        ctx.translate(suitPos.x, suitPos.y);
+        ctx.rotate((rotation * Math.PI) / 180);
+        
+        const finalWidth = suitImg.width * scaleX;
+        const finalHeight = suitImg.height * scaleY;
+        
+        ctx.drawImage(suitImg, 0, 0, finalWidth, finalHeight);
+        ctx.restore();
+        
         const link = document.createElement('a');
-        link.download = 'My_Studio_Photo_HD.png';
+        link.download = 'DhamakaTools_Studio_HD.png';
         link.href = finalCanvas.toDataURL('image/png', 1.0);
         link.click();
       }
@@ -159,14 +188,12 @@ export default function ManualSuitFitter() {
         <div className="text-center mb-10">
           <Link href="/" className="text-sm font-bold text-purple-600 mb-4 inline-block">← Back to Tools</Link>
           <h1 className="text-4xl md:text-5xl font-black mb-4">👔 Manual HD Suit Fitter</h1>
-          <p className="text-lg text-slate-500 font-medium">Fit the suit yourself, erase extra edges, and download HD instantly!</p>
+          <p className="text-lg text-slate-500 font-medium">Fit the suit yourself, adjust width/height, erase extra edges, and download HD!</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border border-slate-100 flex flex-col md:flex-row gap-8">
           
-          {/* LEFT SIDE: Controls & Tools */}
           <div className="w-full md:w-1/3 flex flex-col space-y-6">
-            
             <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
               <h3 className="font-bold mb-3">1. Upload Photo</h3>
               <input type="file" accept="image/*" onChange={handlePhotoUpload} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700" />
@@ -186,25 +213,50 @@ export default function ManualSuitFitter() {
                 </div>
 
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
-                  <h3 className="font-bold">3. Adjustments</h3>
+                  <h3 className="font-bold">3. Pro Adjustments</h3>
                   
-                  {/* Size Slider */}
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Suit Size: {Math.round(suitScale * 100)}%</label>
-                    <input type="range" min="0.5" max="2" step="0.01" value={suitScale} onChange={(e) => setSuitScale(parseFloat(e.target.value))} className="w-full" />
+                  {/* Advanced Sliders */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
+                        <span>↔️ Chaudai (Width)</span> <span>{Math.round(scaleX * 100)}%</span>
+                      </label>
+                      <input type="range" min="0.5" max="2.5" step="0.01" value={scaleX} onChange={(e) => setScaleX(parseFloat(e.target.value))} className="w-full" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
+                        <span>↕️ Lambaai (Height)</span> <span>{Math.round(scaleY * 100)}%</span>
+                      </label>
+                      <input type="range" min="0.5" max="2.5" step="0.01" value={scaleY} onChange={(e) => setScaleY(parseFloat(e.target.value))} className="w-full" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
+                        <span>🔄 Ghumana (Rotate)</span> <span>{rotation}°</span>
+                      </label>
+                      <input type="range" min="-45" max="45" step="1" value={rotation} onChange={(e) => setRotation(parseInt(e.target.value))} className="w-full" />
+                    </div>
                   </div>
 
-                  {/* Eraser Toggle */}
                   <div className="pt-2 border-t border-slate-200">
                     <button 
                       onClick={() => setIsEraserMode(!isEraserMode)}
                       className={`w-full py-2 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${isEraserMode ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
                     >
-                      {isEraserMode ? '🧹 Eraser Active (Turn Off to Move Suit)' : '🧹 Erase Extra Clothes'}
+                      {isEraserMode ? '🧹 Stop Erasing (Move Suit)' : '🧹 Erase Extra Clothes'}
                     </button>
+                    
                     {isEraserMode && (
-                      <div className="mt-3">
-                        <label className="text-xs font-bold text-slate-500 mb-1 block">Eraser Size</label>
+                      <div className="mt-4 p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-xs font-bold text-slate-500">Eraser Size</label>
+                          <button 
+                            onClick={handleUndo} 
+                            disabled={undoHistory.length === 0}
+                            className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            ↩️ Undo Action
+                          </button>
+                        </div>
                         <input type="range" min="5" max="50" value={eraserSize} onChange={(e) => setEraserSize(parseInt(e.target.value))} className="w-full" />
                       </div>
                     )}
@@ -218,7 +270,6 @@ export default function ManualSuitFitter() {
             )}
           </div>
 
-          {/* RIGHT SIDE: The Canvas (Editing Area) */}
           <div className="w-full md:w-2/3 flex flex-col items-center justify-center bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300 overflow-hidden relative min-h-[500px]">
             {!photo ? (
               <p className="text-slate-400 font-bold">Upload a photo to start tailoring...</p>
@@ -233,7 +284,6 @@ export default function ManualSuitFitter() {
                 onMouseMove={handleSuitMouseMove}
                 onTouchMove={handleSuitMouseMove}
               >
-                {/* Layer 1: Base Photo with Erasing Capability */}
                 <canvas 
                   ref={canvasRef}
                   className="absolute top-0 left-0 z-10"
@@ -243,7 +293,6 @@ export default function ManualSuitFitter() {
                   onTouchMove={erase}
                 />
 
-                {/* Layer 2: Draggable Suit */}
                 <img 
                   ref={suitImgRef}
                   src={`/suits/suit${selectedSuit}.png`} 
@@ -253,9 +302,9 @@ export default function ManualSuitFitter() {
                   style={{
                     left: `${suitPos.x}px`,
                     top: `${suitPos.y}px`,
-                    transform: `scale(${suitScale})`,
+                    transform: `scaleX(${scaleX}) scaleY(${scaleY}) rotate(${rotation}deg)`,
                     transformOrigin: 'top left',
-                    pointerEvents: isEraserMode ? 'none' : 'auto', // Disable dragging while erasing
+                    pointerEvents: isEraserMode ? 'none' : 'auto',
                   }}
                   onMouseDown={handleSuitMouseDown}
                   onTouchStart={handleSuitMouseDown}
@@ -267,7 +316,7 @@ export default function ManualSuitFitter() {
             
             {photo && (
               <p className="text-xs text-slate-400 font-bold mt-4">
-                {isEraserMode ? 'Tip: Drag on photo to erase old clothes.' : 'Tip: Drag the suit to position it perfectly.'}
+                {isEraserMode ? 'Tip: Drag on photo to erase old clothes.' : 'Tip: Drag the suit and use sliders to fit it perfectly.'}
               </p>
             )}
           </div>
