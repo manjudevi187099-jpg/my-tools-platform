@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import { Rnd } from 'react-rnd'; // 🔥 NEW: Photoshop jaisa box!
+import { Rnd } from 'react-rnd'; 
 
 const SUIT_OPTIONS = [
   { id: '1', name: 'Black Formal', emoji: '🕴️' },
@@ -17,20 +17,30 @@ const SUIT_OPTIONS = [
   { id: '10', name: 'Pinstripe', emoji: '💼' },
 ];
 
+// 🔥 Photoshop jaise Handle Box ka Design
+const handleStyle = {
+  width: '14px',
+  height: '14px',
+  background: '#ffffff',
+  border: '2px solid #2563eb', // Blue border
+  borderRadius: '2px',
+  boxShadow: '0 0 4px rgba(0,0,0,0.3)',
+};
+
 export default function ManualSuitFitter() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [selectedSuit, setSelectedSuit] = useState('1');
   
-  // 🔥 Box State (Position & Size)
+  // Box State
   const [suitBox, setSuitBox] = useState({
-    x: 100,
+    x: 80,
     y: 150,
-    width: 200,
-    height: 250,
+    width: 240,
+    height: 300,
   });
   const [rotation, setRotation] = useState(0); 
 
-  // Eraser Tool & Undo State
+  // Eraser State
   const [isEraserMode, setIsEraserMode] = useState(false);
   const [eraserSize, setEraserSize] = useState(20);
   const [isErasing, setIsErasing] = useState(false);
@@ -39,7 +49,6 @@ export default function ManualSuitFitter() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const suitImgRef = useRef<HTMLImageElement>(null);
 
-  // 1️⃣ Photo Upload
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const url = URL.createObjectURL(e.target.files[0]);
@@ -61,7 +70,6 @@ export default function ManualSuitFitter() {
     }
   };
 
-  // 2️⃣ Eraser Logic & Undo
   const startErasing = (e: any) => {
     if (!isEraserMode) return;
     const canvas = canvasRef.current;
@@ -116,7 +124,6 @@ export default function ManualSuitFitter() {
     }
   };
 
-  // 3️⃣ Final Merge & Download HD
   const downloadHDPhoto = () => {
     const baseCanvas = canvasRef.current;
     const suitImg = suitImgRef.current;
@@ -132,11 +139,9 @@ export default function ManualSuitFitter() {
         ctx.globalCompositeOperation = 'source-over';
         ctx.save();
         
-        // Calculate center for rotation
         ctx.translate(suitBox.x + suitBox.width / 2, suitBox.y + suitBox.height / 2);
         ctx.rotate((rotation * Math.PI) / 180);
         
-        // Draw image stretched to exact box size
         ctx.drawImage(suitImg, -suitBox.width / 2, -suitBox.height / 2, suitBox.width, suitBox.height);
         ctx.restore();
         
@@ -154,7 +159,7 @@ export default function ManualSuitFitter() {
         <div className="text-center mb-10">
           <Link href="/" className="text-sm font-bold text-purple-600 mb-4 inline-block">← Back to Tools</Link>
           <h1 className="text-4xl md:text-5xl font-black mb-4">👔 Manual HD Suit Fitter</h1>
-          <p className="text-lg text-slate-500 font-medium">Drag the corners to stretch and fit the suit exactly like Photoshop!</p>
+          <p className="text-lg text-slate-500 font-medium">Drag any side or corner to stretch the suit exactly like Photoshop!</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border border-slate-100 flex flex-col md:flex-row gap-8">
@@ -241,7 +246,7 @@ export default function ManualSuitFitter() {
                   onTouchMove={erase}
                 />
 
-                {/* 🔥 Photoshop jaisa Transform Box */}
+                {/* 🔥 REAL Photoshop 8-Point Box */}
                 {!isEraserMode && (
                   <Rnd
                     size={{ width: suitBox.width, height: suitBox.height }}
@@ -257,9 +262,24 @@ export default function ManualSuitFitter() {
                     bounds="parent"
                     className="z-20 border-2 border-dashed border-blue-500 hover:border-blue-600"
                     style={{ transform: `translate(${suitBox.x}px, ${suitBox.y}px) rotate(${rotation}deg)` }}
-                    enableResizing={!isEraserMode}
+                    // 👇 Ye sabse important setting hai jo har side ko active karti hai
+                    enableResizing={{
+                      top: !isEraserMode, right: !isEraserMode, bottom: !isEraserMode, left: !isEraserMode,
+                      topRight: !isEraserMode, bottomRight: !isEraserMode, bottomLeft: !isEraserMode, topLeft: !isEraserMode
+                    }}
+                    // 👇 Ye white/blue dब्बे lagati hai exactly kono aur sides par
+                    resizeHandleStyles={{
+                      topLeft: { ...handleStyle, marginTop: '-7px', marginLeft: '-7px' },
+                      topRight: { ...handleStyle, marginTop: '-7px', marginRight: '-7px' },
+                      bottomLeft: { ...handleStyle, marginBottom: '-7px', marginLeft: '-7px' },
+                      bottomRight: { ...handleStyle, marginBottom: '-7px', marginRight: '-7px' },
+                      top: { ...handleStyle, marginTop: '-7px', left: '50%', transform: 'translateX(-50%)' },
+                      bottom: { ...handleStyle, marginBottom: '-7px', left: '50%', transform: 'translateX(-50%)' },
+                      left: { ...handleStyle, marginLeft: '-7px', top: '50%', transform: 'translateY(-50%)' },
+                      right: { ...handleStyle, marginRight: '-7px', top: '50%', transform: 'translateY(-50%)' }
+                    }}
                     disableDragging={isEraserMode}
-                    lockAspectRatio={false} // Khinchne ki aazadi (Stretching allowed)
+                    lockAspectRatio={false} 
                   >
                     <img 
                       ref={suitImgRef}
@@ -268,15 +288,9 @@ export default function ManualSuitFitter() {
                       draggable={false}
                       className="w-full h-full opacity-90 hover:opacity-100 pointer-events-none"
                     />
-                    {/* Corner Dots (Design) */}
-                    <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full"></div>
-                    <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full"></div>
-                    <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full"></div>
-                    <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full"></div>
                   </Rnd>
                 )}
                 
-                {/* Hidden image for erasing mode download reference */}
                 {isEraserMode && (
                   <img 
                     ref={suitImgRef}
@@ -295,7 +309,7 @@ export default function ManualSuitFitter() {
             
             {photo && (
               <p className="text-xs text-slate-400 font-bold mt-4">
-                Tip: Drag the blue corners to stretch the suit.
+                Tip: Drag the white squares on sides or corners to fit perfectly.
               </p>
             )}
           </div>
