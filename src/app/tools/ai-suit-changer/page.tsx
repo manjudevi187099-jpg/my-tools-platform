@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Rnd } from 'react-rnd'; 
+import ReactCrop, { type Crop } from 'react-image-crop'; // 🔥 NEW: Crop Tool
+import 'react-image-crop/dist/ReactCrop.css'; // 🔥 Crop tool ki styling
 
 const SUIT_OPTIONS = [
   { id: '1', name: 'Black Formal', emoji: '🕴️' },
@@ -18,31 +20,33 @@ const SUIT_OPTIONS = [
 ];
 
 const handleStyle = {
-  width: '14px',
-  height: '14px',
-  background: '#ffffff',
-  border: '2px solid #2563eb', 
-  borderRadius: '2px',
-  boxShadow: '0 0 4px rgba(0,0,0,0.3)',
-  transition: 'opacity 0.3s ease', // Smooth fade effect
+  width: '14px', height: '14px', background: '#ffffff',
+  border: '2px solid #2563eb', borderRadius: '2px',
+  boxShadow: '0 0 4px rgba(0,0,0,0.3)', transition: 'opacity 0.3s ease',
 };
 
-export default function ManualSuitFitter() {
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [selectedSuit, setSelectedSuit] = useState('1');
-  
-  const [suitBox, setSuitBox] = useState({
-    x: 80,
-    y: 150,
-    width: 240,
-    height: 300,
-  });
-  const [rotation, setRotation] = useState(0); 
+// Standard Passport Size Ratio (3.5 / 4.5)
+const ASPECT_RATIO = 3.5 / 4.5;
+const CANVAS_WIDTH = 350;
+const CANVAS_HEIGHT = 450;
 
-  // 🔥 NEW: Auto-Hide Timer State
+export default function ManualSuitFitter() {
+  // --- States ---
+  const [originalPhoto, setOriginalPhoto] = useState<string | null>(null);
+  const [croppedWebP, setCroppedWebP] = useState<string | null>(null);
+  
+  // Crop States
+  const [crop, setCrop] = useState<Crop>({ unit: '%', width: 50, x: 25, y: 10, height: 50 });
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Editor States
+  const [selectedSuit, setSelectedSuit] = useState('1');
+  const [suitBox, setSuitBox] = useState({ x: 50, y: 150, width: 250, height: 320 });
+  const [rotation, setRotation] = useState(0); 
   const [isBoxVisible, setIsBoxVisible] = useState(true);
   const hideTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // Eraser States
   const [isEraserMode, setIsEraserMode] = useState(false);
   const [eraserSize, setEraserSize] = useState(20);
   const [isErasing, setIsErasing] = useState(false);
@@ -51,7 +55,57 @@ export default function ManualSuitFitter() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const suitImgRef = useRef<HTMLImageElement>(null);
 
-  // --- Smart Timer Functions ---
+  // --- 1. Upload & Show Cropper ---
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const url = URL.createObjectURL(e.target.files[0]);
+      setOriginalPhoto(url);
+      setCroppedWebP(null); // Reset
+      setUndoHistory([]);
+    }
+  };
+
+  // --- 2. Process Crop & Convert to Light WebP ---
+  const handleConfirmCrop = () => {
+    if (!imgRef.current) return;
+    const image = imgRef.current;
+    const canvas = document.createElement('canvas');
+    
+    // Scale crop coordinates to actual image size
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
+    const ctx = canvas.getContext('2d');
+
+    if (ctx) {
+      // Draw cropped area to canvas
+      ctx.drawImage(
+        image,
+        crop.x * scaleX, crop.y * scaleY, crop.width * scaleX, crop.height * scaleY,
+        0, 0, CANVAS_WIDTH, CANVAS_HEIGHT
+      );
+
+      // 🔥 JAADU: Convert to lightweight WebP (Solves lagging issue)
+      const webpUrl = canvas.toDataURL('image/webp', 0.8);
+      setCroppedWebP(webpUrl);
+      
+      // Load onto main editor canvas
+      const newImg = new Image();
+      newImg.src = webpUrl;
+      newImg.onload = () => {
+        const mainCanvas = canvasRef.current;
+        if (mainCanvas) {
+          mainCanvas.width = CANVAS_WIDTH;
+          mainCanvas.height = CANVAS_HEIGHT;
+          mainCanvas.getContext('2d')?.drawImage(newImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        }
+      };
+    }
+  };
+
+  // --- 3. Smart Timer Functions ---
   const showBox = () => {
     if (isEraserMode) return;
     setIsBoxVisible(true);
@@ -60,42 +114,16 @@ export default function ManualSuitFitter() {
 
   const startHideTimer = () => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => {
-      setIsBoxVisible(false);
-    }, 2000); // 2 Seconds baad hide hoga
+    hideTimer.current = setTimeout(() => setIsBoxVisible(false), 2000);
   };
 
-  // Jab naya suit select ho toh box dikhe aur timer shuru ho
   useEffect(() => {
     showBox();
     startHideTimer();
-    return () => {
-      if (hideTimer.current) clearTimeout(hideTimer.current);
-    };
+    return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
   }, [selectedSuit]);
 
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const url = URL.createObjectURL(e.target.files[0]);
-      setPhoto(url);
-      setUndoHistory([]);
-      
-      const img = new Image();
-      img.src = url;
-      img.onload = () => {
-        const canvas = canvasRef.current;
-        if (canvas) {
-          const ctx = canvas.getContext('2d');
-          canvas.width = 400;
-          canvas.height = 500;
-          ctx?.clearRect(0, 0, canvas.width, canvas.height);
-          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        }
-      };
-    }
-  };
-
+  // --- 4. Eraser Logic ---
   const startErasing = (e: any) => {
     if (!isEraserMode) return;
     const canvas = canvasRef.current;
@@ -150,6 +178,7 @@ export default function ManualSuitFitter() {
     }
   };
 
+  // --- 5. Download ---
   const downloadHDPhoto = () => {
     const baseCanvas = canvasRef.current;
     const suitImg = suitImgRef.current;
@@ -164,22 +193,19 @@ export default function ManualSuitFitter() {
         ctx.drawImage(baseCanvas, 0, 0);
         ctx.globalCompositeOperation = 'source-over';
         ctx.save();
-        
         ctx.translate(suitBox.x + suitBox.width / 2, suitBox.y + suitBox.height / 2);
         ctx.rotate((rotation * Math.PI) / 180);
-        
         ctx.drawImage(suitImg, -suitBox.width / 2, -suitBox.height / 2, suitBox.width, suitBox.height);
         ctx.restore();
         
         const link = document.createElement('a');
-        link.download = 'DhamakaTools_Studio_HD.png';
+        link.download = 'Passport_Suit_HD.png';
         link.href = finalCanvas.toDataURL('image/png', 1.0);
         link.click();
       }
     }
   };
 
-  // Visibility logic for handles
   const handleOpacity = isBoxVisible && !isEraserMode ? 1 : 0;
   const pointerEvents = isBoxVisible && !isEraserMode ? 'auto' : 'none';
 
@@ -188,19 +214,20 @@ export default function ManualSuitFitter() {
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
           <Link href="/" className="text-sm font-bold text-purple-600 mb-4 inline-block">← Back to Tools</Link>
-          <h1 className="text-4xl md:text-5xl font-black mb-4">👔 Manual HD Suit Fitter</h1>
-          <p className="text-lg text-slate-500 font-medium">Click on the suit to wake up the box. It will automatically hide after 2 seconds!</p>
+          <h1 className="text-4xl md:text-5xl font-black mb-4">👔 Pro Passport Suit Fitter</h1>
+          <p className="text-lg text-slate-500 font-medium">Auto WebP compression, perfectly smooth dragging, and standard 3.5x4.5 ratio!</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border border-slate-100 flex flex-col md:flex-row gap-8">
           
+          {/* LEFT PANEL */}
           <div className="w-full md:w-1/3 flex flex-col space-y-6">
             <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
               <h3 className="font-bold mb-3">1. Upload Photo</h3>
               <input type="file" accept="image/*" onChange={handlePhotoUpload} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700" />
             </div>
 
-            {photo && (
+            {croppedWebP && (
               <>
                 <div>
                   <h3 className="font-bold mb-3">2. Choose Suit</h3>
@@ -239,13 +266,7 @@ export default function ManualSuitFitter() {
                       <div className="mt-4 p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
                         <div className="flex justify-between items-center mb-2">
                           <label className="text-xs font-bold text-slate-500">Eraser Size</label>
-                          <button 
-                            onClick={handleUndo} 
-                            disabled={undoHistory.length === 0}
-                            className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            ↩️ Undo Action
-                          </button>
+                          <button onClick={handleUndo} disabled={undoHistory.length === 0} className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-lg disabled:opacity-50">↩️ Undo Action</button>
                         </div>
                         <input type="range" min="5" max="50" value={eraserSize} onChange={(e) => setEraserSize(parseInt(e.target.value))} className="w-full" />
                       </div>
@@ -260,59 +281,63 @@ export default function ManualSuitFitter() {
             )}
           </div>
 
-          <div className="w-full md:w-2/3 flex flex-col items-center justify-center bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300 relative min-h-[500px]">
-            {!photo ? (
+          {/* RIGHT PANEL - CROPPER OR EDITOR */}
+          <div className="w-full md:w-2/3 flex flex-col items-center justify-center bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300 relative min-h-[500px] overflow-hidden p-4">
+            
+            {!originalPhoto && !croppedWebP && (
               <p className="text-slate-400 font-bold">Upload a photo to start tailoring...</p>
-            ) : (
+            )}
+
+            {/* STEP 1: CROPPER */}
+            {originalPhoto && !croppedWebP && (
+              <div className="flex flex-col items-center w-full">
+                <h3 className="font-bold mb-4 text-purple-600 bg-purple-100 px-4 py-2 rounded-full">✂️ Set Face for 3.5x4.5 Passport Size</h3>
+                <ReactCrop 
+                  crop={crop} 
+                  onChange={(c) => setCrop(c)} 
+                  aspect={ASPECT_RATIO} // 🔥 3.5 by 4.5 Lock
+                  className="max-h-[400px]"
+                >
+                  <img ref={imgRef} src={originalPhoto} alt="Upload" className="max-h-[400px] object-contain" />
+                </ReactCrop>
+                <button 
+                  onClick={handleConfirmCrop}
+                  className="mt-6 bg-purple-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-purple-600/30 hover:bg-purple-700"
+                >
+                  ✅ Confirm Crop & Add Suit
+                </button>
+              </div>
+            )}
+
+            {/* STEP 2: MAIN EDITOR */}
+            {croppedWebP && (
               <div 
                 className="relative shadow-2xl bg-white border border-slate-200"
-                style={{ width: 400, height: 500, cursor: isEraserMode ? 'crosshair' : 'default' }}
-                onMouseUp={stopErasing}
-                onMouseLeave={stopErasing}
-                onTouchEnd={stopErasing}
+                style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, cursor: isEraserMode ? 'crosshair' : 'default' }}
+                onMouseUp={stopErasing} onMouseLeave={stopErasing} onTouchEnd={stopErasing}
               >
                 <canvas 
                   ref={canvasRef}
                   className="absolute top-0 left-0 z-10"
-                  onMouseDown={startErasing}
-                  onMouseMove={erase}
-                  onTouchStart={startErasing}
-                  onTouchMove={erase}
+                  onMouseDown={startErasing} onMouseMove={erase} onTouchStart={startErasing} onTouchMove={erase}
                 />
 
                 {!isEraserMode && (
                   <Rnd
                     size={{ width: suitBox.width, height: suitBox.height }}
                     position={{ x: suitBox.x, y: suitBox.y }}
-                    
-                    // 🔥 Magic Start Here: Show box on activity, Hide on stop
                     onDragStart={showBox}
-                    onDragStop={(e, d) => {
-                      setSuitBox((prev) => ({ ...prev, x: d.x, y: d.y }));
-                      startHideTimer();
-                    }}
+                    onDragStop={(e, d) => { setSuitBox((prev) => ({ ...prev, x: d.x, y: d.y })); startHideTimer(); }}
                     onResizeStart={showBox}
                     onResizeStop={(e, direction, ref, delta, position) => {
-                      setSuitBox({
-                        width: parseInt(ref.style.width, 10),
-                        height: parseInt(ref.style.height, 10),
-                        ...position,
-                      });
+                      setSuitBox({ width: parseInt(ref.style.width, 10), height: parseInt(ref.style.height, 10), ...position });
                       startHideTimer();
                     }}
-                    onMouseDown={showBox}
-                    onTouchStart={showBox}
-
-                    minWidth={60} 
-                    minHeight={60}
-                    className={`z-20 flex items-center justify-center transition-all duration-300 ${isBoxVisible && !isEraserMode ? 'border-2 border-dashed border-blue-500' : 'border-2 border-transparent'}`}
-                    style={{ transform: `translate(${suitBox.x}px, ${suitBox.y}px) rotate(${rotation}deg)` }}
-                    enableResizing={{
-                      top: !isEraserMode, right: !isEraserMode, bottom: !isEraserMode, left: !isEraserMode,
-                      topRight: !isEraserMode, bottomRight: !isEraserMode, bottomLeft: !isEraserMode, topLeft: !isEraserMode
-                    }}
-                    
-                    // Handle Visibility Logic
+                    onMouseDown={showBox} onTouchStart={showBox}
+                    minWidth={60} minHeight={60}
+                    className={`z-20 flex items-center justify-center transition-all duration-200 ${isBoxVisible && !isEraserMode ? 'border-2 border-dashed border-blue-500' : 'border-2 border-transparent'}`}
+                    style={{ transform: `translate(${suitBox.x}px, ${suitBox.y}px) rotate(${rotation}deg)`, willChange: 'transform' }} // 🔥 willChange makes drag buttery smooth
+                    enableResizing={{ top: !isEraserMode, right: !isEraserMode, bottom: !isEraserMode, left: !isEraserMode, topRight: !isEraserMode, bottomRight: !isEraserMode, bottomLeft: !isEraserMode, topLeft: !isEraserMode }}
                     resizeHandleStyles={{
                       topLeft: { ...handleStyle, marginTop: '-7px', marginLeft: '-7px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
                       topRight: { ...handleStyle, marginTop: '-7px', marginRight: '-7px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
@@ -323,15 +348,11 @@ export default function ManualSuitFitter() {
                       left: { ...handleStyle, marginLeft: '-7px', top: '50%', transform: 'translateY(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any },
                       right: { ...handleStyle, marginRight: '-7px', top: '50%', transform: 'translateY(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any }
                     }}
-                    disableDragging={isEraserMode}
-                    lockAspectRatio={false} 
+                    disableDragging={isEraserMode} lockAspectRatio={false} 
                   >
                     <img 
-                      ref={suitImgRef}
-                      src={`/suits/suit${selectedSuit}.png`} 
-                      alt="Suit"
-                      draggable={false}
-                      className="pointer-events-none block"
+                      ref={suitImgRef} src={`/suits/suit${selectedSuit}.png`} alt="Suit"
+                      draggable={false} className="pointer-events-none block"
                       style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
                     />
                   </Rnd>
@@ -339,27 +360,15 @@ export default function ManualSuitFitter() {
                 
                 {isEraserMode && (
                   <img 
-                    ref={suitImgRef}
-                    src={`/suits/suit${selectedSuit}.png`} 
-                    alt="Suit"
+                    ref={suitImgRef} src={`/suits/suit${selectedSuit}.png`} alt="Suit"
                     className="absolute z-20 opacity-50 pointer-events-none"
-                    style={{
-                      left: `${suitBox.x}px`, top: `${suitBox.y}px`,
-                      width: `${suitBox.width}px`, height: `${suitBox.height}px`,
-                      transform: `rotate(${rotation}deg)`
-                    }}
+                    style={{ left: `${suitBox.x}px`, top: `${suitBox.y}px`, width: `${suitBox.width}px`, height: `${suitBox.height}px`, transform: `rotate(${rotation}deg)` }}
                   />
                 )}
               </div>
             )}
             
-            {photo && (
-              <p className="text-xs text-slate-400 font-bold mt-8">
-                Tip: The blue box will auto-hide after 2 seconds. Click the suit again to show it!
-              </p>
-            )}
           </div>
-
         </div>
       </div>
     </div>
