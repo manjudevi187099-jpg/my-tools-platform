@@ -127,6 +127,7 @@ export default function ManualSuitFitter() {
     
     if (baseCanvas && suitImg) {
       const finalCanvas = document.createElement('canvas');
+      // Download sirf utna hi hoga jitna main canvas ka size hai (400x500)
       finalCanvas.width = baseCanvas.width;
       finalCanvas.height = baseCanvas.height;
       const ctx = finalCanvas.getContext('2d');
@@ -156,7 +157,7 @@ export default function ManualSuitFitter() {
         <div className="text-center mb-10">
           <Link href="/" className="text-sm font-bold text-purple-600 mb-4 inline-block">← Back to Tools</Link>
           <h1 className="text-4xl md:text-5xl font-black mb-4">👔 Manual HD Suit Fitter</h1>
-          <p className="text-lg text-slate-500 font-medium">Drag any side or corner to stretch the suit exactly like Photoshop!</p>
+          <p className="text-lg text-slate-500 font-medium">Drag any side or corner outside the boundaries to stretch and fit perfectly!</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border border-slate-100 flex flex-col md:flex-row gap-8">
@@ -223,12 +224,13 @@ export default function ManualSuitFitter() {
             )}
           </div>
 
-          <div className="w-full md:w-2/3 flex flex-col items-center justify-center bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300 overflow-hidden relative min-h-[500px]">
+          <div className="w-full md:w-2/3 flex flex-col items-center justify-center bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300 relative min-h-[500px]">
             {!photo ? (
               <p className="text-slate-400 font-bold">Upload a photo to start tailoring...</p>
             ) : (
               <div 
-                className="relative overflow-hidden shadow-2xl bg-white border border-slate-200"
+                // 🔥 JAADU 1: Yahan se 'overflow-hidden' hata diya hai taaki handles bahar dikhein
+                className="relative shadow-2xl bg-white border border-slate-200"
                 style={{ width: 400, height: 500, cursor: isEraserMode ? 'crosshair' : 'default' }}
                 onMouseUp={stopErasing}
                 onMouseLeave={stopErasing}
@@ -255,9 +257,9 @@ export default function ManualSuitFitter() {
                         ...position,
                       });
                     }}
-                    bounds="parent"
-                    minWidth={60}  // 🔥 JAADU 1: Box ab isse zyada chhota nahi hoga!
-                    minHeight={60} // 🔥 Box ab kabhi andar nahi ghusega
+                    // 🔥 JAADU 2: bounds="parent" wala code delete kar diya hai
+                    minWidth={60} 
+                    minHeight={60}
                     className="z-20 border-2 border-dashed border-blue-500 hover:border-blue-600 flex items-center justify-center"
                     style={{ transform: `translate(${suitBox.x}px, ${suitBox.y}px) rotate(${rotation}deg)` }}
                     enableResizing={{
@@ -283,7 +285,6 @@ export default function ManualSuitFitter() {
                       alt="Suit"
                       draggable={false}
                       className="opacity-90 hover:opacity-100 pointer-events-none block"
-                      // 🔥 JAADU 2: objectFit fill karne se suit ekdum box ke saath chipak kar khichega
                       style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
                     />
                   </Rnd>
@@ -306,8 +307,8 @@ export default function ManualSuitFitter() {
             )}
             
             {photo && (
-              <p className="text-xs text-slate-400 font-bold mt-4">
-                Tip: Drag the white squares on sides or corners to fit perfectly.
+              <p className="text-xs text-slate-400 font-bold mt-8">
+                Tip: Now you can stretch the suit completely OUTSIDE the photo boundaries to fit it perfectly!
               </p>
             )}
           </div>
