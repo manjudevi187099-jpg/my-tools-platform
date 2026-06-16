@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Rnd } from 'react-rnd'; 
 
@@ -24,6 +24,7 @@ const handleStyle = {
   border: '2px solid #2563eb', 
   borderRadius: '2px',
   boxShadow: '0 0 4px rgba(0,0,0,0.3)',
+  transition: 'opacity 0.3s ease', // Smooth fade effect
 };
 
 export default function ManualSuitFitter() {
@@ -38,6 +39,10 @@ export default function ManualSuitFitter() {
   });
   const [rotation, setRotation] = useState(0); 
 
+  // 🔥 NEW: Auto-Hide Timer State
+  const [isBoxVisible, setIsBoxVisible] = useState(true);
+  const hideTimer = useRef<NodeJS.Timeout | null>(null);
+
   const [isEraserMode, setIsEraserMode] = useState(false);
   const [eraserSize, setEraserSize] = useState(20);
   const [isErasing, setIsErasing] = useState(false);
@@ -45,6 +50,30 @@ export default function ManualSuitFitter() {
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const suitImgRef = useRef<HTMLImageElement>(null);
+
+  // --- Smart Timer Functions ---
+  const showBox = () => {
+    if (isEraserMode) return;
+    setIsBoxVisible(true);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+  };
+
+  const startHideTimer = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => {
+      setIsBoxVisible(false);
+    }, 2000); // 2 Seconds baad hide hoga
+  };
+
+  // Jab naya suit select ho toh box dikhe aur timer shuru ho
+  useEffect(() => {
+    showBox();
+    startHideTimer();
+    return () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, [selectedSuit]);
+
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -127,7 +156,6 @@ export default function ManualSuitFitter() {
     
     if (baseCanvas && suitImg) {
       const finalCanvas = document.createElement('canvas');
-      // Download sirf utna hi hoga jitna main canvas ka size hai (400x500)
       finalCanvas.width = baseCanvas.width;
       finalCanvas.height = baseCanvas.height;
       const ctx = finalCanvas.getContext('2d');
@@ -151,13 +179,17 @@ export default function ManualSuitFitter() {
     }
   };
 
+  // Visibility logic for handles
+  const handleOpacity = isBoxVisible && !isEraserMode ? 1 : 0;
+  const pointerEvents = isBoxVisible && !isEraserMode ? 'auto' : 'none';
+
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 font-sans text-slate-900">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
           <Link href="/" className="text-sm font-bold text-purple-600 mb-4 inline-block">← Back to Tools</Link>
           <h1 className="text-4xl md:text-5xl font-black mb-4">👔 Manual HD Suit Fitter</h1>
-          <p className="text-lg text-slate-500 font-medium">Drag any side or corner outside the boundaries to stretch and fit perfectly!</p>
+          <p className="text-lg text-slate-500 font-medium">Click on the suit to wake up the box. It will automatically hide after 2 seconds!</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border border-slate-100 flex flex-col md:flex-row gap-8">
@@ -188,7 +220,11 @@ export default function ManualSuitFitter() {
                     <label className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
                       <span>🔄 Gardan Ghumana (Rotate)</span> <span>{rotation}°</span>
                     </label>
-                    <input type="range" min="-45" max="45" step="1" value={rotation} onChange={(e) => setRotation(parseInt(e.target.value))} className="w-full" />
+                    <input 
+                      type="range" min="-45" max="45" step="1" value={rotation} 
+                      onChange={(e) => { setRotation(parseInt(e.target.value)); showBox(); startHideTimer(); }} 
+                      className="w-full" 
+                    />
                   </div>
 
                   <div className="pt-2 border-t border-slate-200">
@@ -229,7 +265,6 @@ export default function ManualSuitFitter() {
               <p className="text-slate-400 font-bold">Upload a photo to start tailoring...</p>
             ) : (
               <div 
-                // 🔥 JAADU 1: Yahan se 'overflow-hidden' hata diya hai taaki handles bahar dikhein
                 className="relative shadow-2xl bg-white border border-slate-200"
                 style={{ width: 400, height: 500, cursor: isEraserMode ? 'crosshair' : 'default' }}
                 onMouseUp={stopErasing}
@@ -249,32 +284,44 @@ export default function ManualSuitFitter() {
                   <Rnd
                     size={{ width: suitBox.width, height: suitBox.height }}
                     position={{ x: suitBox.x, y: suitBox.y }}
-                    onDragStop={(e, d) => setSuitBox((prev) => ({ ...prev, x: d.x, y: d.y }))}
+                    
+                    // 🔥 Magic Start Here: Show box on activity, Hide on stop
+                    onDragStart={showBox}
+                    onDragStop={(e, d) => {
+                      setSuitBox((prev) => ({ ...prev, x: d.x, y: d.y }));
+                      startHideTimer();
+                    }}
+                    onResizeStart={showBox}
                     onResizeStop={(e, direction, ref, delta, position) => {
                       setSuitBox({
                         width: parseInt(ref.style.width, 10),
                         height: parseInt(ref.style.height, 10),
                         ...position,
                       });
+                      startHideTimer();
                     }}
-                    // 🔥 JAADU 2: bounds="parent" wala code delete kar diya hai
+                    onMouseDown={showBox}
+                    onTouchStart={showBox}
+
                     minWidth={60} 
                     minHeight={60}
-                    className="z-20 border-2 border-dashed border-blue-500 hover:border-blue-600 flex items-center justify-center"
+                    className={`z-20 flex items-center justify-center transition-all duration-300 ${isBoxVisible && !isEraserMode ? 'border-2 border-dashed border-blue-500' : 'border-2 border-transparent'}`}
                     style={{ transform: `translate(${suitBox.x}px, ${suitBox.y}px) rotate(${rotation}deg)` }}
                     enableResizing={{
                       top: !isEraserMode, right: !isEraserMode, bottom: !isEraserMode, left: !isEraserMode,
                       topRight: !isEraserMode, bottomRight: !isEraserMode, bottomLeft: !isEraserMode, topLeft: !isEraserMode
                     }}
+                    
+                    // Handle Visibility Logic
                     resizeHandleStyles={{
-                      topLeft: { ...handleStyle, marginTop: '-7px', marginLeft: '-7px' },
-                      topRight: { ...handleStyle, marginTop: '-7px', marginRight: '-7px' },
-                      bottomLeft: { ...handleStyle, marginBottom: '-7px', marginLeft: '-7px' },
-                      bottomRight: { ...handleStyle, marginBottom: '-7px', marginRight: '-7px' },
-                      top: { ...handleStyle, marginTop: '-7px', left: '50%', transform: 'translateX(-50%)' },
-                      bottom: { ...handleStyle, marginBottom: '-7px', left: '50%', transform: 'translateX(-50%)' },
-                      left: { ...handleStyle, marginLeft: '-7px', top: '50%', transform: 'translateY(-50%)' },
-                      right: { ...handleStyle, marginRight: '-7px', top: '50%', transform: 'translateY(-50%)' }
+                      topLeft: { ...handleStyle, marginTop: '-7px', marginLeft: '-7px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      topRight: { ...handleStyle, marginTop: '-7px', marginRight: '-7px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      bottomLeft: { ...handleStyle, marginBottom: '-7px', marginLeft: '-7px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      bottomRight: { ...handleStyle, marginBottom: '-7px', marginRight: '-7px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      top: { ...handleStyle, marginTop: '-7px', left: '50%', transform: 'translateX(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      bottom: { ...handleStyle, marginBottom: '-7px', left: '50%', transform: 'translateX(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      left: { ...handleStyle, marginLeft: '-7px', top: '50%', transform: 'translateY(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      right: { ...handleStyle, marginRight: '-7px', top: '50%', transform: 'translateY(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any }
                     }}
                     disableDragging={isEraserMode}
                     lockAspectRatio={false} 
@@ -284,7 +331,7 @@ export default function ManualSuitFitter() {
                       src={`/suits/suit${selectedSuit}.png`} 
                       alt="Suit"
                       draggable={false}
-                      className="opacity-90 hover:opacity-100 pointer-events-none block"
+                      className="pointer-events-none block"
                       style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
                     />
                   </Rnd>
@@ -308,7 +355,7 @@ export default function ManualSuitFitter() {
             
             {photo && (
               <p className="text-xs text-slate-400 font-bold mt-8">
-                Tip: Now you can stretch the suit completely OUTSIDE the photo boundaries to fit it perfectly!
+                Tip: The blue box will auto-hide after 2 seconds. Click the suit again to show it!
               </p>
             )}
           </div>
