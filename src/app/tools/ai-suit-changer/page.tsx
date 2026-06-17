@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Rnd } from 'react-rnd'; 
-import ReactCrop, { type Crop } from 'react-image-crop'; // 🔥 NEW: Crop Tool
-import 'react-image-crop/dist/ReactCrop.css'; // 🔥 Crop tool ki styling
+import ReactCrop, { type Crop } from 'react-image-crop'; 
+import 'react-image-crop/dist/ReactCrop.css'; 
 
 const SUIT_OPTIONS = [
   { id: '1', name: 'Black Formal', emoji: '🕴️' },
@@ -19,34 +19,30 @@ const SUIT_OPTIONS = [
   { id: '10', name: 'Pinstripe', emoji: '💼' },
 ];
 
+// 🔥 BIG CIRCULAR HANDLES (Easier to grab)
 const handleStyle = {
-  width: '14px', height: '14px', background: '#ffffff',
-  border: '2px solid #2563eb', borderRadius: '2px',
-  boxShadow: '0 0 4px rgba(0,0,0,0.3)', transition: 'opacity 0.3s ease',
+  width: '20px', height: '20px', background: '#ffffff',
+  border: '3px solid #2563eb', borderRadius: '50%',
+  boxShadow: '0 0 6px rgba(0,0,0,0.4)', transition: 'opacity 0.3s ease',
 };
 
-// Standard Passport Size Ratio (3.5 / 4.5)
 const ASPECT_RATIO = 3.5 / 4.5;
 const CANVAS_WIDTH = 350;
 const CANVAS_HEIGHT = 450;
 
 export default function ManualSuitFitter() {
-  // --- States ---
   const [originalPhoto, setOriginalPhoto] = useState<string | null>(null);
   const [croppedWebP, setCroppedWebP] = useState<string | null>(null);
   
-  // Crop States
   const [crop, setCrop] = useState<Crop>({ unit: '%', width: 50, x: 25, y: 10, height: 50 });
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // Editor States
   const [selectedSuit, setSelectedSuit] = useState('1');
   const [suitBox, setSuitBox] = useState({ x: 50, y: 150, width: 250, height: 320 });
   const [rotation, setRotation] = useState(0); 
   const [isBoxVisible, setIsBoxVisible] = useState(true);
   const hideTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Eraser States
   const [isEraserMode, setIsEraserMode] = useState(false);
   const [eraserSize, setEraserSize] = useState(20);
   const [isErasing, setIsErasing] = useState(false);
@@ -55,23 +51,20 @@ export default function ManualSuitFitter() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const suitImgRef = useRef<HTMLImageElement>(null);
 
-  // --- 1. Upload & Show Cropper ---
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const url = URL.createObjectURL(e.target.files[0]);
       setOriginalPhoto(url);
-      setCroppedWebP(null); // Reset
+      setCroppedWebP(null); 
       setUndoHistory([]);
     }
   };
 
-  // --- 2. Process Crop & Convert to Light WebP ---
   const handleConfirmCrop = () => {
     if (!imgRef.current) return;
     const image = imgRef.current;
     const canvas = document.createElement('canvas');
     
-    // Scale crop coordinates to actual image size
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
     
@@ -80,18 +73,15 @@ export default function ManualSuitFitter() {
     const ctx = canvas.getContext('2d');
 
     if (ctx) {
-      // Draw cropped area to canvas
       ctx.drawImage(
         image,
         crop.x * scaleX, crop.y * scaleY, crop.width * scaleX, crop.height * scaleY,
         0, 0, CANVAS_WIDTH, CANVAS_HEIGHT
       );
 
-      // 🔥 JAADU: Convert to lightweight WebP (Solves lagging issue)
       const webpUrl = canvas.toDataURL('image/webp', 0.8);
       setCroppedWebP(webpUrl);
       
-      // Load onto main editor canvas
       const newImg = new Image();
       newImg.src = webpUrl;
       newImg.onload = () => {
@@ -105,7 +95,6 @@ export default function ManualSuitFitter() {
     }
   };
 
-  // --- 3. Smart Timer Functions ---
   const showBox = () => {
     if (isEraserMode) return;
     setIsBoxVisible(true);
@@ -123,7 +112,6 @@ export default function ManualSuitFitter() {
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
   }, [selectedSuit]);
 
-  // --- 4. Eraser Logic ---
   const startErasing = (e: any) => {
     if (!isEraserMode) return;
     const canvas = canvasRef.current;
@@ -178,13 +166,13 @@ export default function ManualSuitFitter() {
     }
   };
 
-  // --- 5. Download ---
   const downloadHDPhoto = () => {
     const baseCanvas = canvasRef.current;
     const suitImg = suitImgRef.current;
     
     if (baseCanvas && suitImg) {
       const finalCanvas = document.createElement('canvas');
+      // Download image hamesha fixed Passport Size (350x450) ki hi hogi
       finalCanvas.width = baseCanvas.width;
       finalCanvas.height = baseCanvas.height;
       const ctx = finalCanvas.getContext('2d');
@@ -281,21 +269,20 @@ export default function ManualSuitFitter() {
             )}
           </div>
 
-          {/* RIGHT PANEL - CROPPER OR EDITOR */}
-          <div className="w-full md:w-2/3 flex flex-col items-center justify-center bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300 relative min-h-[500px] overflow-hidden p-4">
+          {/* RIGHT PANEL - 🔥 overflow-hidden removed to allow free stretching outside */}
+          <div className="w-full md:w-2/3 flex flex-col items-center justify-center bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300 relative min-h-[500px] p-4">
             
             {!originalPhoto && !croppedWebP && (
               <p className="text-slate-400 font-bold">Upload a photo to start tailoring...</p>
             )}
 
-            {/* STEP 1: CROPPER */}
             {originalPhoto && !croppedWebP && (
               <div className="flex flex-col items-center w-full">
                 <h3 className="font-bold mb-4 text-purple-600 bg-purple-100 px-4 py-2 rounded-full">✂️ Set Face for 3.5x4.5 Passport Size</h3>
                 <ReactCrop 
                   crop={crop} 
                   onChange={(c) => setCrop(c)} 
-                  aspect={ASPECT_RATIO} // 🔥 3.5 by 4.5 Lock
+                  aspect={ASPECT_RATIO}
                   className="max-h-[400px]"
                 >
                   <img ref={imgRef} src={originalPhoto} alt="Upload" className="max-h-[400px] object-contain" />
@@ -309,7 +296,6 @@ export default function ManualSuitFitter() {
               </div>
             )}
 
-            {/* STEP 2: MAIN EDITOR */}
             {croppedWebP && (
               <div 
                 className="relative shadow-2xl bg-white border border-slate-200"
@@ -336,17 +322,17 @@ export default function ManualSuitFitter() {
                     onMouseDown={showBox} onTouchStart={showBox}
                     minWidth={60} minHeight={60}
                     className={`z-20 flex items-center justify-center transition-all duration-200 ${isBoxVisible && !isEraserMode ? 'border-2 border-dashed border-blue-500' : 'border-2 border-transparent'}`}
-                    style={{ transform: `translate(${suitBox.x}px, ${suitBox.y}px) rotate(${rotation}deg)`, willChange: 'transform' }} // 🔥 willChange makes drag buttery smooth
+                    style={{ transform: `translate(${suitBox.x}px, ${suitBox.y}px) rotate(${rotation}deg)`, willChange: 'transform' }} 
                     enableResizing={{ top: !isEraserMode, right: !isEraserMode, bottom: !isEraserMode, left: !isEraserMode, topRight: !isEraserMode, bottomRight: !isEraserMode, bottomLeft: !isEraserMode, topLeft: !isEraserMode }}
                     resizeHandleStyles={{
-                      topLeft: { ...handleStyle, marginTop: '-7px', marginLeft: '-7px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
-                      topRight: { ...handleStyle, marginTop: '-7px', marginRight: '-7px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
-                      bottomLeft: { ...handleStyle, marginBottom: '-7px', marginLeft: '-7px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
-                      bottomRight: { ...handleStyle, marginBottom: '-7px', marginRight: '-7px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
-                      top: { ...handleStyle, marginTop: '-7px', left: '50%', transform: 'translateX(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any },
-                      bottom: { ...handleStyle, marginBottom: '-7px', left: '50%', transform: 'translateX(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any },
-                      left: { ...handleStyle, marginLeft: '-7px', top: '50%', transform: 'translateY(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any },
-                      right: { ...handleStyle, marginRight: '-7px', top: '50%', transform: 'translateY(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any }
+                      topLeft: { ...handleStyle, marginTop: '-10px', marginLeft: '-10px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      topRight: { ...handleStyle, marginTop: '-10px', marginRight: '-10px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      bottomLeft: { ...handleStyle, marginBottom: '-10px', marginLeft: '-10px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      bottomRight: { ...handleStyle, marginBottom: '-10px', marginRight: '-10px', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      top: { ...handleStyle, marginTop: '-10px', left: '50%', transform: 'translateX(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      bottom: { ...handleStyle, marginBottom: '-10px', left: '50%', transform: 'translateX(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      left: { ...handleStyle, marginLeft: '-10px', top: '50%', transform: 'translateY(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any },
+                      right: { ...handleStyle, marginRight: '-10px', top: '50%', transform: 'translateY(-50%)', opacity: handleOpacity, pointerEvents: pointerEvents as any }
                     }}
                     disableDragging={isEraserMode} lockAspectRatio={false} 
                   >
@@ -368,6 +354,12 @@ export default function ManualSuitFitter() {
               </div>
             )}
             
+            {croppedWebP && (
+              <p className="text-xs text-slate-400 font-bold mt-8 text-center max-w-sm">
+                Tip: Feel free to stretch the suit outside the box! When you click Download, it will automatically crop to perfectly fit the photo size.
+              </p>
+            )}
+
           </div>
         </div>
       </div>
