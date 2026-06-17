@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Stage, Layer, Image as KonvaImage, Transformer } from 'react-konva';
-import Konva from 'konva';
+import { Stage, Layer, Image as KonvaImage, Transformer, Line } from 'react-konva';
+import useImage from 'use-image';
 import ReactCrop, { type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
@@ -29,18 +29,23 @@ export default function ManualSuitFitter() {
   const [croppedWebP, setCroppedWebP] = useState<string | null>(null);
   const [selectedSuit, setSelectedSuit] = useState('1');
   
-  // Missing states fixed
-  const [suitBox, setSuitBox] = useState({ x: 50, y: 150, width: 250, height: 320 });
   const [crop, setCrop] = useState<Crop>({ unit: '%', width: 60, x: 20, y: 10, height: 60 });
-  const [rotation, setRotation] = useState(0);
-
-  // TypeScript 'any' added to bypass 'never' ref errors
-  const stageRef = useRef<any>(null);
-  const layerRef = useRef<any>(null);
-  const transformerRef = useRef<any>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  const [undoHistory, setUndoHistory] = useState<string[]>([]);
+  // 🔥 Konva Native Refs
+  const stageRef = useRef<any>(null);
+  const suitRef = useRef<any>(null);
+  const trRef = useRef<any>(null);
+
+  // 🔥 Smart Image Loaders (Ye blank screen nahi aane denge!)
+  const [bgImg] = useImage(croppedWebP || '');
+  const [suitImg] = useImage(`/suits/suit${selectedSuit}.png`);
+
+  // Eraser States
+  const [isEraserMode, setIsEraserMode] = useState(false);
+  const [eraserSize, setEraserSize] = useState(25);
+  const [lines, setLines] = useState<any[]>([]);
+  const isDrawing = useRef(false);
 
   // 1. Upload
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,11 +53,11 @@ export default function ManualSuitFitter() {
       const url = URL.createObjectURL(e.target.files[0]);
       setPhoto(url);
       setCroppedWebP(null);
-      setUndoHistory([]);
+      setLines([]);
     }
   };
 
-  // 2. Missing Crop Confirm Function
+  // 2. Crop
   const handleConfirmCrop = () => {
     if (!imgRef.current) return;
     const image = imgRef.current;
@@ -71,106 +76,69 @@ export default function ManualSuitFitter() {
         crop.x * scaleX, crop.y * scaleY, crop.width * scaleX, crop.height * scaleY,
         0, 0, CANVAS_WIDTH, CANVAS_HEIGHT
       );
-      setCroppedWebP(canvas.toDataURL('image/webp', 0.9));
+      setCroppedWebP(canvas.toDataURL('image/webp', 1.0));
     }
   };
 
-  // 3. Setup Konva Canvas when Cropped Image is ready
-  const handleEditorLoad = () => {
-    if (!stageRef.current || !croppedWebP) return;
-    const stage = stageRef.current;
-    const layer = layerRef.current;
-
-    layer.destroyChildren(); // Clear old objects before re-adding
-
-    // Base Photo
-    const userImg = new window.Image();
-    userImg.src = croppedWebP;
-    userImg.onload = () => {
-      const bgImage = new Konva.Image({
-        image: userImg,
-        width: CANVAS_WIDTH,
-        height: CANVAS_HEIGHT,
-        selectable: false,
-        name: 'background'
-      });
-      layer.add(bgImage);
-      layer.moveToBottom();
-    };
-
-    // Suit Layer
-    const suitImg = new window.Image();
-    suitImg.src = `/suits/suit${selectedSuit}.png`;
-    suitImg.onload = () => {
-      const fabricSuit = new Konva.Image({
-        image: suitImg,
-        width: suitBox.width,
-        height: suitBox.height,
-        x: suitBox.x,
-        y: suitBox.y,
-        draggable: true,
-        name: 'suit'
-      });
-
-      layer.add(fabricSuit);
-      
-      const transformer = transformerRef.current;
-      transformer.nodes([fabricSuit]);
-      layer.add(transformer);
-      
-      fabricSuit.on('dragend transformend', () => {
-        saveState();
-        // Update box state to keep rotation UI in sync
-        setRotation(Math.round(fabricSuit.rotation()));
-      });
-
-      saveState();
-    };
-  };
-
-  // 4. State Management (Undo)
-  const saveState = () => {
-    if (stageRef.current) {
-      setUndoHistory((prev) => [...prev, stageRef.current.toJSON()]);
+  // 3. Attach Transformer to Suit
+  useEffect(() => {
+    if (!isEraserMode && suitRef.current && trRef.current) {
+      trRef.current.nodes([suitRef.current]);
+      trRef.current.getLayer().batchDraw();
+    } else if (trRef.current) {
+      trRef.current.nodes([]); // Hide handles in eraser mode
+      trRef.current.getLayer().batchDraw();
     }
+  }, [isEraserMode, suitImg]);
+
+  // 4. Live Eraser Logic (Super Smooth & Mobile Friendly)
+  const handleMouseDown = (e: any) => {
+    if (!isEraserMode) return;
+    isDrawing.current = true;
+    const pos = e.target.getStage().getPointerPosition();
+    setLines([...lines, { points: [pos.x, pos.y], size: eraserSize }]);
   };
 
-  const undo = () => {
-    if (undoHistory.length > 1) {
-      const previousState = undoHistory[undoHistory.length - 2];
-      setUndoHistory((prev) => prev.slice(0, -1));
-      
-      if (stageRef.current) {
-        stageRef.current.destroyChildren(); // Clean up before load
-        stageRef.current.clear();
-        const stage = Konva.Node.create(previousState, 'container'); // Creates a new node tree
-        
-        // We must re-attach the new objects to our layer refs manually or simply trigger reload
-        const loadedLayer = stage.children[0];
-        const suitNode = loadedLayer.findOne('.suit');
-        
-        // Fast hack to restore view visually:
-        handleEditorLoad(); // Simplified for now to prevent ref losing
-      }
-    }
+  const handleMouseMove = (e: any) => {
+    if (!isEraserMode || !isDrawing.current) return;
+    const stage = e.target.getStage();
+    const point = stage.getPointerPosition();
+    let lastLine = lines[lines.length - 1];
+    
+    // Add new points to the current stroke
+    lastLine.points = lastLine.points.concat([point.x, point.y]);
+    
+    // Update state
+    lines.splice(lines.length - 1, 1, lastLine);
+    setLines(lines.concat());
   };
 
-  // 5. Download HD
+  const handleMouseUp = () => {
+    isDrawing.current = false;
+  };
+
+  const handleUndo = () => {
+    setLines(lines.slice(0, -1)); // Removes the last eraser stroke!
+  };
+
+  // 5. Download Ultra HD (Pixel Ratio 2 = 700x900)
   const downloadHDPhoto = () => {
     if (stageRef.current) {
-      // Hide transformer before download
-      transformerRef.current.nodes([]);
+      // Temporarily hide the blue selection box
+      trRef.current?.nodes([]);
       
-      const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 }); // High Quality
-      const link = document.createElement('a');
-      link.download = 'Passport_Studio_HD.png';
-      link.href = dataURL;
-      link.click();
-
-      // Restore transformer
-      const layer = layerRef.current;
-      const suitNode = layer.findOne('.suit');
-      if (suitNode) transformerRef.current.nodes([suitNode]);
+      setTimeout(() => {
+        const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 }); // 🔥 HD Export
+        const link = document.createElement('a');
+        link.download = 'Passport_Pro_HD.png';
+        link.href = dataURL;
+        link.click();
+        
+        // Bring selection box back
+        if (!isEraserMode && suitRef.current) {
+          trRef.current?.nodes([suitRef.current]);
+        }
+      }, 100);
     }
   };
 
@@ -180,7 +148,7 @@ export default function ManualSuitFitter() {
         <div className="text-center mb-10">
           <Link href="/" className="text-sm font-bold text-purple-600 mb-4 inline-block">← Back to Tools</Link>
           <h1 className="text-4xl md:text-5xl font-black mb-4">👔 Pro Passport Studio</h1>
-          <p className="text-lg text-slate-500 font-medium">Independent side-stretching to fit collars and sleeves perfectly!</p>
+          <p className="text-lg text-slate-500 font-medium">Independent sleeve stretching & Live background eraser!</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border border-slate-100 flex flex-col md:flex-row gap-8">
@@ -197,7 +165,7 @@ export default function ManualSuitFitter() {
                   <h3 className="font-bold mb-3">2. Choose Suit</h3>
                   <div className="grid grid-cols-5 gap-2">
                     {SUIT_OPTIONS.map((suit) => (
-                      <button key={suit.id} onClick={() => { setSelectedSuit(suit.id); handleEditorLoad(); }} className={`p-2 text-xl rounded-lg border-2 ${selectedSuit === suit.id ? 'border-purple-600 bg-purple-100' : 'border-slate-100 hover:bg-slate-50'}`} title={suit.name}>
+                      <button key={suit.id} onClick={() => setSelectedSuit(suit.id)} className={`p-2 text-xl rounded-lg border-2 ${selectedSuit === suit.id ? 'border-purple-600 bg-purple-100' : 'border-slate-100 hover:bg-slate-50'}`} title={suit.name}>
                         {suit.emoji}
                       </button>
                     ))}
@@ -205,29 +173,49 @@ export default function ManualSuitFitter() {
                 </div>
 
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
-                  <h3 className="font-bold">3. Advanced Tailoring Tools</h3>
+                  <h3 className="font-bold">3. Tools & Eraser</h3>
                   
                   <div>
                     <label className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
-                      <span>🔄 Gardan Ghumana (Rotate)</span> <span>{rotation}°</span>
+                      <span>🔄 Gardan Ghumana (Rotate)</span>
                     </label>
                     <input 
-                      type="range" min="-45" max="45" step="1" value={rotation} 
+                      type="range" min="-45" max="45" step="1" defaultValue="0"
                       onChange={(e) => { 
-                        const val = parseInt(e.target.value);
-                        setRotation(val); 
-                        if(layerRef.current) {
-                          const suitNode = layerRef.current.findOne('.suit');
-                          if(suitNode) suitNode.rotation(val);
+                        if(suitRef.current && trRef.current) {
+                          suitRef.current.rotation(parseInt(e.target.value));
+                          trRef.current.getLayer().batchDraw();
                         }
                       }} 
                       className="w-full" 
                     />
                   </div>
 
-                  <button onClick={undo} disabled={undoHistory.length <= 1} className="w-full bg-slate-200 text-slate-800 font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50">
-                    ↩️ Undo Step
-                  </button>
+                  <div className="pt-4 border-t border-slate-200">
+                    <button 
+                      onClick={() => setIsEraserMode(!isEraserMode)}
+                      className={`w-full py-3 px-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 transition-all transform active:scale-95 ${isEraserMode ? 'bg-red-500 text-white shadow-lg shadow-red-500/40 border-2 border-red-600' : 'bg-slate-800 text-white hover:bg-black shadow-lg'}`}
+                    >
+                      {isEraserMode ? '🛑 Stop Erasing (Move Suit)' : '🧹 Erase Extra Clothes'}
+                    </button>
+                    
+                    {isEraserMode && (
+                      <div className="mt-4 p-4 bg-red-50 rounded-xl border-2 border-red-200 shadow-inner">
+                        <div className="flex justify-between items-center mb-3">
+                          <label className="text-sm font-bold text-red-700">Eraser Size</label>
+                          <button 
+                            onClick={handleUndo} 
+                            disabled={lines.length === 0}
+                            className="text-sm font-black bg-white border-2 border-slate-300 hover:border-slate-800 text-slate-800 px-4 py-1.5 rounded-lg disabled:opacity-50 transition-all flex items-center gap-1 active:bg-slate-100"
+                          >
+                            ↩️ Undo
+                          </button>
+                        </div>
+                        <input type="range" min="10" max="80" value={eraserSize} onChange={(e) => setEraserSize(parseInt(e.target.value))} className="w-full accent-red-500" />
+                        <p className="text-xs text-red-500 mt-2 font-medium">Tip: The suit is locked while erasing. Trace around it safely!</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <button onClick={downloadHDPhoto} className="w-full bg-green-600 text-white font-black py-4 rounded-xl hover:bg-green-700 transition-colors shadow-lg shadow-green-600/30 text-xl border-b-4 border-green-800 active:border-b-0 active:mt-1">
@@ -237,7 +225,7 @@ export default function ManualSuitFitter() {
             )}
           </div>
 
-          {/* MAIN EDITOR */}
+          {/* MAIN CANVAS */}
           <div className="w-full md:w-2/3 flex flex-col items-center justify-center bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300 relative min-h-[500px] overflow-hidden p-4">
             
             {!croppedWebP && photo && (
@@ -253,25 +241,61 @@ export default function ManualSuitFitter() {
             )}
 
             {croppedWebP && (
-              <div id="container" className="relative shadow-2xl bg-white border border-slate-200" style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}>
-                {/* 🔥 REAL CANVAS RENDERING */}
-                <Stage ref={stageRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} onLoad={handleEditorLoad} onReady={handleEditorLoad}>
-                  <Layer ref={layerRef}>
-                      <Transformer 
-                          ref={transformerRef} 
-                          rotateEnabled={true} 
-                          flipEnabled={true} 
-                          keepRatio={false} // 🔥 THIS ALLOWS FREE STRETCHING (Shoulders without neck!)
-                          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']}
-                          anchorSize={20}
-                          anchorCornerRadius={10}
-                          anchorFill="#ffffff"
-                          anchorStroke="#2563eb"
-                          anchorStrokeWidth={3}
-                          borderStroke="#2563eb"
-                          borderDash={[5, 5]}
+              <div className={`relative shadow-2xl bg-white border-4 ${isEraserMode ? 'border-red-500' : 'border-slate-200'} transition-colors`}>
+                
+                {/* 🔥 REAL KONVA STAGE */}
+                <Stage 
+                  ref={stageRef} 
+                  width={CANVAS_WIDTH} 
+                  height={CANVAS_HEIGHT}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onTouchStart={handleMouseDown}
+                  onTouchMove={handleMouseMove}
+                  onTouchEnd={handleMouseUp}
+                  style={{ cursor: isEraserMode ? 'crosshair' : 'default' }}
+                >
+                  {/* Layer 1: Background Photo & Eraser Lines */}
+                  <Layer>
+                    {bgImg && <KonvaImage image={bgImg} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />}
+                    {lines.map((line, i) => (
+                      <Line
+                        key={i}
+                        points={line.points}
+                        stroke="#000000"
+                        strokeWidth={line.size}
+                        tension={0.5}
+                        lineCap="round"
+                        lineJoin="round"
+                        globalCompositeOperation="destination-out" // 🔥 This turns the stroke into an eraser!
                       />
+                    ))}
                   </Layer>
+
+                  {/* Layer 2: Suit & Transformer */}
+                  <Layer>
+                    {suitImg && (
+                      <KonvaImage 
+                        ref={suitRef}
+                        image={suitImg}
+                        x={50} y={150} width={250} height={320}
+                        draggable={!isEraserMode}
+                        listening={!isEraserMode} // 🔥 Magic: Lets you erase right *through* the suit without moving it!
+                      />
+                    )}
+                    <Transformer 
+                      ref={trRef} 
+                      keepRatio={false} // 🔥 THIS ALLOWS INDEPENDENT SHOULDER STRETCHING
+                      anchorSize={24}
+                      anchorCornerRadius={12}
+                      anchorFill="#ffffff"
+                      anchorStroke="#2563eb"
+                      anchorStrokeWidth={4}
+                      borderStroke="#2563eb"
+                    />
+                  </Layer>
+
                 </Stage>
               </div>
             )}
