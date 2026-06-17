@@ -32,22 +32,18 @@ export default function ManualSuitFitter() {
   const [crop, setCrop] = useState<Crop>({ unit: '%', width: 60, x: 20, y: 10, height: 60 });
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // 🔥 Konva Native Refs
   const stageRef = useRef<any>(null);
   const suitRef = useRef<any>(null);
   const trRef = useRef<any>(null);
 
-  // 🔥 Smart Image Loaders (Ye blank screen nahi aane denge!)
   const [bgImg] = useImage(croppedWebP || '');
   const [suitImg] = useImage(`/suits/suit${selectedSuit}.png`);
 
-  // Eraser States
   const [isEraserMode, setIsEraserMode] = useState(false);
   const [eraserSize, setEraserSize] = useState(25);
   const [lines, setLines] = useState<any[]>([]);
   const isDrawing = useRef(false);
 
-  // 1. Upload
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const url = URL.createObjectURL(e.target.files[0]);
@@ -57,7 +53,6 @@ export default function ManualSuitFitter() {
     }
   };
 
-  // 2. Crop
   const handleConfirmCrop = () => {
     if (!imgRef.current) return;
     const image = imgRef.current;
@@ -80,18 +75,30 @@ export default function ManualSuitFitter() {
     }
   };
 
-  // 3. Attach Transformer to Suit
+  // 🔥 MAGIC FIX: Ye code guarantee deta hai ki Handles hamesha aayenge!
   useEffect(() => {
+    // Thoda delay lagaya taaki Canvas pehle render ho jaye
+    const timer = setTimeout(() => {
+      if (!isEraserMode && suitRef.current && trRef.current) {
+        trRef.current.nodes([suitRef.current]);
+        trRef.current.getLayer().batchDraw();
+      } else if (trRef.current) {
+        trRef.current.nodes([]);
+        trRef.current.getLayer().batchDraw();
+      }
+    }, 100); // 100ms delay to ensure elements exist
+
+    return () => clearTimeout(timer);
+  }, [isEraserMode, suitImg, croppedWebP, selectedSuit]); // Har action par check karega
+
+  // Manual wake-up click just in case
+  const handleSuitClick = () => {
     if (!isEraserMode && suitRef.current && trRef.current) {
       trRef.current.nodes([suitRef.current]);
       trRef.current.getLayer().batchDraw();
-    } else if (trRef.current) {
-      trRef.current.nodes([]); // Hide handles in eraser mode
-      trRef.current.getLayer().batchDraw();
     }
-  }, [isEraserMode, suitImg]);
+  };
 
-  // 4. Live Eraser Logic (Super Smooth & Mobile Friendly)
   const handleMouseDown = (e: any) => {
     if (!isEraserMode) return;
     isDrawing.current = true;
@@ -104,11 +111,7 @@ export default function ManualSuitFitter() {
     const stage = e.target.getStage();
     const point = stage.getPointerPosition();
     let lastLine = lines[lines.length - 1];
-    
-    // Add new points to the current stroke
     lastLine.points = lastLine.points.concat([point.x, point.y]);
-    
-    // Update state
     lines.splice(lines.length - 1, 1, lastLine);
     setLines(lines.concat());
   };
@@ -118,25 +121,22 @@ export default function ManualSuitFitter() {
   };
 
   const handleUndo = () => {
-    setLines(lines.slice(0, -1)); // Removes the last eraser stroke!
+    setLines(lines.slice(0, -1)); 
   };
 
-  // 5. Download Ultra HD (Pixel Ratio 2 = 700x900)
   const downloadHDPhoto = () => {
     if (stageRef.current) {
-      // Temporarily hide the blue selection box
-      trRef.current?.nodes([]);
+      trRef.current?.nodes([]); // Hide handles
       
       setTimeout(() => {
-        const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 }); // 🔥 HD Export
+        const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 }); 
         const link = document.createElement('a');
         link.download = 'Passport_Pro_HD.png';
         link.href = dataURL;
         link.click();
         
-        // Bring selection box back
         if (!isEraserMode && suitRef.current) {
-          trRef.current?.nodes([suitRef.current]);
+          trRef.current?.nodes([suitRef.current]); // Bring back handles
         }
       }, 100);
     }
@@ -225,7 +225,6 @@ export default function ManualSuitFitter() {
             )}
           </div>
 
-          {/* MAIN CANVAS */}
           <div className="w-full md:w-2/3 flex flex-col items-center justify-center bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300 relative min-h-[500px] overflow-hidden p-4">
             
             {!croppedWebP && photo && (
@@ -243,7 +242,6 @@ export default function ManualSuitFitter() {
             {croppedWebP && (
               <div className={`relative shadow-2xl bg-white border-4 ${isEraserMode ? 'border-red-500' : 'border-slate-200'} transition-colors`}>
                 
-                {/* 🔥 REAL KONVA STAGE */}
                 <Stage 
                   ref={stageRef} 
                   width={CANVAS_WIDTH} 
@@ -256,7 +254,6 @@ export default function ManualSuitFitter() {
                   onTouchEnd={handleMouseUp}
                   style={{ cursor: isEraserMode ? 'crosshair' : 'default' }}
                 >
-                  {/* Layer 1: Background Photo & Eraser Lines */}
                   <Layer>
                     {bgImg && <KonvaImage image={bgImg} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />}
                     {lines.map((line, i) => (
@@ -268,12 +265,11 @@ export default function ManualSuitFitter() {
                         tension={0.5}
                         lineCap="round"
                         lineJoin="round"
-                        globalCompositeOperation="destination-out" // 🔥 This turns the stroke into an eraser!
+                        globalCompositeOperation="destination-out" 
                       />
                     ))}
                   </Layer>
 
-                  {/* Layer 2: Suit & Transformer */}
                   <Layer>
                     {suitImg && (
                       <KonvaImage 
@@ -281,7 +277,9 @@ export default function ManualSuitFitter() {
                         image={suitImg}
                         x={50} y={150} width={250} height={320}
                         draggable={!isEraserMode}
-                        listening={!isEraserMode} // 🔥 Magic: Lets you erase right *through* the suit without moving it!
+                        listening={!isEraserMode} 
+                        onClick={handleSuitClick} // 🔥 Extra click handler
+                        onTap={handleSuitClick} // 🔥 For mobile
                       />
                     )}
                     <Transformer 
