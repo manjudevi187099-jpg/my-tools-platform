@@ -75,9 +75,7 @@ export default function ManualSuitFitter() {
     }
   };
 
-  // 🔥 MAGIC FIX: Ye code guarantee deta hai ki Handles hamesha aayenge!
   useEffect(() => {
-    // Thoda delay lagaya taaki Canvas pehle render ho jaye
     const timer = setTimeout(() => {
       if (!isEraserMode && suitRef.current && trRef.current) {
         trRef.current.nodes([suitRef.current]);
@@ -86,12 +84,11 @@ export default function ManualSuitFitter() {
         trRef.current.nodes([]);
         trRef.current.getLayer().batchDraw();
       }
-    }, 100); // 100ms delay to ensure elements exist
+    }, 100);
 
     return () => clearTimeout(timer);
-  }, [isEraserMode, suitImg, croppedWebP, selectedSuit]); // Har action par check karega
+  }, [isEraserMode, suitImg, croppedWebP, selectedSuit]);
 
-  // Manual wake-up click just in case
   const handleSuitClick = () => {
     if (!isEraserMode && suitRef.current && trRef.current) {
       trRef.current.nodes([suitRef.current]);
@@ -126,17 +123,15 @@ export default function ManualSuitFitter() {
 
   const downloadHDPhoto = () => {
     if (stageRef.current) {
-      trRef.current?.nodes([]); // Hide handles
-      
+      trRef.current?.nodes([]); 
       setTimeout(() => {
         const dataURL = stageRef.current.toDataURL({ pixelRatio: 2 }); 
         const link = document.createElement('a');
         link.download = 'Passport_Pro_HD.png';
         link.href = dataURL;
         link.click();
-        
         if (!isEraserMode && suitRef.current) {
-          trRef.current?.nodes([suitRef.current]); // Bring back handles
+          trRef.current?.nodes([suitRef.current]); 
         }
       }, 100);
     }
@@ -241,7 +236,6 @@ export default function ManualSuitFitter() {
 
             {croppedWebP && (
               <div className={`relative shadow-2xl bg-white border-4 ${isEraserMode ? 'border-red-500' : 'border-slate-200'} transition-colors`}>
-                
                 <Stage 
                   ref={stageRef} 
                   width={CANVAS_WIDTH} 
@@ -278,22 +272,29 @@ export default function ManualSuitFitter() {
                         x={50} y={150} width={250} height={320}
                         draggable={!isEraserMode}
                         listening={!isEraserMode} 
-                        onClick={handleSuitClick} // 🔥 Extra click handler
-                        onTap={handleSuitClick} // 🔥 For mobile
+                        onClick={handleSuitClick} 
+                        onTap={handleSuitClick} 
                       />
                     )}
                     <Transformer 
                       ref={trRef} 
-                      keepRatio={false} // 🔥 THIS ALLOWS INDEPENDENT SHOULDER STRETCHING
+                      keepRatio={false} 
                       anchorSize={24}
                       anchorCornerRadius={12}
                       anchorFill="#ffffff"
                       anchorStroke="#2563eb"
                       anchorStrokeWidth={4}
                       borderStroke="#2563eb"
+                      // 🔥 YAHAN HAI MAGIC: SUIT KO COLLAPSE HONE SE ROKEGA
+                      boundBoxFunc={(oldBox, newBox) => {
+                        // Agar width ya height 40px se kam hui, toh purana size hi rakhega
+                        if (Math.abs(newBox.width) < 40 || Math.abs(newBox.height) < 40) {
+                          return oldBox;
+                        }
+                        return newBox;
+                      }}
                     />
                   </Layer>
-
                 </Stage>
               </div>
             )}
