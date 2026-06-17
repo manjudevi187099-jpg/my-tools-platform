@@ -303,11 +303,11 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     isActive: true,
     icon: "🧾", // 🔥 NAYA
   },
-  "ai-suit-changer": {
-    name: "AI Suit Changer",
-    description: "Upload your photo and let AI automatically dress you in a professional suit or formal attire.",
+ "pro-suit-changer": { // 🔥 YAHAN NAAM CHANGE KAR DIYA HAI
+    name: "Pro Suit Changer",
+    description: "Upload your photo and perfectly fit professional suits for passport size images!",
     category: "design",
-    keywords: ["ai suit changer", "photo suit editor", "idm vton", "ai outfit changer"],
+    keywords: ["ai suit changer", "photo suit editor", "passport suit", "suit fitter", "manual suit maker"],
     isActive: true,
     icon: "👔",
   },

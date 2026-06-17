@@ -41,6 +41,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "p2p-share": dynamic(() => import('../../../tools/p2p-share'), { ssr: false }),
   "timer": dynamic(() => import('../../../tools/timer'), { ssr: false }),
   "walkie-talkie": dynamic(() => import('../../../tools/walkie-talkie'), { ssr: false }),
+  "pro-suit-changer": dynamic(() => import('../../../tools/pro-suit-changer'), { ssr: false }),
 };
 
 export default function ToolPage() {
