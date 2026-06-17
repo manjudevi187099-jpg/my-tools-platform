@@ -76,25 +76,14 @@ export default function ManualSuitFitter() {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isEraserMode && suitRef.current && trRef.current) {
-        trRef.current.nodes([suitRef.current]);
-        trRef.current.getLayer().batchDraw();
-      } else if (trRef.current) {
-        trRef.current.nodes([]);
-        trRef.current.getLayer().batchDraw();
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [isEraserMode, suitImg, croppedWebP, selectedSuit]);
-
-  const handleSuitClick = () => {
     if (!isEraserMode && suitRef.current && trRef.current) {
       trRef.current.nodes([suitRef.current]);
       trRef.current.getLayer().batchDraw();
+    } else if (trRef.current) {
+      trRef.current.nodes([]);
+      trRef.current.getLayer().batchDraw();
     }
-  };
+  }, [isEraserMode, suitImg, croppedWebP, selectedSuit]);
 
   const handleMouseDown = (e: any) => {
     if (!isEraserMode) return;
@@ -272,24 +261,25 @@ export default function ManualSuitFitter() {
                         x={50} y={150} width={250} height={320}
                         draggable={!isEraserMode}
                         listening={!isEraserMode} 
-                        onClick={handleSuitClick} 
-                        onTap={handleSuitClick} 
                       />
                     )}
                     <Transformer 
                       ref={trRef} 
-                      keepRatio={false} 
+                      keepRatio={false} // 🔥 THIS ALLOWS INDEPENDENT SHOULDER STRETCHING
                       anchorSize={24}
                       anchorCornerRadius={12}
                       anchorFill="#ffffff"
                       anchorStroke="#2563eb"
                       anchorStrokeWidth={4}
                       borderStroke="#2563eb"
-                      // 🔥 YAHAN HAI MAGIC: SUIT KO COLLAPSE HONE SE ROKEGA
+                      // 🔥 BUG FIX: Prevent image disappearing when collapsing 'inside'
                       boundBoxFunc={(oldBox, newBox) => {
-                        // Agar width ya height 40px se kam hui, toh purana size hi rakhega
-                        if (Math.abs(newBox.width) < 40 || Math.abs(newBox.height) < 40) {
-                          return oldBox;
+                        // Enforce minimum dimensions. If the new box is too small, revert to the old box.
+                        const MIN_DIMENSION = 20; // minimum 20 pixels
+
+                        // Check absolute dimensions to handle flipping scenarios correctly
+                        if (Math.abs(newBox.width) < MIN_DIMENSION || Math.abs(newBox.height) < MIN_DIMENSION) {
+                          return oldBox; // reject transformation
                         }
                         return newBox;
                       }}
