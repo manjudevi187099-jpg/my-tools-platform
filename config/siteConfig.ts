@@ -311,4 +311,12 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     isActive: true,
     icon: "👔",
   },
+  "remove-bg": {
+    name: "Remove BG",
+    description: "Remove background from images instantly. Download as transparent PNG or add custom solid colors.",
+    category: "design",
+    keywords: ["remove bg", "background eraser", "transparent png", "change image color"],
+    isActive: true,
+    icon: "🪄",
+  },
 };

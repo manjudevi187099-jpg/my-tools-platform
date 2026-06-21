@@ -80,7 +80,7 @@ export default function RemoveBgTool() {
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-8 rounded-3xl shadow-sm border border-slate-200 text-center">
-      <h2 className="text-3xl font-black text-slate-900 mb-2">🪄 AI Background Remover</h2>
+      <h2 className="text-3xl font-black text-slate-900 mb-2">🪄 Remove BG</h2>
       <p className="text-slate-500 mb-8 font-medium">Remove background instantly and add custom colors. 100% Free & Private.</p>
 
       {!previewUrl && (
