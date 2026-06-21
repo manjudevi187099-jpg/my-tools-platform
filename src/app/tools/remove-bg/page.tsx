@@ -21,17 +21,18 @@ export default function RemoveBgTool() {
     setBgColor('transparent');
   };
 
- const removeBackground = async () => {
+  const removeBackground = async () => {
     if (!imageFile) return;
 
     setLoading(true);
     setProgress('AI is processing your image... Please wait ⏳');
 
     try {
+      // 🔥 Yahan humne dynamically poora absolute URL bana liya hai
+      const fullPublicPath = window.location.origin + "/imgly/";
+
       const blob = await imglyRemoveBg(imageFile, {
-        // 🔥 CDN hata diya, ab direct aapki website se local files uthayega
-        publicPath: "/imgly/",
-        
+        publicPath: fullPublicPath,
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Processing: ${percent}%`);
@@ -47,7 +48,7 @@ export default function RemoveBgTool() {
       setLoading(false);
     }
   };
-  
+
   const handleDownload = () => {
     if (!processedUrl) return;
 
