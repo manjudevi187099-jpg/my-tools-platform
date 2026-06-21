@@ -21,15 +21,18 @@ export default function RemoveBgTool() {
     setBgColor('transparent');
   };
 
-  const removeBackground = async () => {
+ const removeBackground = async () => {
     if (!imageFile) return;
 
     setLoading(true);
     setProgress('AI is processing your image... Please wait ⏳');
 
     try {
-      const blob = await imglyRemoveBackground(imageFile, {
-        progress: (key, current, total) => {
+      // 🔥 TypeScript Error Fix: Function ko force-cast kiya taaki TS pareshan na kare
+      const processBg = (imglyRemoveBackground as any).default || imglyRemoveBackground;
+
+      const blob = await processBg(imageFile, {
+        progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Processing: ${percent}%`);
         }

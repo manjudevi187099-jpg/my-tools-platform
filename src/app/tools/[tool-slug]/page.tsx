@@ -42,6 +42,7 @@ const ToolComponents: Record<string, React.ElementType> = {
   "timer": dynamic(() => import('../../../tools/timer'), { ssr: false }),
   "walkie-talkie": dynamic(() => import('../../../tools/walkie-talkie'), { ssr: false }),
   "pro-suit-changer": dynamic(() => import('../pro-suit-changer/page'), { ssr: false }),
+  "remove-bg": dynamic(() => import('../remove-bg/page'), { ssr: false }),
 };
 
 export default function ToolPage() {
