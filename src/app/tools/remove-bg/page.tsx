@@ -29,8 +29,8 @@ export default function RemoveBgTool() {
 
     try {
       const blob = await imglyRemoveBg(imageFile, {
-        // 🔥 YE WALI LINE ADD KI HAI (WASM 404 ERROR FIX KARNE KE LIYE)
-        publicPath: "https://unpkg.com/@imgly/background-removal/dist/",
+        // 🔥 CDN CHANGE KIYA HAI: unpkg ki jagah jsdelivr lagaya hai
+        publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal/dist/",
         
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
@@ -47,7 +47,6 @@ export default function RemoveBgTool() {
       setLoading(false);
     }
   };
-
   const handleDownload = () => {
     if (!processedUrl) return;
 
