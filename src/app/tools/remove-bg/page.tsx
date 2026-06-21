@@ -29,8 +29,8 @@ export default function RemoveBgTool() {
 
     try {
       const blob = await imglyRemoveBg(imageFile, {
-        // 🔥 CDN CHANGE KIYA HAI: unpkg ki jagah jsdelivr lagaya hai
-        publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal/dist/",
+        // 🔥 CDN hata diya, ab direct aapki website se local files uthayega
+        publicPath: "/imgly/",
         
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
@@ -47,6 +47,7 @@ export default function RemoveBgTool() {
       setLoading(false);
     }
   };
+  
   const handleDownload = () => {
     if (!processedUrl) return;
 
