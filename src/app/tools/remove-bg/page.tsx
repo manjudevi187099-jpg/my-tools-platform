@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { removeBackground } from '@imgly/background-removal';
 import { UploadCloud, Image as ImageIcon, Download, Settings, RefreshCw, ZoomIn, Move } from 'lucide-react';
@@ -59,9 +59,9 @@ export default function BackgroundChanger() {
     setProgress(0);
 
     try {
-      // 🔥 BUG FIXED: 100% Reliable UNPKG CDN path (No local path issues anymore)
+      // 🔥 THE ULTIMATE FIX: No publicPath needed anymore!
+      // It will automatically look for the files in your public/models/ folder
       const blob = await removeBackground(originalFile, {
-        publicPath: "https://unpkg.com/@imgly/background-removal-data/dist/",
         progress: (key, current, total) => {
           setProgress(Math.round((current / total) * 100));
         }
@@ -92,14 +92,12 @@ export default function BackgroundChanger() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Load foreground image to get dimensions
     const fgImg = new Image();
     fgImg.crossOrigin = 'anonymous';
     fgImg.src = processedUrl;
     
     await new Promise((resolve) => { fgImg.onload = resolve; });
 
-    // Set canvas to a high-quality standard size (or base it on original image)
     canvas.width = fgImg.width;
     canvas.height = fgImg.height;
 
@@ -113,7 +111,6 @@ export default function BackgroundChanger() {
       bgImg.src = bgImageUrl;
       await new Promise((resolve) => { bgImg.onload = resolve; });
       
-      // Cover logic for BG image
       const scaleBg = Math.max(canvas.width / bgImg.width, canvas.height / bgImg.height);
       const x = (canvas.width / 2) - (bgImg.width / 2) * scaleBg;
       const y = (canvas.height / 2) - (bgImg.height / 2) * scaleBg;
@@ -125,7 +122,6 @@ export default function BackgroundChanger() {
     const drawWidth = fgImg.width * scaleMultiplier;
     const drawHeight = fgImg.height * scaleMultiplier;
     
-    // Convert 0-100 position slider to actual canvas coordinates
     const xPos = (canvas.width - drawWidth) * (posX / 100);
     const yPos = (canvas.height - drawHeight) * (posY / 100);
 
@@ -136,14 +132,13 @@ export default function BackgroundChanger() {
     const ext = bgType === 'transparent' ? 'png' : format;
     const mime = bgType === 'transparent' ? 'image/png' : `image/${format}`;
     
-    link.download = `edited-photo-${Date.now()}.${ext}`;
+    link.download = `dhamaka-bg-${Date.now()}.${ext}`;
     link.href = canvas.toDataURL(mime, 1.0);
     link.click();
   };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
-      {/* Header */}
       <header className="bg-white border-b border-slate-200 py-6 px-8 flex items-center justify-between shadow-sm sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <div className="bg-blue-600 p-2 rounded-xl">
@@ -155,7 +150,6 @@ export default function BackgroundChanger() {
 
       <main className="max-w-6xl mx-auto mt-10 px-6">
         {!originalUrl ? (
-          // Upload Screen
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10">
               <h2 className="text-4xl font-bold mb-4 text-slate-800">Change Background Automatically</h2>
@@ -180,10 +174,7 @@ export default function BackgroundChanger() {
             </div>
           </div>
         ) : (
-          // Editor Screen
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            {/* Left Column: Preview */}
             <div className="lg:col-span-8 flex flex-col">
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex-grow flex items-center justify-center relative overflow-hidden min-h-[500px]">
                 
@@ -210,8 +201,6 @@ export default function BackgroundChanger() {
 
                 {processedUrl && (
                   <div className="w-full h-full flex flex-col relative rounded-2xl overflow-hidden shadow-inner" style={{ minHeight: '500px' }}>
-                    
-                    {/* Live Preview Canvas CSS-based */}
                     <div className="absolute inset-0 w-full h-full flex items-center justify-center" 
                          style={{
                            backgroundColor: bgType === 'color' ? bgColor : bgType === 'transparent' ? '#e2e8f0' : 'transparent',
@@ -220,7 +209,6 @@ export default function BackgroundChanger() {
                            backgroundSize: bgType === 'transparent' ? '20px 20px' : 'cover',
                          }}
                     >
-                      {/* Foreground Subject */}
                       <img 
                         src={processedUrl} 
                         alt="Subject" 
@@ -237,9 +225,7 @@ export default function BackgroundChanger() {
               </div>
             </div>
 
-            {/* Right Column: Tools */}
             <div className="lg:col-span-4 flex flex-col gap-6">
-              {/* Background Selection */}
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><ImageIcon className="w-5 h-5" /> Background</h3>
                 
@@ -251,7 +237,6 @@ export default function BackgroundChanger() {
                   <button onClick={() => { setBgType('color'); setBgColor('#3b82f6'); }} className={`h-12 rounded-xl border-2 bg-blue-500 ${bgType === 'color' && bgColor === '#3b82f6' ? 'border-blue-600 shadow-md' : 'border-slate-200'}`} title="Blue"></button>
                   <button onClick={() => { setBgType('color'); setBgColor('#000000'); }} className={`h-12 rounded-xl border-2 bg-black ${bgType === 'color' && bgColor === '#000000' ? 'border-blue-600 shadow-md' : 'border-slate-200'}`} title="Black"></button>
                   
-                  {/* Custom Color Picker */}
                   <div className={`relative h-12 rounded-xl border-2 overflow-hidden ${bgType === 'color' && !['#ffffff','#ef4444','#22c55e','#3b82f6','#000000'].includes(bgColor) ? 'border-blue-600 shadow-md' : 'border-slate-200'}`}>
                     <input type="color" value={bgColor} onChange={(e) => { setBgType('color'); setBgColor(e.target.value); }} className="absolute -top-2 -left-2 w-20 h-20 cursor-pointer" />
                   </div>
@@ -266,12 +251,10 @@ export default function BackgroundChanger() {
                 </div>
               </div>
 
-              {/* Adjustments (Only show if processed) */}
               <div className={`bg-white rounded-3xl p-6 shadow-sm border border-slate-200 transition-opacity ${!processedUrl ? 'opacity-50 pointer-events-none' : ''}`}>
                 <h3 className="font-bold text-lg mb-6 flex items-center gap-2"><Settings className="w-5 h-5" /> Adjustments</h3>
                 
                 <div className="space-y-6">
-                  {/* Zoom */}
                   <div>
                     <div className="flex justify-between text-sm font-medium text-slate-600 mb-2">
                       <span className="flex items-center gap-1"><ZoomIn className="w-4 h-4"/> Size</span>
@@ -280,7 +263,6 @@ export default function BackgroundChanger() {
                     <input type="range" min="10" max="200" value={scale} onChange={(e) => setScale(Number(e.target.value))} className="w-full accent-blue-600" />
                   </div>
 
-                  {/* Position X */}
                   <div>
                     <div className="flex justify-between text-sm font-medium text-slate-600 mb-2">
                       <span className="flex items-center gap-1"><Move className="w-4 h-4"/> Horizontal Position</span>
@@ -288,7 +270,6 @@ export default function BackgroundChanger() {
                     <input type="range" min="0" max="100" value={posX} onChange={(e) => setPosX(Number(e.target.value))} className="w-full accent-blue-600" />
                   </div>
 
-                  {/* Position Y */}
                   <div>
                     <div className="flex justify-between text-sm font-medium text-slate-600 mb-2">
                       <span className="flex items-center gap-1"><Move className="w-4 h-4 rotate-90"/> Vertical Position</span>
@@ -298,7 +279,6 @@ export default function BackgroundChanger() {
                 </div>
               </div>
 
-              {/* Export Buttons */}
               <div className={`flex flex-col gap-3 transition-opacity ${!processedUrl ? 'opacity-50 pointer-events-none' : ''}`}>
                 <button onClick={() => handleDownload('png')} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-md flex items-center justify-center gap-2">
                   <Download className="w-5 h-5" />
