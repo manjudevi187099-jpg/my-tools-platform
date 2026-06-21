@@ -8,26 +8,21 @@ import { UploadCloud, Image as ImageIcon, Download, Settings, RefreshCw, ZoomIn,
 type BgType = 'transparent' | 'color' | 'image';
 
 export default function BackgroundChanger() {
-  // File States
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
   
-  // Processing States
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   
-  // Editor States
   const [bgType, setBgType] = useState<BgType>('transparent');
   const [bgColor, setBgColor] = useState<string>('#ffffff');
   const [bgImageUrl, setBgImageUrl] = useState<string | null>(null);
   
-  // Transform States
   const [scale, setScale] = useState(100);
   const [posX, setPosX] = useState(50);
   const [posY, setPosY] = useState(50);
 
-  // Drag and Drop Setup
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
@@ -59,9 +54,11 @@ export default function BackgroundChanger() {
     setProgress(0);
 
     try {
-      // 🔥 BUG FIXED: Added Versioned UNPKG CDN to bypass Vercel limits
+      // 🔥 100% LOCAL PATH: CDN ka chakkar khatam!
+      const fullPublicPath = window.location.origin + "/imgly/";
+      
       const blob = await removeBackground(originalFile, {
-        publicPath: "https://unpkg.com/@imgly/background-removal-data@1.2.0/dist/",
+        publicPath: fullPublicPath,
         progress: (key, current, total) => {
           setProgress(Math.round((current / total) * 100));
         }
@@ -75,7 +72,6 @@ export default function BackgroundChanger() {
     }
   };
 
-  // Custom BG Image Upload
   const handleBgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -84,7 +80,6 @@ export default function BackgroundChanger() {
     }
   };
 
-  // Export & Download Logic
   const handleDownload = async (format: 'png' | 'jpeg') => {
     if (!processedUrl) return;
 
@@ -101,7 +96,6 @@ export default function BackgroundChanger() {
     canvas.width = fgImg.width;
     canvas.height = fgImg.height;
 
-    // 1. Draw Background
     if (bgType === 'color') {
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -117,7 +111,6 @@ export default function BackgroundChanger() {
       ctx.drawImage(bgImg, x, y, bgImg.width * scaleBg, bgImg.height * scaleBg);
     }
 
-    // 2. Draw Foreground (with scale and position)
     const scaleMultiplier = scale / 100;
     const drawWidth = fgImg.width * scaleMultiplier;
     const drawHeight = fgImg.height * scaleMultiplier;
@@ -127,7 +120,6 @@ export default function BackgroundChanger() {
 
     ctx.drawImage(fgImg, xPos, yPos, drawWidth, drawHeight);
 
-    // 3. Trigger Download
     const link = document.createElement('a');
     const ext = bgType === 'transparent' ? 'png' : format;
     const mime = bgType === 'transparent' ? 'image/png' : `image/${format}`;
