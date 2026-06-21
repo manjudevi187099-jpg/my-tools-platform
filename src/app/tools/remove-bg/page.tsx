@@ -28,11 +28,10 @@ export default function RemoveBgTool() {
     setProgress('AI is processing your image... Please wait ⏳');
 
     try {
-      // 🔥 Yahan humne manually local path (jo public/imgly mein hai) ko absolute URL banaya hai
-      const fullPublicPath = window.location.origin + "/imgly/";
-
       const blob = await imglyRemoveBg(imageFile, {
-        publicPath: fullPublicPath,
+        // 🔥 NOTICE KAREIN: is baar background-removal-data likha hai (ye 100% chalega)
+        publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data/dist/",
+        
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Processing: ${percent}%`);
