@@ -59,9 +59,9 @@ export default function BackgroundChanger() {
     setProgress(0);
 
     try {
-      // 🔥 THE ULTIMATE FIX: No publicPath needed anymore!
-      // It will automatically look for the files in your public/models/ folder
+      // 🔥 BUG FIXED: Added Versioned UNPKG CDN to bypass Vercel limits
       const blob = await removeBackground(originalFile, {
+        publicPath: "https://unpkg.com/@imgly/background-removal-data@1.2.0/dist/",
         progress: (key, current, total) => {
           setProgress(Math.round((current / total) * 100));
         }
