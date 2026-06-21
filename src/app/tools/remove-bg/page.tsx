@@ -59,11 +59,9 @@ export default function BackgroundChanger() {
     setProgress(0);
 
     try {
-      // Pointing directly to our locally hosted assets for 100% reliability
-      const fullPublicPath = window.location.origin + "/imgly/";
-
+      // 🔥 BUG FIXED: 100% Reliable UNPKG CDN path (No local path issues anymore)
       const blob = await removeBackground(originalFile, {
-        publicPath: fullPublicPath,
+        publicPath: "https://unpkg.com/@imgly/background-removal-data/dist/",
         progress: (key, current, total) => {
           setProgress(Math.round((current / total) * 100));
         }
