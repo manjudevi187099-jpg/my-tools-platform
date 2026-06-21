@@ -21,16 +21,16 @@ export default function RemoveBgTool() {
     setBgColor('transparent');
   };
 
-  const removeBackground = async () => {
+ const removeBackground = async () => {
     if (!imageFile) return;
 
     setLoading(true);
     setProgress('AI is processing your image... Please wait ⏳');
 
     try {
+      // 🔥 YE HAI OFFICIAL URL: imgly ne ise khud host kiya hai
       const blob = await imglyRemoveBg(imageFile, {
-        // 🔥 NOTICE KAREIN: is baar background-removal-data likha hai (ye 100% chalega)
-        publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data/dist/",
+        publicPath: "https://cdn.img.ly/packages/imgly/background-removal-data/1.2.0/dist/",
         
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
