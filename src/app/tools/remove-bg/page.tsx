@@ -21,15 +21,17 @@ export default function RemoveBgTool() {
     setBgColor('transparent');
   };
 
-  const removeBackground = async () => {
+ const removeBackground = async () => {
     if (!imageFile) return;
 
     setLoading(true);
     setProgress('AI is processing your image... Please wait ⏳');
 
     try {
-      // 🔥 Yahan humne naya wala naam use kiya hai
       const blob = await imglyRemoveBg(imageFile, {
+        // 🔥 YE WALI LINE ADD KI HAI (WASM 404 ERROR FIX KARNE KE LIYE)
+        publicPath: "https://unpkg.com/@imgly/background-removal/dist/",
+        
         progress: (key: string, current: number, total: number) => {
           const percent = Math.round((current / total) * 100);
           setProgress(`Processing: ${percent}%`);
