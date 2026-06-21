@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import imglyRemoveBackground from '@imgly/background-removal';
+import { removeBackground as imglyRemoveBg } from '@imgly/background-removal';
 
 export default function RemoveBgTool() {
   const [imageFile, setImageFile] = useState<File | null>(null);
