@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npx -y shx mkdir -p public/imgly && npx -y shx cp -rf node_modules/@imgly/background-removal-data/dist/* public/imgly/ && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint"
   },
   "dependencies": {
     "@cantoo/pdf-lib": "^2.7.1",

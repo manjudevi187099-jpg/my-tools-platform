@@ -48,28 +48,6 @@ export default function BackgroundChanger() {
   };
 
   // AI Background Removal
-  const handleRemoveBackground = async () => {
-    if (!originalFile) return;
-    setIsProcessing(true);
-    setProgress(0);
-
-    try {
-      // 🔥 100% PROVEN CDN: jsDelivr with Exact Version 1.4.3
-      // Isme local files ya Vercel block ka koi chakkar nahi hai!
-      const blob = await removeBackground(originalFile, {
-        publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.3/dist/",
-        progress: (key, current, total) => {
-          setProgress(Math.round((current / total) * 100));
-        }
-      });
-      setProcessedUrl(URL.createObjectURL(blob));
-    } catch (error) {
-      console.error('Error removing background:', error);
-      alert('Failed to process image. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleBgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
