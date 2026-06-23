@@ -111,12 +111,14 @@ export default function BackgroundChanger() {
       setProgress(100);
       setStatusText("Done!");
 
-      // 🔥 STEP 2: NAYA TRACKING CODE YAHAN ADD HUA HAI 🔥
-      // Jaise hi photo ban jayegi, ye Admin panel me count badha dega
-      try {
-        await supabase.from('tool_pageviews').insert([{ tool_slug: 'remove-bg' }]);
-      } catch (trackErr) {
-        console.error("Admin track error:", trackErr);
+      const { error: trackErr } = await supabase
+        .from('tool_pageviews')
+        .insert([{ tool_slug: 'remove-bg' }]); // Agar admin panel me slug kuch aur hai toh change kar lena
+
+      if (trackErr) {
+        console.error("Supabase Error Pakda Gaya:", trackErr.message);
+      } else {
+        console.log("✅ Admin count successfully updated!");
       }
       // 🔥----------------------------------------------🔥
 
