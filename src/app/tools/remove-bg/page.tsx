@@ -47,18 +47,15 @@ export default function BackgroundChanger() {
     setBgImageUrl(null);
   };
 
-  // 🔥 AI Background Removal Function (Added back properly!)
   const handleRemoveBackground = async () => {
     if (!originalFile) return;
     setIsProcessing(true);
     setProgress(0);
 
     try {
-      // 100% LOCAL PATH: Vercel cloud build automatically gives files here
-      const fullPublicPath = window.location.origin + "/imgly/";
-
+      // 🔥 FASTEST STABLE CDN: Isme na CORS aayega na version mismatch!
       const blob = await removeBackground(originalFile, {
-        publicPath: fullPublicPath,
+        publicPath: "https://unpkg.com/@imgly/background-removal-data@latest/dist/",
         progress: (key, current, total) => {
           setProgress(Math.round((current / total) * 100));
         }

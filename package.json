@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx -y shx mkdir -p public/imgly && npx -y shx cp -rf node_modules/@imgly/background-removal-data/dist/* public/imgly/ && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
