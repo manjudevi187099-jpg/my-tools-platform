@@ -47,7 +47,30 @@ export default function BackgroundChanger() {
     setBgImageUrl(null);
   };
 
-  // AI Background Removal
+  // 🔥 AI Background Removal Function (Added back properly!)
+  const handleRemoveBackground = async () => {
+    if (!originalFile) return;
+    setIsProcessing(true);
+    setProgress(0);
+
+    try {
+      // 100% LOCAL PATH: Vercel cloud build automatically gives files here
+      const fullPublicPath = window.location.origin + "/imgly/";
+
+      const blob = await removeBackground(originalFile, {
+        publicPath: fullPublicPath,
+        progress: (key, current, total) => {
+          setProgress(Math.round((current / total) * 100));
+        }
+      });
+      setProcessedUrl(URL.createObjectURL(blob));
+    } catch (error) {
+      console.error('Error removing background:', error);
+      alert('Failed to process image. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleBgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
