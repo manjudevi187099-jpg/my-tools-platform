@@ -2,7 +2,6 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-// 🔥 NAYI LIBRARY: Hugging Face Transformers.js
 import { AutoModel, AutoProcessor, RawImage, env } from '@huggingface/transformers';
 import { UploadCloud, Image as ImageIcon, Download, Settings, RefreshCw, ZoomIn, Move } from 'lucide-react';
 
@@ -25,9 +24,16 @@ export default function BackgroundChanger() {
   const [posX, setPosX] = useState(50);
   const [posY, setPosY] = useState(50);
 
-  // Vercel local limit block bypass: Always fetch fresh from HuggingFace Hub
+  // 🔥 THE ULTIMATE WASM & THREAD FIX
   useEffect(() => {
+    // 1. Force use online models
     env.allowLocalModels = false;
+    
+    // 2. Disable multithreading to avoid crossOriginIsolated block
+    env.backends.onnx.wasm.numThreads = 1;
+    
+    // 3. Force exact path for WASM files so Next.js doesn't mess it up
+    env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/';
   }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -54,37 +60,31 @@ export default function BackgroundChanger() {
     setBgImageUrl(null);
   };
 
-  // 🔥 HUGGING FACE DIMAAG (AI LOGIC)
   const handleRemoveBackground = async () => {
     if (!originalUrl) return;
     setIsProcessing(true);
     setProgress(10);
-    setStatusText("Loading Hugging Face Model...");
+    setStatusText("Loading AI Model...");
 
     try {
-      // 1. Load Model (Xenova/modnet is tiny and highly optimized)
       const processor = await AutoProcessor.from_pretrained('Xenova/modnet');
       const model = await AutoModel.from_pretrained('Xenova/modnet');
       
       setProgress(40);
       setStatusText("Analyzing Image...");
 
-      // 2. Read Image
       const image = await RawImage.fromURL(originalUrl);
       
-      // 3. Process AI Mask
       const { pixel_values } = await processor(image);
       const { output } = await model({ input: pixel_values });
 
       setProgress(80);
       setStatusText("Applying Transparency...");
 
-      // 4. Create Mask Data
       const maskData = (
         await RawImage.fromTensor(output[0].mul(255).to("uint8")).resize(image.width, image.height)
       ).data;
 
-      // 5. Build Transparent Image in Canvas
       const canvas = document.createElement("canvas");
       canvas.width = image.width;
       canvas.height = image.height;
@@ -95,13 +95,11 @@ export default function BackgroundChanger() {
       ctx.drawImage(image.toCanvas(), 0, 0);
       const pixelData = ctx.getImageData(0, 0, image.width, image.height);
       
-      // Merge Alpha Mask
       for (let i = 0; i < maskData.length; ++i) {
         pixelData.data[4 * i + 3] = maskData[i]; 
       }
       ctx.putImageData(pixelData, 0, 0);
 
-      // 6. Output the Final Magic
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob(b => b ? resolve(b) : reject(new Error("Blob failed")), "image/png");
       });
@@ -112,7 +110,7 @@ export default function BackgroundChanger() {
 
     } catch (error) {
       console.error('Hugging Face Error:', error);
-      alert('Failed to process image. Please try again.');
+      alert('Failed to process image. Check console for details.');
     } finally {
       setIsProcessing(false);
     }
@@ -232,7 +230,7 @@ export default function BackgroundChanger() {
                 {isProcessing && (
                   <div className="flex flex-col items-center">
                     <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-6"></div>
-                    <h3 className="text-2xl font-bold mb-2">Hugging Face AI is working...</h3>
+                    <h3 className="text-2xl font-bold mb-2">AI is working...</h3>
                     <p className="text-blue-600 font-medium text-lg">{statusText} ({progress}%)</p>
                   </div>
                 )}
