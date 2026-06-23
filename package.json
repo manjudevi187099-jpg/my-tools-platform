@@ -12,7 +12,6 @@
     "@cantoo/pdf-lib": "^2.7.1",
     "@gradio/client": "^2.2.1",
     "@hello-pangea/dnd": "^18.0.1",
-    "@imgly/background-removal": "^1.7.0",
     "@imgly/background-removal-data": "^1.4.5",
     "@pdfsmaller/pdf-encrypt": "^1.0.2",
     "@supabase/supabase-js": "^2.106.2",
