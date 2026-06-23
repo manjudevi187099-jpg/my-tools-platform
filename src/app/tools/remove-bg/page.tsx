@@ -5,6 +5,9 @@ import { useDropzone } from 'react-dropzone';
 import { AutoModel, AutoProcessor, RawImage, env } from '@huggingface/transformers';
 import { UploadCloud, Image as ImageIcon, Download, Settings, RefreshCw, ZoomIn, Move } from 'lucide-react';
 
+// 🔥 STEP 1: Supabase import kiya yahan (Path check kar lena agar error aaye toh '../../lib/supabase' kar dena)
+import { supabase } from '../../../lib/supabase';
+
 type BgType = 'transparent' | 'color' | 'image';
 
 export default function BackgroundChanger() {
@@ -35,7 +38,7 @@ export default function BackgroundChanger() {
     // 3. Force exact path for WASM files so Next.js doesn't mess it up
     (env as any).backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/';
   }, []);
-  
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
@@ -107,6 +110,15 @@ export default function BackgroundChanger() {
       setProcessedUrl(URL.createObjectURL(blob));
       setProgress(100);
       setStatusText("Done!");
+
+      // 🔥 STEP 2: NAYA TRACKING CODE YAHAN ADD HUA HAI 🔥
+      // Jaise hi photo ban jayegi, ye Admin panel me count badha dega
+      try {
+        await supabase.from('tool_pageviews').insert([{ tool_slug: 'remove-bg' }]);
+      } catch (trackErr) {
+        console.error("Admin track error:", trackErr);
+      }
+      // 🔥----------------------------------------------🔥
 
     } catch (error) {
       console.error('Hugging Face Error:', error);
