@@ -54,9 +54,10 @@ export default function BackgroundChanger() {
     setProgress(0);
 
     try {
-      // 🔥 BUG FIXED: Version Mismatch solved using '@latest' tag
+      // 🔥 100% PROVEN CDN: jsDelivr with Exact Version 1.4.3
+      // Isme local files ya Vercel block ka koi chakkar nahi hai!
       const blob = await removeBackground(originalFile, {
-        publicPath: "https://unpkg.com/@imgly/background-removal-data@latest/dist/",
+        publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.3/dist/",
         progress: (key, current, total) => {
           setProgress(Math.round((current / total) * 100));
         }
