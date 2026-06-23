@@ -111,14 +111,17 @@ export default function BackgroundChanger() {
       setProgress(100);
       setStatusText("Done!");
 
+      // 🔥 NAYA SMART TRACKING CODE 🔥
+      const exactSlug = 'YAHAN_BRACKET_WALA_NAAM_DALEIN'; // Jaise 'background-remover' ya jo bhi wahan likha ho
+      
       const { error: trackErr } = await supabase
         .from('tool_pageviews')
-        .insert([{ tool_slug: 'remove-bg' }]); // Agar admin panel me slug kuch aur hai toh change kar lena
+        .insert([{ tool_slug: exactSlug }]); 
 
       if (trackErr) {
         console.error("Supabase Error Pakda Gaya:", trackErr.message);
       } else {
-        console.log("✅ Admin count successfully updated!");
+        console.log("✅ Admin count successfully updated for:", exactSlug);
       }
       // 🔥----------------------------------------------🔥
 
