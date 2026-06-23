@@ -24,18 +24,18 @@ export default function BackgroundChanger() {
   const [posX, setPosX] = useState(50);
   const [posY, setPosY] = useState(50);
 
-  // 🔥 THE ULTIMATE WASM & THREAD FIX
+  // 🔥 THE ULTIMATE WASM & THREAD FIX (TypeScript Error Bypassed)
   useEffect(() => {
     // 1. Force use online models
     env.allowLocalModels = false;
     
     // 2. Disable multithreading to avoid crossOriginIsolated block
-    env.backends.onnx.wasm.numThreads = 1;
+    (env as any).backends.onnx.wasm.numThreads = 1;
     
     // 3. Force exact path for WASM files so Next.js doesn't mess it up
-    env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/';
+    (env as any).backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/';
   }, []);
-
+  
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
