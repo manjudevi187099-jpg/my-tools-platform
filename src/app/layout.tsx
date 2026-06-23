@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getSiteSettings } from '../lib/getSettings';
+import Script from 'next/script'; // 🔥 GA ke liye naya import add kiya
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +38,21 @@ export default async function RootLayout({
       {/* 🚫 Dhyan dein: Yahan manual <head> tag NAHI lagana hai, Next.js khud CSS yahan daalega */}
       
       <body className="min-h-full flex flex-col">
+        
+        {/* 🔥 GOOGLE ANALYTICS CODE (Safe Injection) 🔥 */}
+        <Script 
+          src="https://www.googletagmanager.com/gtag/js?id=G-B4M8VQ16P2" 
+          strategy="afterInteractive" 
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-B4M8VQ16P2');
+          `}
+        </Script>
+
         {children}
 
         {/* 🔥 SAFE SCRIPT INJECTION: Ab script ki wajah se CSS kabhi break nahi hogi 🔥 */}
