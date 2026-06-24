@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { AutoModel, AutoProcessor, RawImage, env } from '@huggingface/transformers';
-import { UploadCloud, Image as ImageIcon, Download, RefreshCw } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, Download, RefreshCw, ZoomIn, Move, Palette } from 'lucide-react';
 
 type BgType = 'transparent' | 'color' | 'image';
 
@@ -22,7 +22,7 @@ export default function BackgroundChanger() {
   
   const [scale, setScale] = useState(100);
   const [posX, setPosX] = useState(50);
-  const [posY, setPosY] = useState(50);
+  const [posY, setPosXVertical] = useState(50); // Renamed for clarity in UI
 
   // WASM Fix for Next.js
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function BackgroundChanger() {
     setBgType('transparent');
     setScale(100);
     setPosX(50);
-    setPosY(50);
+    setPosXVertical(50);
     setBgImageUrl(null);
   };
 
@@ -129,7 +129,11 @@ export default function BackgroundChanger() {
     canvas.width = fgImg.width;
     canvas.height = fgImg.height;
 
-    if (bgType === 'color') {
+    // 🔥 Fix: Agar user JPG download kar raha hai aur background transparent hai, toh usko White kar do (warna black aayega)
+    if (format === 'jpeg' && bgType === 'transparent') {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } else if (bgType === 'color') {
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     } else if (bgType === 'image' && bgImageUrl) {
@@ -152,20 +156,34 @@ export default function BackgroundChanger() {
     ctx.drawImage(fgImg, xPos, yPos, drawWidth, drawHeight);
 
     const link = document.createElement('a');
-    const ext = bgType === 'transparent' ? 'png' : format;
-    const mime = bgType === 'transparent' ? 'image/png' : `image/${format}`;
-    link.download = `dhamaka-bg-${Date.now()}.${ext}`;
-    link.href = canvas.toDataURL(mime, 1.0);
+    const ext = format === 'jpeg' ? 'jpg' : 'png';
+    const mime = `image/${format}`;
+    link.download = `Dhamaka-Bg-Changer-${Date.now()}.${ext}`;
+    link.href = canvas.toDataURL(mime, format === 'jpeg' ? 0.9 : 1.0);
     link.click();
   };
 
+  // 🌟 Premium Colors List
+  const presetColors = [
+    '#ffffff', // White
+    '#000000', // Black
+    '#ef4444', // Red
+    '#22c55e', // Green
+    '#3b82f6', // Blue
+    '#eab308', // Yellow
+    '#a855f7', // Purple
+    '#ec4899', // Pink
+    '#64748b'  // Slate/Grey
+  ];
+
   return (
     <div className="w-full">
-      {/* 🌟 OMR WALA GRID LAYOUT 🌟 */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* LEFT COLUMN: SETTINGS */}
+        {/* ================= LEFT COLUMN: SETTINGS ================= */}
         <div className="lg:col-span-5 space-y-6">
+          
+          {/* 1. UPLOAD BOX */}
           <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-6">
             <h3 className="font-bold text-xl text-slate-800 mb-6 flex items-center gap-2">
               <ImageIcon className="w-6 h-6 text-blue-600" /> Image Setup
@@ -209,78 +227,152 @@ export default function BackgroundChanger() {
             )}
           </div>
 
+          {/* 2. BACKGROUND COLORS (Premium UI) */}
           <div className={`bg-white rounded-3xl shadow-xl border border-slate-200 p-6 transition-opacity duration-300 ${!processedUrl ? 'opacity-40 pointer-events-none' : ''}`}>
-            <h3 className="font-bold text-lg text-slate-800 mb-4">New Background</h3>
-            <div className="grid grid-cols-4 gap-3 mb-4">
-              <button onClick={() => setBgType('transparent')} className={`h-12 rounded-xl border-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjZWVlIi8+PHJlY3QgeD0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiNmZmYiLz48cmVjdCB4PSIxMCIgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2VlZSIvPjwvc3ZnPg==')] ${bgType === 'transparent' ? 'border-blue-600 shadow-md' : 'border-slate-200'}`} title="Transparent"></button>
-              <button onClick={() => { setBgType('color'); setBgColor('#ffffff'); }} className={`h-12 rounded-xl border-2 bg-white ${bgType === 'color' && bgColor === '#ffffff' ? 'border-blue-600 shadow-md' : 'border-slate-200'}`} title="White"></button>
-              <button onClick={() => { setBgType('color'); setBgColor('#ef4444'); }} className={`h-12 rounded-xl border-2 bg-red-500 ${bgType === 'color' && bgColor === '#ef4444' ? 'border-blue-600 shadow-md' : 'border-slate-200'}`} title="Red"></button>
-              <div className={`relative h-12 rounded-xl border-2 overflow-hidden ${bgType === 'color' && !['#ffffff','#ef4444'].includes(bgColor) ? 'border-blue-600 shadow-md' : 'border-slate-200'}`}>
-                <input type="color" value={bgColor} onChange={(e) => { setBgType('color'); setBgColor(e.target.value); }} className="absolute -top-2 -left-2 w-20 h-20 cursor-pointer" />
+            <h3 className="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+              <Palette className="w-5 h-5 text-blue-600"/> Choose Background
+            </h3>
+            
+            {/* Color Grid */}
+            <div className="grid grid-cols-5 gap-2 mb-6">
+              {/* Transparent Button */}
+              <button 
+                onClick={() => setBgType('transparent')} 
+                className={`h-12 w-full rounded-xl border-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjZWVlIi8+PHJlY3QgeD0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiNmZmYiLz48cmVjdCB4PSIxMCIgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2VlZSIvPjwvc3ZnPg==')] ${bgType === 'transparent' ? 'border-blue-600 shadow-lg scale-105' : 'border-slate-200 hover:scale-105'} transition-all`} 
+                title="Transparent"
+              />
+              
+              {/* Preset Colors */}
+              {presetColors.map((color) => (
+                <button 
+                  key={color}
+                  onClick={() => { setBgType('color'); setBgColor(color); }} 
+                  className={`h-12 w-full rounded-xl border-2 ${bgType === 'color' && bgColor === color ? 'border-blue-600 shadow-lg scale-105' : 'border-slate-200 hover:scale-105'} transition-all`} 
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
+              ))}
+
+              {/* Custom Color Picker */}
+              <div className={`relative h-12 w-full rounded-xl border-2 overflow-hidden ${bgType === 'color' && !presetColors.includes(bgColor) ? 'border-blue-600 shadow-lg scale-105' : 'border-slate-200 hover:scale-105'} transition-all`} title="Custom Color">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-gradient-to-r from-red-500 via-green-500 to-blue-500">
+                   <span className="text-white text-xs font-bold drop-shadow-md">+</span>
+                </div>
+                <input type="color" value={bgColor} onChange={(e) => { setBgType('color'); setBgColor(e.target.value); }} className="absolute -top-2 -left-2 w-20 h-20 cursor-pointer opacity-0" />
               </div>
             </div>
+
+            {/* Custom Image Upload */}
             <div className="border-t border-slate-100 pt-4">
               <input type="file" id="bg-upload" accept="image/*" className="hidden" onChange={handleBgImageUpload} />
-              <label htmlFor="bg-upload" className="flex items-center justify-center gap-2 w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer transition-colors">
-                <UploadCloud className="w-5 h-5" /> Upload Custom Image
+              <label htmlFor="bg-upload" className="flex items-center justify-center gap-2 w-full py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl cursor-pointer transition-colors border border-blue-200">
+                <UploadCloud className="w-5 h-5" /> Use Custom Image Background
               </label>
             </div>
           </div>
 
+          {/* 3. DOWNLOAD BUTTONS (PNG & JPG) */}
           <div className={`transition-opacity duration-300 ${!processedUrl ? 'opacity-40 pointer-events-none' : ''}`}>
-             <button 
-                onClick={() => handleDownload('png')} 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-black text-xl shadow-xl transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 mb-3"
-             >
-                <Download className="w-6 h-6" /> Download PNG 📥
-             </button>
+             <div className="grid grid-cols-2 gap-3 mb-3">
+               <button 
+                  onClick={() => handleDownload('png')} 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold shadow-lg transition-transform hover:-translate-y-1 flex flex-col items-center justify-center gap-1"
+               >
+                  <Download className="w-6 h-6" /> 
+                  <span>Save as PNG</span>
+                  <span className="text-[10px] font-normal opacity-80">(Transparent/HD)</span>
+               </button>
+               <button 
+                  onClick={() => handleDownload('jpeg')} 
+                  className="w-full bg-slate-800 hover:bg-slate-900 text-white py-4 rounded-xl font-bold shadow-lg transition-transform hover:-translate-y-1 flex flex-col items-center justify-center gap-1"
+               >
+                  <Download className="w-6 h-6" /> 
+                  <span>Save as JPG</span>
+                  <span className="text-[10px] font-normal opacity-80">(Faster/Small)</span>
+               </button>
+             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: PREVIEW */}
-        <div className="lg:col-span-7 bg-slate-100 rounded-3xl border border-slate-200 p-6 flex flex-col items-center relative min-h-[500px]">
-          
-          <div className="flex justify-between items-center w-full mb-4 sticky top-0 bg-slate-100 py-2 z-10">
-            <h3 className="font-bold text-xl text-slate-800">Live View</h3>
-            {processedUrl ? (
-               <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full border border-emerald-200">AI Processed</span>
-            ) : originalUrl ? (
-               <span className="bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full border border-blue-200">Ready to Process</span>
-            ) : null}
+        {/* ================= RIGHT COLUMN: LIVE PREVIEW ================= */}
+        <div className="lg:col-span-7 flex flex-col gap-4">
+          <div className="bg-slate-100 rounded-3xl border border-slate-200 p-6 flex flex-col relative w-full" style={{ minHeight: '450px' }}>
+            
+            <div className="flex justify-between items-center w-full mb-4 z-10">
+              <h3 className="font-bold text-xl text-slate-800">Live View</h3>
+              {processedUrl ? (
+                 <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full border border-emerald-200 shadow-sm">AI Processed</span>
+              ) : originalUrl ? (
+                 <span className="bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full border border-blue-200 shadow-sm">Ready to Process</span>
+              ) : null}
+            </div>
+
+            {/* 🔥 PHOTO UI (Better constraints and shadow) 🔥 */}
+            <div className="w-full flex-grow flex items-center justify-center relative rounded-2xl overflow-hidden border-2 border-slate-300 shadow-inner"
+                 style={{
+                   backgroundColor: processedUrl ? (bgType === 'color' ? bgColor : bgType === 'transparent' ? '#f8fafc' : 'transparent') : '#ffffff',
+                   backgroundImage: processedUrl && bgType === 'transparent' ? 'repeating-linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%, #e2e8f0), repeating-linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%, #e2e8f0)' : processedUrl && bgType === 'image' && bgImageUrl ? `url(${bgImageUrl})` : 'none',
+                   backgroundPosition: processedUrl && bgType === 'transparent' ? '0 0, 15px 15px' : 'center',
+                   backgroundSize: processedUrl && bgType === 'transparent' ? '30px 30px' : 'cover',
+                 }}>
+              
+              {!originalUrl ? (
+                 <div className="text-slate-400 flex flex-col items-center">
+                    <ImageIcon className="w-16 h-16 mb-2 opacity-30" />
+                    <p className="font-medium">Upload image from left panel</p>
+                 </div>
+              ) : !processedUrl ? (
+                 <img src={originalUrl} alt="Original" className="max-w-full max-h-[400px] object-contain drop-shadow-md p-4" />
+              ) : (
+                 <div className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden">
+                   <img src={processedUrl} alt="Subject" 
+                     style={{
+                       transform: `scale(${scale / 100}) translate(${(posX - 50)}%, ${(posY - 50)}%)`,
+                       transformOrigin: 'center', transition: 'transform 0.1s ease-out'
+                     }}
+                     // Added drop-shadow-2xl so the cut-out image pops nicely against the background!
+                     className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-[0_15px_25px_rgba(0,0,0,0.35)]"
+                   />
+                 </div>
+              )}
+            </div>
           </div>
 
-          <div className="w-full flex-grow flex items-center justify-center relative rounded-2xl overflow-hidden border-2 border-dashed border-slate-300 bg-white shadow-inner">
-            {!originalUrl ? (
-               <div className="text-slate-400 flex flex-col items-center">
-                  <ImageIcon className="w-16 h-16 mb-2 opacity-30" />
-                  <p className="font-medium">Upload image from left panel</p>
-               </div>
-            ) : !processedUrl ? (
-               <img src={originalUrl} alt="Original" className="max-w-full max-h-[600px] object-contain drop-shadow-md p-4" />
-            ) : (
-               <div className="absolute inset-0 w-full h-full flex items-center justify-center" 
-                    style={{
-                      backgroundColor: bgType === 'color' ? bgColor : bgType === 'transparent' ? '#e2e8f0' : 'transparent',
-                      backgroundImage: bgType === 'transparent' ? 'repeating-linear-gradient(45deg, #cbd5e1 25%, transparent 25%, transparent 75%, #cbd5e1 75%, #cbd5e1), repeating-linear-gradient(45deg, #cbd5e1 25%, transparent 25%, transparent 75%, #cbd5e1 75%, #cbd5e1)' : bgType === 'image' && bgImageUrl ? `url(${bgImageUrl})` : 'none',
-                      backgroundPosition: bgType === 'transparent' ? '0 0, 10px 10px' : 'center',
-                      backgroundSize: bgType === 'transparent' ? '20px 20px' : 'cover',
-                    }}>
-                 <img src={processedUrl} alt="Subject" 
-                   style={{
-                     transform: `scale(${scale / 100}) translate(${(posX - 50)}%, ${(posY - 50)}%)`,
-                     transformOrigin: 'center', transition: 'transform 0.1s ease-out'
-                   }}
-                   className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-2xl"
-                 />
-               </div>
-            )}
-          </div>
-
+          {/* 🔥 PREMIUM SLIDERS (Zoom & Position) 🔥 */}
           {processedUrl && (
-             <div className="w-full bg-white rounded-2xl border border-slate-200 p-4 mt-4 flex gap-4">
-                <div className="flex-1">
-                   <p className="text-xs font-bold text-slate-500 mb-2">ZOOM / SIZE</p>
-                   <input type="range" min="10" max="200" value={scale} onChange={(e) => setScale(Number(e.target.value))} className="w-full accent-blue-600" />
+             <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col gap-4">
+                <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2 border-b pb-2">
+                  <Move className="w-4 h-4"/> Fine Tune Image
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-500 mb-2">
+                       <span className="flex items-center gap-1"><ZoomIn className="w-3 h-3"/> SIZE</span>
+                       <span className="text-blue-600">{scale}%</span>
+                    </div>
+                    <input type="range" min="10" max="250" value={scale} onChange={(e) => setScale(Number(e.target.value))} className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-500 mb-2">
+                       <span className="flex items-center gap-1"><Move className="w-3 h-3"/> LEFT / RIGHT</span>
+                    </div>
+                    <input type="range" min="-100" max="200" value={posX} onChange={(e) => setPosX(Number(e.target.value))} className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-500 mb-2">
+                       <span className="flex items-center gap-1"><Move className="w-3 h-3 rotate-90"/> UP / DOWN</span>
+                    </div>
+                    <input type="range" min="-100" max="200" value={posY} onChange={(e) => setPosXVertical(Number(e.target.value))} className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                   <button onClick={() => {setScale(100); setPosX(50); setPosXVertical(50);}} className="text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors">
+                     ↺ Reset Adjustments
+                   </button>
                 </div>
              </div>
           )}
