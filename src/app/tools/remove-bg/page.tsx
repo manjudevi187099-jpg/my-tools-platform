@@ -353,3 +353,42 @@ export default function BackgroundChanger() {
     </div>
   );
 }
+
+{/* 🌟 SOCIAL MEDIA SECTION 🌟 */}
+        <div className="mt-16 text-center border-t border-slate-200 pt-10">
+          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6">
+            JOIN OUR COMMUNITY
+          </h3>
+          <div className="flex flex-wrap justify-center gap-4">
+            <a href="#" className="flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-green-500/20 transition-transform hover:-translate-y-1">
+              <span>💬</span> Join WhatsApp
+            </a>
+            <a href="#" className="flex items-center gap-2 bg-[#1877F2] hover:bg-[#1464cc] text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-transform hover:-translate-y-1">
+              <span>📘</span> Facebook Page
+            </a>
+            <a href="#" className="flex items-center gap-2 bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] hover:opacity-90 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-pink-500/20 transition-transform hover:-translate-y-1">
+              <span>📸</span> Instagram
+            </a>
+          </div>
+        </div>
+
+        {/* 🌟 SEO BLOG ARTICLE SECTION 🌟 */}
+        <div className="mt-12 bg-white rounded-3xl shadow-xl border border-slate-200 p-8 md:p-12 mb-8 text-left">
+          <h2 className="text-3xl font-black text-slate-800 mb-6">
+            AI Background Changer - Remove Backgrounds Automatically
+          </h2>
+          <div className="prose prose-lg prose-slate max-w-none text-slate-600 space-y-4">
+            <p>
+              Welcome to Dhamaka Tools <strong>AI Background Changer</strong>. Ye 100% free aur secure tool hai jisse aap kisi bhi photo (JPG, PNG, WEBP) ka background sirf ek click mein remove kar sakte hain. 
+            </p>
+            <h3 className="text-xl font-bold text-slate-800 mt-6 mb-2">How to use this tool?</h3>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>Upar diye gaye box mein apni photo <strong>Drag & Drop</strong> karein ya select karein.</li>
+              <li>Humara advanced AI automatically photo process karega.</li>
+              <li>Sirf 5 seconds mein transparent background wali PNG image download karein!</li>
+            </ul>
+            <p>
+              <strong>Privacy Note:</strong> Aapki koi bhi photo humare server par save nahi hoti hai. Saara processing secure environment mein hota hai.
+            </p>
+          </div>
+        </div>
