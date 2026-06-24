@@ -3,10 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getSiteSettings } from '../lib/getSettings';
 import Script from 'next/script';
-import dynamic from 'next/dynamic';
 
-// 🔥 DYNAMIC IMPORT: Isse server crash nahi hoga aur white screen kabhi nahi aayegi!
-const OneSignalSetup = dynamic(() => import('../components/OneSignalSetup'), { ssr: false });
+// 🔥 DYNAMIC HATA DIYA: Normal Import lagaya (Kyunki OneSignalSetup mein 'use client' hai)
+import OneSignalSetup from '../components/OneSignalSetup';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,10 +52,10 @@ export default async function RootLayout({
           `}
         </Script>
 
-        {/* MAIN CONTENT (Homepage aur baaki pages yahan aayenge) */}
+        {/* MAIN CONTENT */}
         {children}
 
-        {/* 🔥 NOTIFICATION BANNER (Har page ke liye ek hi jagah lagega) 🔥 */}
+        {/* 🔥 NOTIFICATION BANNER 🔥 */}
         <OneSignalSetup />
 
         {/* HEADER SCRIPTS */}
