@@ -38,6 +38,7 @@
     "react-dropzone": "^15.0.0",
     "react-image-crop": "^11.0.10",
     "react-konva": "^19.2.5",
+    "react-onesignal": "^3.5.5",
     "react-rnd": "^10.5.3",
     "react-transliterate": "^1.1.9",
     "tesseract.js": "^7.0.0",
