@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { AutoModel, AutoProcessor, RawImage, env } from '@huggingface/transformers';
-import { UploadCloud, Image as ImageIcon, Download, Settings, RefreshCw, ZoomIn, Move } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, Download, RefreshCw } from 'lucide-react';
 
 type BgType = 'transparent' | 'color' | 'image';
 
@@ -285,7 +285,6 @@ export default function BackgroundChanger() {
              </div>
           )}
         </div>
-
       </div>
     </div>
   );
