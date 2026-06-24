@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getSiteSettings } from '../lib/getSettings';
-import Script from 'next/script'; // 🔥 GA ke liye naya import add kiya
-import OneSignalSetup from '@/components/OneSignalSetup'; // 🚀 NAYA LAGA: OneSignal Component Import
+import Script from 'next/script'; 
+// 🔥 Rasta theek kar diya gaya hai (../ lagaya hai)
+import OneSignalSetup from '../components/OneSignalSetup'; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +16,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// 🌟 DYNAMIC SEO (Next.js ka official aur safe tareeka) 🌟
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   
@@ -31,16 +31,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Database se settings aur scripts lana
   const settings = await getSiteSettings();
 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      {/* 🚫 Dhyan dein: Yahan manual <head> tag NAHI lagana hai, Next.js khud CSS yahan daalega */}
-      
       <body className="min-h-full flex flex-col">
         
-        {/* 🔥 GOOGLE ANALYTICS CODE (Safe Injection) 🔥 */}
+        {/* 🔥 GOOGLE ANALYTICS CODE 🔥 */}
         <Script 
           src="https://www.googletagmanager.com/gtag/js?id=G-B4M8VQ16P2" 
           strategy="afterInteractive" 
@@ -56,81 +53,10 @@ export default async function RootLayout({
 
         {children}
 
-        {/* 🚀 NAYA LAGA: Ziddi Banner Wala Component 🚀 */}
+        {/* 🚀 Ziddi Banner Wala Component 🚀 */}
         <OneSignalSetup />
 
-        {/* 🔥 SAFE SCRIPT INJECTION: Ab script ki wajah se CSS kabhi break nahi hogi 🔥 */}
-        {settings?.header_scripts && (
-          <div 
-            dangerouslySetInnerHTML={{ __html: settings.header_scripts }} 
-            style={{ display: 'none' }}
-          />
-        )}
-      </body>
-    </html>
-  );
-}import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { getSiteSettings } from '../lib/getSettings';
-import Script from 'next/script'; // 🔥 GA ke liye naya import add kiya
-import OneSignalSetup from '@/components/OneSignalSetup'; // 🚀 NAYA LAGA: OneSignal Component Import
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-// 🌟 DYNAMIC SEO (Next.js ka official aur safe tareeka) 🌟
-export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSiteSettings();
-  
-  return {
-    title: settings?.site_name || "Dhamka Tools - Professional Utility Engine",
-    description: settings?.seo_description || "Free, secure, and blazing-fast web tools built for developers, designers, and power users.",
-    keywords: settings?.keywords || "pdf tools, online utility, format converter",
-  };
-}
-
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  // Database se settings aur scripts lana
-  const settings = await getSiteSettings();
-
-  return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      {/* 🚫 Dhyan dein: Yahan manual <head> tag NAHI lagana hai, Next.js khud CSS yahan daalega */}
-      
-      <body className="min-h-full flex flex-col">
-        
-        {/* 🔥 GOOGLE ANALYTICS CODE (Safe Injection) 🔥 */}
-        <Script 
-          src="https://www.googletagmanager.com/gtag/js?id=G-B4M8VQ16P2" 
-          strategy="afterInteractive" 
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-B4M8VQ16P2');
-          `}
-        </Script>
-
-        {children}
-
-        {/* 🚀 NAYA LAGA: Ziddi Banner Wala Component 🚀 */}
-        <OneSignalSetup />
-
-        {/* 🔥 SAFE SCRIPT INJECTION: Ab script ki wajah se CSS kabhi break nahi hogi 🔥 */}
+        {/* 🔥 SAFE SCRIPT INJECTION 🔥 */}
         {settings?.header_scripts && (
           <div 
             dangerouslySetInnerHTML={{ __html: settings.header_scripts }} 
