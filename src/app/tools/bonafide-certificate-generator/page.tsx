@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Download, FileText, Loader2, Award, Building, User, Briefcase, GraduationCap } from 'lucide-react';
+import { Download, FileText, Loader2, Award, Building, User, GraduationCap } from 'lucide-react';
 import { toPng, toJpeg } from 'html-to-image';
 import jsPDF from 'jspdf';
 
@@ -9,37 +9,42 @@ export default function BonafideCertificateGenerator() {
   const previewRef = useRef<HTMLDivElement>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isDownloadingJpg, setIsDownloadingJpg] = useState(false);
-  
-  // Toggle between Student and Employee
-  const [certType, setCertType] = useState<'student' | 'employee'>('student');
 
   // Unified Form State
   const [formData, setFormData] = useState({
-    // Organization Details (Letterhead)
+    // Letterhead Details
     orgName: 'DHAMAKA UNIVERSITY OF TECHNOLOGY',
     orgAddress: 'Sector-62, Knowledge Park, New Delhi - 110001',
     orgContact: 'Phone: +91-9876543210 | Email: info@dhamaka.edu',
-    refNo: 'DUT/REG/2026/1024',
+    
+    // Certificate Core
+    heading: 'BONAFIDE CERTIFICATE', // 🔥 NEW: Editable Heading
     date: new Date().toLocaleDateString('en-GB'),
     
-    // Personal Details
-    name: 'Rahul Sharma',
+    // Student Details
+    studentName: 'Rahul Sharma',
+    regNo: '2023CS105',
+    semesterYear: '5th Semester',
+    courseName: 'B.Tech Computer Science',
+    academicYear: '2025-2026',
+    
+    // List Details
+    dob: '15-Aug-2002',
     fatherName: 'Mr. Rajesh Sharma',
-    
-    // Student Specific
-    course: 'B.Tech (Computer Science)',
-    rollNo: '2023CS105',
-    year: '3rd Year (2025-2026)',
-    
-    // Employee Specific
-    designation: 'Senior Software Engineer',
-    empId: 'EMP-4092',
-    doj: '15-Jan-2022',
+    motherName: 'Mrs. Sunita Sharma',
+    admissionDate: '10-Jul-2023',
+    completionYear: '2027',
+
+    // Authorized Signatory Details
+    authName: 'Dr. A.K. Verma',
+    authDesignation: 'Registrar',
+    authMobile: '+91-9876543210',
+    authEmail: 'registrar@dhamaka.edu',
   });
 
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -62,7 +67,7 @@ export default function BonafideCertificateGenerator() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (previewRef.current.offsetHeight * pdfWidth) / previewRef.current.offsetWidth;
       pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Bonafide_${certType}_${formData.name.replace(/\s+/g, '_')}.pdf`);
+      pdf.save(`${formData.heading.replace(/\s+/g, '_')}_${formData.studentName.replace(/\s+/g, '_')}.pdf`);
     } catch (error) {
       alert("Download failed. Please try again.");
     } finally {
@@ -77,7 +82,7 @@ export default function BonafideCertificateGenerator() {
     try {
       const dataUrl = await toJpeg(previewRef.current, { cacheBust: true, pixelRatio: 2, quality: 0.95 });
       const link = document.createElement('a');
-      link.download = `Bonafide_${certType}_${formData.name.replace(/\s+/g, '_')}.jpg`;
+      link.download = `${formData.heading.replace(/\s+/g, '_')}_${formData.studentName.replace(/\s+/g, '_')}.jpg`;
       link.href = dataUrl;
       link.click();
     } catch (error) {
@@ -94,95 +99,95 @@ export default function BonafideCertificateGenerator() {
         <div className="text-center mb-10">
           <h1 className="text-4xl font-black text-slate-800 flex items-center justify-center gap-3">
             <Award className="w-10 h-10 text-emerald-600" />
-            Smart Bonafide Generator
+            Bonafide Certificate Maker
           </h1>
-          <p className="text-slate-500 mt-2 font-medium">Create Official Letterhead Bonafide for Students & Employees.</p>
+          <p className="text-slate-500 mt-2 font-medium">Standard University/College Letterhead Format</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* ================= LEFT COLUMN: FORM ================= */}
-          <div className="lg:col-span-5 bg-white rounded-3xl shadow-xl border border-slate-200 p-6 space-y-6 flex flex-col">
+          <div className="lg:col-span-5 bg-white rounded-3xl shadow-xl border border-slate-200 p-6 space-y-6 flex flex-col max-h-[85vh] overflow-y-auto custom-scrollbar">
             
-            {/* TYPE SELECTOR */}
-            <div className="flex bg-slate-100 p-1 rounded-xl">
-              <button 
-                onClick={() => setCertType('student')}
-                className={`flex-1 flex justify-center items-center gap-2 py-2 text-sm font-bold rounded-lg transition-all ${certType === 'student' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                <GraduationCap className="w-4 h-4" /> Student
-              </button>
-              <button 
-                onClick={() => setCertType('employee')}
-                className={`flex-1 flex justify-center items-center gap-2 py-2 text-sm font-bold rounded-lg transition-all ${certType === 'employee' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                <Briefcase className="w-4 h-4" /> Employee
-              </button>
+            {/* MAIN HEADING SELECTOR */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+              <label className="block text-xs font-bold text-emerald-800 uppercase mb-2">Certificate Heading</label>
+              <div className="flex gap-2">
+                <select 
+                  name="heading" 
+                  value={formData.heading} 
+                  onChange={handleInputChange} 
+                  className="flex-1 text-sm border-2 border-emerald-300 rounded-lg px-3 py-2 focus:border-emerald-600 font-bold text-slate-800"
+                >
+                  <option value="BONAFIDE CERTIFICATE">BONAFIDE CERTIFICATE</option>
+                  <option value="CHARACTER CERTIFICATE">CHARACTER CERTIFICATE</option>
+                  <option value="PROVISIONAL CERTIFICATE">PROVISIONAL CERTIFICATE</option>
+                  <option value="COURSE COMPLETION CERTIFICATE">COURSE COMPLETION</option>
+                  <option value="NO OBJECTION CERTIFICATE (NOC)">NO OBJECTION (NOC)</option>
+                </select>
+              </div>
             </div>
 
-            <div className="space-y-4 flex-grow overflow-y-auto pr-2 custom-scrollbar">
-              
-              {/* LETTERHEAD DETAILS */}
-              <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
-                <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><Building className="w-3 h-3"/> Letterhead Info</h3>
-                <div className="space-y-3">
-                  <input type="text" name="orgName" placeholder="Organization/College Name" value={formData.orgName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                  <input type="text" name="orgAddress" placeholder="Address" value={formData.orgAddress} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                  <input type="text" name="orgContact" placeholder="Phone & Email" value={formData.orgContact} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload Logo</label>
-                    <input type="file" accept="image/*" onChange={handleLogoUpload} className="w-full text-xs file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-emerald-50 file:text-emerald-700 cursor-pointer" />
-                  </div>
+            {/* LETTERHEAD DETAILS */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><Building className="w-3 h-3"/> Letterhead Info</h3>
+              <div className="space-y-3">
+                <input type="text" name="orgName" placeholder="College / Institute Name" value={formData.orgName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
+                <input type="text" name="orgAddress" placeholder="Address" value={formData.orgAddress} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
+                <input type="text" name="orgContact" placeholder="Phone & Email" value={formData.orgContact} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload College Logo</label>
+                  <input type="file" accept="image/*" onChange={handleLogoUpload} className="w-full text-xs file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-emerald-50 file:text-emerald-700 cursor-pointer" />
                 </div>
               </div>
+            </div>
 
-              {/* RECORD DETAILS */}
+            {/* STUDENT CORE DETAILS */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><GraduationCap className="w-3 h-3"/> Student Details</h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" name="studentName" placeholder="Student Name" value={formData.studentName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="regNo" placeholder="Registration No" value={formData.regNo} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="semesterYear" placeholder="Semester/Year (e.g. 5th Sem)" value={formData.semesterYear} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="courseName" placeholder="Course Name" value={formData.courseName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="academicYear" placeholder="Academic Year" value={formData.academicYear} onChange={handleInputChange} className="col-span-2 w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                </div>
+              </div>
+            </div>
+
+            {/* RECORD LIST DETAILS */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><User className="w-3 h-3"/> Institute Records</h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" name="dob" placeholder="Date of Birth" value={formData.dob} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="admissionDate" placeholder="Date of Admission" value={formData.admissionDate} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="fatherName" placeholder="Father's Name" value={formData.fatherName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="motherName" placeholder="Mother's Name" value={formData.motherName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="completionYear" placeholder="Expected Completion Year" value={formData.completionYear} onChange={handleInputChange} className="col-span-2 w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                </div>
+              </div>
+            </div>
+
+            {/* FOOTER / SIGNATURE DETAILS */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3">Signatory Details</h3>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Reference Number</label>
-                  <input type="text" name="refNo" value={formData.refNo} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Date</label>
-                  <input type="text" name="date" value={formData.date} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                </div>
+                <input type="text" name="authName" placeholder="Signatory Name" value={formData.authName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                <input type="text" name="authDesignation" placeholder="Designation" value={formData.authDesignation} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                <input type="text" name="authMobile" placeholder="Mobile" value={formData.authMobile} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                <input type="text" name="authEmail" placeholder="Email" value={formData.authEmail} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                <input type="text" name="date" placeholder="Issue Date" value={formData.date} onChange={handleInputChange} className="col-span-2 w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
               </div>
-
-              {/* PERSONAL DETAILS */}
-              <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
-                <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><User className="w-3 h-3"/> {certType === 'student' ? 'Student' : 'Employee'} Details</h3>
-                <div className="space-y-3">
-                  <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                  <input type="text" name="fatherName" placeholder="Father's / Husband's Name" value={formData.fatherName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                  
-                  {certType === 'student' ? (
-                    <>
-                      <input type="text" name="course" placeholder="Course / Class" value={formData.course} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                      <div className="grid grid-cols-2 gap-3">
-                        <input type="text" name="rollNo" placeholder="Roll No / Enroll No" value={formData.rollNo} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                        <input type="text" name="year" placeholder="Academic Year" value={formData.year} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <input type="text" name="designation" placeholder="Designation (e.g. Manager)" value={formData.designation} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                      <div className="grid grid-cols-2 gap-3">
-                        <input type="text" name="empId" placeholder="Employee ID" value={formData.empId} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                        <input type="text" name="doj" placeholder="Date of Joining" value={formData.doj} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
             </div>
 
             {/* DOWNLOAD BUTTONS */}
             <div className="pt-4 grid grid-cols-2 gap-3 border-t border-slate-200 mt-auto">
-              <button onClick={downloadImage} disabled={isDownloadingJpg || isDownloadingPdf} className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-transform hover:-translate-y-1">
+              <button onClick={downloadImage} disabled={isDownloadingJpg || isDownloadingPdf} className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2">
                 {isDownloadingJpg ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} Save JPG
               </button>
-              <button onClick={downloadPDF} disabled={isDownloadingJpg || isDownloadingPdf} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-transform hover:-translate-y-1">
+              <button onClick={downloadPDF} disabled={isDownloadingJpg || isDownloadingPdf} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2">
                 {isDownloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Print PDF
               </button>
             </div>
@@ -191,22 +196,21 @@ export default function BonafideCertificateGenerator() {
           {/* ================= RIGHT COLUMN: LIVE PREVIEW ================= */}
           <div className="lg:col-span-7 flex justify-center bg-slate-200 rounded-3xl p-4 md:p-8 overflow-x-auto shadow-inner">
             
-            {/* A4 Size Canvas Container */}
             <div className="flex-shrink-0" style={{ width: '794px', transform: 'scale(0.85)', transformOrigin: 'top center' }}>
               <div 
                 ref={previewRef} 
                 className="bg-white w-[794px] h-[1123px] relative flex flex-col shadow-2xl mx-auto overflow-hidden font-serif"
               >
                 
-                {/* WATERMARK BACKGROUND */}
+                {/* WATERMARK */}
                 {logoUrl && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none z-0">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none z-0">
                     <img src={logoUrl} alt="Watermark" className="w-96 h-96 object-contain grayscale" />
                   </div>
                 )}
 
-                {/* --- LETTERHEAD HEADER --- */}
-                <div className="w-full px-12 pt-12 pb-6 border-b-4 border-slate-800 z-10 bg-white/80">
+                {/* --- HEADER (Official Letter Pad) --- */}
+                <div className="w-full px-12 pt-12 pb-6 border-b-4 border-slate-800 z-10 bg-white/90">
                   <div className="flex items-center gap-6">
                     {logoUrl ? (
                       <img src={logoUrl} alt="Logo" className="w-24 h-24 object-contain" />
@@ -216,63 +220,82 @@ export default function BonafideCertificateGenerator() {
                       </div>
                     )}
                     <div className="flex-1 text-center pr-12">
-                      <h1 className={`font-black text-3xl uppercase tracking-wider ${certType === 'student' ? 'text-emerald-900' : 'text-blue-900'}`}>
-                        {formData.orgName || 'ORGANIZATION NAME'}
+                      <h1 className="font-black text-3xl uppercase tracking-wider text-emerald-900">
+                        {formData.orgName}
                       </h1>
-                      <p className="text-slate-700 font-medium text-sm mt-2">{formData.orgAddress}</p>
-                      <p className="text-slate-600 font-medium text-xs mt-1">{formData.orgContact}</p>
+                      <p className="text-slate-800 font-semibold text-sm mt-2">{formData.orgAddress}</p>
+                      <p className="text-slate-700 font-medium text-sm mt-1">{formData.orgContact}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* --- CERTIFICATE BODY --- */}
-                <div className="flex-1 px-16 py-10 z-10 flex flex-col">
+                {/* --- BODY --- */}
+                <div className="flex-1 px-16 py-10 z-10 flex flex-col text-slate-900">
                   
-                  {/* Ref & Date */}
-                  <div className="flex justify-between items-center text-sm font-bold text-slate-800 mb-12">
-                    <p>Ref. No: <span className="font-medium text-slate-700">{formData.refNo}</span></p>
-                    <p>Date: <span className="font-medium text-slate-700">{formData.date}</span></p>
+                  {/* Date */}
+                  <div className="text-right text-base font-bold mb-10">
+                    Date: <span className="underline underline-offset-4 decoration-slate-400 font-medium">{formData.date}</span>
                   </div>
 
-                  {/* Title */}
-                  <div className="text-center mb-16">
-                    <h2 className="text-2xl font-black uppercase tracking-widest border-b-2 border-slate-800 inline-block pb-2">
-                      TO WHOMSOEVER IT MAY CONCERN
+                  {/* DYNAMIC HEADING */}
+                  <div className="text-center mb-12">
+                    <h2 className="text-2xl font-black uppercase tracking-widest border-b-[3px] border-slate-800 inline-block pb-2">
+                      {formData.heading}
                     </h2>
                   </div>
 
-                  {/* Dynamic Content */}
-                  <div className="text-lg text-justify leading-[2.5] font-medium text-slate-800">
-                    {certType === 'student' ? (
-                      <p>
-                        This is to certify that <strong>Mr. / Ms. {formData.name}</strong>, Son/Daughter of <strong>{formData.fatherName}</strong>, 
-                        is a bonafide student of this institution. He/She is presently studying in <strong>{formData.course}</strong>, 
-                        bearing Roll/Enrollment Number <strong>{formData.rollNo}</strong> for the academic year <strong>{formData.year}</strong>.
-                        <br/><br/>
-                        During his/her tenure in this institution, we have found his/her character and conduct to be good. We wish him/her success in all future endeavors.
-                      </p>
-                    ) : (
-                      <p>
-                        This is to certify that <strong>Mr. / Ms. {formData.name}</strong>, Son/Daughter of <strong>{formData.fatherName}</strong>, 
-                        is a bonafide employee of our organization, <strong>{formData.orgName}</strong>. 
-                        He/She has been working with us in the capacity of <strong>{formData.designation}</strong> under Employee ID <strong>{formData.empId}</strong> since <strong>{formData.doj}</strong>.
-                        <br/><br/>
-                        During his/her employment, his/her performance and conduct have been highly satisfactory. This certificate is issued upon the employee's request for their personal requirements.
-                      </p>
-                    )}
+                  {/* Main Paragraph */}
+                  <div className="text-lg text-justify leading-loose font-medium mb-10">
+                    This is to certify that Mr/Ms <span className="font-bold border-b border-dashed border-slate-500 px-2">{formData.studentName}</span>, 
+                    bearing Registration No. <span className="font-bold border-b border-dashed border-slate-500 px-2">{formData.regNo}</span> is a 
+                    Bonafide student of this institute, studying in the <span className="font-bold border-b border-dashed border-slate-500 px-2">{formData.semesterYear}</span> 
+                    <span className="font-bold border-b border-dashed border-slate-500 px-2">{formData.courseName}</span> course during Academic Year 
+                    <span className="font-bold border-b border-dashed border-slate-500 px-2">{formData.academicYear}</span>.
+                  </div>
+
+                  {/* Student Records List */}
+                  <div className="text-lg font-medium mb-4">
+                    The student details as entered in our institute record are:
+                  </div>
+                  
+                  <div className="pl-8 space-y-4 text-lg font-medium">
+                    <div className="grid grid-cols-[300px_auto]">
+                      <span>Date of Birth</span>
+                      <span className="font-bold">: {formData.dob}</span>
+                    </div>
+                    <div className="grid grid-cols-[300px_auto]">
+                      <span>Father's Name</span>
+                      <span className="font-bold">: {formData.fatherName}</span>
+                    </div>
+                    <div className="grid grid-cols-[300px_auto]">
+                      <span>Mother's Name</span>
+                      <span className="font-bold">: {formData.motherName}</span>
+                    </div>
+                    <div className="grid grid-cols-[300px_auto]">
+                      <span>Date of Admission</span>
+                      <span className="font-bold">: {formData.admissionDate}</span>
+                    </div>
+                    <div className="grid grid-cols-[300px_auto]">
+                      <span>Expected Year of Course Completion</span>
+                      <span className="font-bold">: {formData.completionYear}</span>
+                    </div>
                   </div>
 
                   {/* --- FOOTER / SIGNATURES --- */}
-                  <div className="mt-auto pt-20 flex justify-between items-end">
+                  <div className="mt-auto pt-16 flex justify-between items-end">
                     <div className="text-center w-40">
-                      <div className="w-24 h-24 border-2 border-dashed border-slate-300 rounded-full mx-auto mb-2 flex items-center justify-center text-xs text-slate-400 font-sans">
-                        Official Seal
+                      <div className="w-28 h-28 border-2 border-dashed border-slate-300 rounded-full mx-auto flex items-center justify-center text-sm text-slate-400 font-sans mb-2">
+                        Official Stamp
                       </div>
                     </div>
-                    <div className="text-center w-48">
-                      <div className="border-b-2 border-slate-800 mb-2"></div>
-                      <p className="font-bold text-slate-800 text-sm">Authorized Signatory</p>
-                      <p className="text-slate-600 text-xs mt-1">{certType === 'student' ? 'Principal / Registrar' : 'HR Manager / Director'}</p>
+                    
+                    <div className="text-left w-72">
+                      <div className="border-b-2 border-slate-800 mb-3 w-48"></div>
+                      <p className="font-bold text-slate-900 text-base mb-1">Authorized Signature with Stamp</p>
+                      <p className="text-slate-800 font-medium">Name: <span className="font-bold">{formData.authName}</span></p>
+                      <p className="text-slate-800 font-medium">Designation: <span className="font-bold">{formData.authDesignation}</span></p>
+                      <p className="text-slate-800 font-medium">Mobile: {formData.authMobile}</p>
+                      <p className="text-slate-800 font-medium">Email: {formData.authEmail}</p>
                     </div>
                   </div>
 
