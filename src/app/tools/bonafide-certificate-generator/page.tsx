@@ -1,45 +1,85 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Download, FileText, Loader2, Award, Building, User, GraduationCap } from 'lucide-react';
+import { Download, FileText, Loader2, Award, Building, User, GraduationCap, Briefcase } from 'lucide-react';
 import { toPng, toJpeg } from 'html-to-image';
 import jsPDF from 'jspdf';
+
+// 🔥 ALL 65 CATEGORIES & HEADINGS
+const CERT_CATEGORIES = [
+  {
+    category: "शिक्षा (Education)",
+    options: ["School Bonafide", "College Bonafide", "University Bonafide", "Scholarship Bonafide", "Education Loan Bonafide", "Internship Bonafide", "Training Bonafide", "Railway Concession Bonafide", "Bus Pass Bonafide", "Hostel Bonafide", "Research Scholar Bonafide", "Exam Registration Bonafide"]
+  },
+  {
+    category: "नौकरी / रोजगार (Employment)",
+    options: ["Employee Bonafide", "Government Employee Bonafide", "Private Employee Bonafide", "Contract Employee Bonafide", "Internship Employee Bonafide", "Job Verification Bonafide", "Background Verification Bonafide"]
+  },
+  {
+    category: "बैंक / वित्त (Banking & Finance)",
+    options: ["Bank Account Opening Bonafide", "Personal Loan Bonafide", "Business Loan Bonafide", "Mudra Loan Bonafide", "PMEGP Loan Bonafide", "Subsidy Claim Bonafide", "Financial Assistance Bonafide"]
+  },
+  {
+    category: "पहचान / पता (Identity & Address)",
+    options: ["Residence Bonafide", "Domicile Bonafide", "Permanent Resident Bonafide", "Temporary Resident Bonafide", "Address Proof Bonafide"]
+  },
+  {
+    category: "सरकारी योजनाएँ (Government Schemes)",
+    options: ["CSC Registration Bonafide", "RTPS Service Bonafide", "KYP Admission Bonafide", "Student Credit Card Bonafide", "Government Scholarship Bonafide", "Welfare Scheme Bonafide", "Caste-Based Scheme Bonafide", "Pension Scheme Bonafide"]
+  },
+  {
+    category: "व्यापार (Business)",
+    options: ["Startup Bonafide", "GST Registration Bonafide", "MSME/Udyam Bonafide", "Shop Establishment Bonafide", "Trade License Bonafide", "Business Address Bonafide", "Partnership Firm Bonafide", "Proprietorship Bonafide"]
+  },
+  {
+    category: "टेंडर / कॉन्ट्रैक्ट (Tender & Contract)",
+    options: ["Government Tender Bonafide", "Contractor Bonafide", "Vendor Bonafide", "Service Provider Bonafide", "Project Participation Bonafide"]
+  },
+  {
+    category: "यात्रा / विदेश (Travel & Foreign)",
+    options: ["Passport Bonafide", "Visa Bonafide", "Embassy Bonafide", "Immigration Bonafide", "Travel Concession Bonafide"]
+  },
+  {
+    category: "अन्य (Other)",
+    options: ["Library Membership Bonafide", "SIM Card Verification Bonafide", "Insurance Claim Bonafide", "Court Purpose Bonafide", "Police Verification Bonafide", "Character Verification Bonafide", "NGO/Trust Association Bonafide", "Event Participation Bonafide"]
+  }
+];
 
 export default function BonafideCertificateGenerator() {
   const previewRef = useRef<HTMLDivElement>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isDownloadingJpg, setIsDownloadingJpg] = useState(false);
 
-  // Unified Form State
+  // Unified Form State (Works for Student, Employee, and Business)
   const [formData, setFormData] = useState({
-    // Letterhead Details
-    orgName: 'DHAMAKA UNIVERSITY OF TECHNOLOGY',
+    // Letterhead
+    orgName: 'DHAMAKA UNIVERSITY / TECH PVT LTD',
     orgAddress: 'Sector-62, Knowledge Park, New Delhi - 110001',
-    orgContact: 'Phone: +91-9876543210 | Email: info@dhamaka.edu',
+    orgContact: 'Phone: +91-9876543210 | Email: info@dhamaka.com',
     
-    // Certificate Core
-    heading: 'BONAFIDE CERTIFICATE', // 🔥 NEW: Editable Heading
+    // Core
+    heading: 'College Bonafide', 
     date: new Date().toLocaleDateString('en-GB'),
     
-    // Student Details
-    studentName: 'Rahul Sharma',
-    regNo: '2023CS105',
-    semesterYear: '5th Semester',
-    courseName: 'B.Tech Computer Science',
-    academicYear: '2025-2026',
+    // Universal Details (Used dynamically)
+    applicantName: 'Rahul Sharma',
+    regIdNo: '2023CS105 / EMP-402',
+    designationCourse: 'B.Tech / Software Engineer',
+    departmentType: 'Computer Science / IT',
+    durationYear: '2025-2026 / 3 Years',
     
-    // List Details
+    // Additional Records
     dob: '15-Aug-2002',
-    fatherName: 'Mr. Rajesh Sharma',
-    motherName: 'Mrs. Sunita Sharma',
-    admissionDate: '10-Jul-2023',
-    completionYear: '2027',
+    careOfName: 'Mr. Rajesh Sharma', // Father / Partner Name
+    address: 'Flat 402, Green Valley, New Delhi',
+    admissionJoiningDate: '10-Jul-2023',
+    completionValidity: '2027',
 
-    // Authorized Signatory Details
+    // Signatory
     authName: 'Dr. A.K. Verma',
-    authDesignation: 'Registrar',
+    authDesignation: 'Registrar / Director',
     authMobile: '+91-9876543210',
-    authEmail: 'registrar@dhamaka.edu',
+    authEmail: 'admin@dhamaka.com',
   });
 
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -57,7 +97,6 @@ export default function BonafideCertificateGenerator() {
     }
   };
 
-  // 🔥 A4 PDF DOWNLOADER
   const downloadPDF = async () => {
     if (!previewRef.current) return;
     setIsDownloadingPdf(true);
@@ -67,7 +106,7 @@ export default function BonafideCertificateGenerator() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (previewRef.current.offsetHeight * pdfWidth) / previewRef.current.offsetWidth;
       pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${formData.heading.replace(/\s+/g, '_')}_${formData.studentName.replace(/\s+/g, '_')}.pdf`);
+      pdf.save(`${formData.heading.replace(/\s+/g, '_')}_${formData.applicantName.replace(/\s+/g, '_')}.pdf`);
     } catch (error) {
       alert("Download failed. Please try again.");
     } finally {
@@ -75,20 +114,110 @@ export default function BonafideCertificateGenerator() {
     }
   };
 
-  // 🔥 JPG DOWNLOADER
   const downloadImage = async () => {
     if (!previewRef.current) return;
     setIsDownloadingJpg(true);
     try {
       const dataUrl = await toJpeg(previewRef.current, { cacheBust: true, pixelRatio: 2, quality: 0.95 });
       const link = document.createElement('a');
-      link.download = `${formData.heading.replace(/\s+/g, '_')}_${formData.studentName.replace(/\s+/g, '_')}.jpg`;
+      link.download = `${formData.heading.replace(/\s+/g, '_')}_${formData.applicantName.replace(/\s+/g, '_')}.jpg`;
       link.href = dataUrl;
       link.click();
     } catch (error) {
       alert("Download failed. Please try again.");
     } finally {
       setIsDownloadingJpg(false);
+    }
+  };
+
+  // 🔥 65-in-1 SMART PARAGRAPH ENGINE
+  const renderDynamicContent = () => {
+    const { heading, applicantName, regIdNo, designationCourse, departmentType, durationYear, address, orgName } = formData;
+    const h = heading.toLowerCase();
+
+    // 1. BUSINESS, TENDER, STARTUP, GST
+    if (h.includes('business') || h.includes('gst') || h.includes('startup') || h.includes('msme') || h.includes('tender') || h.includes('contractor') || h.includes('proprietorship') || h.includes('firm')) {
+      return (
+        <div className="text-lg text-justify leading-loose font-medium mb-8">
+          This is to certify that M/s <span className="font-bold border-b border-dashed border-slate-500 px-2">{applicantName}</span>, 
+          bearing Registration/GST No. <span className="font-bold border-b border-dashed border-slate-500 px-2">{regIdNo}</span>, 
+          is a Bonafide business entity functioning as <span className="font-bold border-b border-dashed border-slate-500 px-2">{designationCourse}</span> 
+          in the domain of <span className="font-bold border-b border-dashed border-slate-500 px-2">{departmentType}</span>.
+          <br/><br/>
+          The entity is officially registered and operating at <span className="font-bold border-b border-dashed border-slate-500 px-2">{address}</span>. 
+          This <strong>{heading.toUpperCase()}</strong> is being issued upon their request for official processing and verification purposes.
+        </div>
+      );
+    }
+    // 2. EMPLOYMENT, GOVERNMENT JOB, VERIFICATION
+    else if (h.includes('employee') || h.includes('job') || h.includes('background') || h.includes('police')) {
+      return (
+        <div className="text-lg text-justify leading-loose font-medium mb-8">
+          This is to certify that Mr/Ms <span className="font-bold border-b border-dashed border-slate-500 px-2">{applicantName}</span>, 
+          Employee/ID No. <span className="font-bold border-b border-dashed border-slate-500 px-2">{regIdNo}</span>, 
+          is a Bonafide employee of <strong>{orgName}</strong>. 
+          <br/><br/>
+          He/She is currently working as <span className="font-bold border-b border-dashed border-slate-500 px-2">{designationCourse}</span> 
+          in the <span className="font-bold border-b border-dashed border-slate-500 px-2">{departmentType}</span> department, 
+          and has been associated with us for the period of <span className="font-bold border-b border-dashed border-slate-500 px-2">{durationYear}</span>. 
+          During this tenure, we have found his/her professional conduct to be highly satisfactory.
+        </div>
+      );
+    }
+    // 3. BANKING, LOAN, SUBSIDY
+    else if (h.includes('loan') || h.includes('bank') || h.includes('subsidy') || h.includes('finance') || h.includes('credit')) {
+      return (
+        <div className="text-lg text-justify leading-loose font-medium mb-8">
+          This is to certify that Mr/Ms <span className="font-bold border-b border-dashed border-slate-500 px-2">{applicantName}</span>, 
+          Registration/ID No. <span className="font-bold border-b border-dashed border-slate-500 px-2">{regIdNo}</span>, 
+          maintains a Bonafide association with our institution/organization.
+          <br/><br/>
+          He/She is applying for financial assistance under the <strong>{heading.toUpperCase()}</strong> category. 
+          We verify that he/she is a legitimate candidate belonging to <span className="font-bold border-b border-dashed border-slate-500 px-2">{departmentType}</span> 
+          and holds a good financial and moral track record with us.
+        </div>
+      );
+    }
+    // 4. TRAVEL, VISA, PASSPORT
+    else if (h.includes('visa') || h.includes('passport') || h.includes('embassy') || h.includes('travel') || h.includes('immigration')) {
+      return (
+        <div className="text-lg text-justify leading-loose font-medium mb-8">
+          This is to certify that Mr/Ms <span className="font-bold border-b border-dashed border-slate-500 px-2">{applicantName}</span>, 
+          bearing ID/Reg No. <span className="font-bold border-b border-dashed border-slate-500 px-2">{regIdNo}</span>, 
+          is a Bonafide member/student/employee of our institution.
+          <br/><br/>
+          This certificate is issued specifically for the purpose of <strong>{heading.toUpperCase()}</strong>. 
+          The institution has No Objection to his/her travel plans. He/She will resume their respective duties/studies upon return.
+        </div>
+      );
+    }
+    // 5. RESIDENCE, IDENTITY, DOMICILE
+    else if (h.includes('residence') || h.includes('domicile') || h.includes('address') || h.includes('sim')) {
+      return (
+        <div className="text-lg text-justify leading-loose font-medium mb-8">
+          This is to certify that Mr/Ms <span className="font-bold border-b border-dashed border-slate-500 px-2">{applicantName}</span>, 
+          bearing ID No. <span className="font-bold border-b border-dashed border-slate-500 px-2">{regIdNo}</span>, 
+          is known to our institution.
+          <br/><br/>
+          As per our official records, his/her Bonafide permanent/temporary address is documented as: 
+          <br/><strong>{address}</strong>.<br/>
+          This certificate is issued to serve as a valid proof for <strong>{heading.toUpperCase()}</strong> processing.
+        </div>
+      );
+    }
+    // 6. EDUCATION (DEFAULT / CATCH-ALL)
+    else {
+      return (
+        <div className="text-lg text-justify leading-loose font-medium mb-8">
+          This is to certify that Mr/Ms <span className="font-bold border-b border-dashed border-slate-500 px-2">{applicantName}</span>, 
+          bearing Registration No. <span className="font-bold border-b border-dashed border-slate-500 px-2">{regIdNo}</span> is a 
+          Bonafide applicant of this institute/organization, currently associated as <span className="font-bold border-b border-dashed border-slate-500 px-2">{designationCourse}</span> 
+          in <span className="font-bold border-b border-dashed border-slate-500 px-2">{departmentType}</span> during the period of 
+          <span className="font-bold border-b border-dashed border-slate-500 px-2">{durationYear}</span>.
+          <br/><br/>
+          This <strong>{heading.toUpperCase()}</strong> is issued at the request of the applicant for their official use.
+        </div>
+      );
     }
   };
 
@@ -99,9 +228,9 @@ export default function BonafideCertificateGenerator() {
         <div className="text-center mb-10">
           <h1 className="text-4xl font-black text-slate-800 flex items-center justify-center gap-3">
             <Award className="w-10 h-10 text-emerald-600" />
-            Bonafide Certificate Maker
+            Mega Bonafide Generator (65-in-1)
           </h1>
-          <p className="text-slate-500 mt-2 font-medium">Standard University/College Letterhead Format</p>
+          <p className="text-slate-500 mt-2 font-medium">Education, Employment, Business, Visa, Bank Loans & More</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -109,76 +238,62 @@ export default function BonafideCertificateGenerator() {
           {/* ================= LEFT COLUMN: FORM ================= */}
           <div className="lg:col-span-5 bg-white rounded-3xl shadow-xl border border-slate-200 p-6 space-y-6 flex flex-col max-h-[85vh] overflow-y-auto custom-scrollbar">
             
-            {/* MAIN HEADING SELECTOR */}
+            {/* 🔥 MEGA HEADING SELECTOR WITH 65 OPTIONS */}
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <label className="block text-xs font-bold text-emerald-800 uppercase mb-2">Certificate Heading</label>
-              <div className="flex gap-2">
-                <select 
-                  name="heading" 
-                  value={formData.heading} 
-                  onChange={handleInputChange} 
-                  className="flex-1 text-sm border-2 border-emerald-300 rounded-lg px-3 py-2 focus:border-emerald-600 font-bold text-slate-800"
-                >
-                  <option value="BONAFIDE CERTIFICATE">BONAFIDE CERTIFICATE</option>
-                  <option value="CHARACTER CERTIFICATE">CHARACTER CERTIFICATE</option>
-                  <option value="PROVISIONAL CERTIFICATE">PROVISIONAL CERTIFICATE</option>
-                  <option value="COURSE COMPLETION CERTIFICATE">COURSE COMPLETION</option>
-                  <option value="NO OBJECTION CERTIFICATE (NOC)">NO OBJECTION (NOC)</option>
-                </select>
+              <label className="block text-xs font-bold text-emerald-800 uppercase mb-2">Select Certificate Category (65 Types)</label>
+              <select 
+                name="heading" 
+                value={formData.heading} 
+                onChange={handleInputChange} 
+                className="w-full text-sm border-2 border-emerald-300 rounded-lg px-3 py-2 focus:border-emerald-600 font-bold text-slate-800 bg-white"
+              >
+                {CERT_CATEGORIES.map((cat, idx) => (
+                  <optgroup key={idx} label={cat.category} className="bg-slate-100 font-bold text-emerald-700">
+                    {cat.options.map((opt, i) => (
+                      <option key={i} value={opt} className="bg-white text-slate-800 font-medium">{opt}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
+            {/* UNIVERSAL DETAILS */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><Briefcase className="w-3 h-3"/> Core Details (Adapts to selection)</h3>
+              <div className="space-y-3">
+                <input type="text" name="applicantName" placeholder="Applicant / Business Name" value={formData.applicantName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                <input type="text" name="regIdNo" placeholder="Reg No / Emp ID / GST No" value={formData.regIdNo} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                <input type="text" name="designationCourse" placeholder="Course / Designation / Business Type" value={formData.designationCourse} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                <input type="text" name="departmentType" placeholder="Department / Branch / Sector" value={formData.departmentType} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                <input type="text" name="durationYear" placeholder="Academic Year / Tenure / Validity" value={formData.durationYear} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+              </div>
+            </div>
+
+            {/* RECORDS / ADDRESS LIST */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><User className="w-3 h-3"/> Master Records & Info</h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" name="dob" placeholder="Date of Birth" value={formData.dob} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="admissionJoiningDate" placeholder="Admission / Joining Date" value={formData.admissionJoiningDate} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="careOfName" placeholder="C/o (Father / Partner Name)" value={formData.careOfName} onChange={handleInputChange} className="col-span-2 w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="address" placeholder="Full Address" value={formData.address} onChange={handleInputChange} className="col-span-2 w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                  <input type="text" name="completionValidity" placeholder="Expected Completion / Expiry" value={formData.completionValidity} onChange={handleInputChange} className="col-span-2 w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
+                </div>
               </div>
             </div>
 
             {/* LETTERHEAD DETAILS */}
             <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
-              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><Building className="w-3 h-3"/> Letterhead Info</h3>
+              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><Building className="w-3 h-3"/> Organization Letterhead</h3>
               <div className="space-y-3">
-                <input type="text" name="orgName" placeholder="College / Institute Name" value={formData.orgName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
+                <input type="text" name="orgName" placeholder="Company / College Name" value={formData.orgName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
                 <input type="text" name="orgAddress" placeholder="Address" value={formData.orgAddress} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
                 <input type="text" name="orgContact" placeholder="Phone & Email" value={formData.orgContact} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none" />
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload College Logo</label>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload Seal/Logo</label>
                   <input type="file" accept="image/*" onChange={handleLogoUpload} className="w-full text-xs file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-emerald-50 file:text-emerald-700 cursor-pointer" />
                 </div>
-              </div>
-            </div>
-
-            {/* STUDENT CORE DETAILS */}
-            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
-              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><GraduationCap className="w-3 h-3"/> Student Details</h3>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <input type="text" name="studentName" placeholder="Student Name" value={formData.studentName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                  <input type="text" name="regNo" placeholder="Registration No" value={formData.regNo} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                  <input type="text" name="semesterYear" placeholder="Semester/Year (e.g. 5th Sem)" value={formData.semesterYear} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                  <input type="text" name="courseName" placeholder="Course Name" value={formData.courseName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                  <input type="text" name="academicYear" placeholder="Academic Year" value={formData.academicYear} onChange={handleInputChange} className="col-span-2 w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                </div>
-              </div>
-            </div>
-
-            {/* RECORD LIST DETAILS */}
-            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
-              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3 flex items-center gap-1"><User className="w-3 h-3"/> Institute Records</h3>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <input type="text" name="dob" placeholder="Date of Birth" value={formData.dob} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                  <input type="text" name="admissionDate" placeholder="Date of Admission" value={formData.admissionDate} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                  <input type="text" name="fatherName" placeholder="Father's Name" value={formData.fatherName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                  <input type="text" name="motherName" placeholder="Mother's Name" value={formData.motherName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                  <input type="text" name="completionYear" placeholder="Expected Completion Year" value={formData.completionYear} onChange={handleInputChange} className="col-span-2 w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                </div>
-              </div>
-            </div>
-
-            {/* FOOTER / SIGNATURE DETAILS */}
-            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
-              <h3 className="font-bold text-xs text-slate-500 uppercase mb-3">Signatory Details</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <input type="text" name="authName" placeholder="Signatory Name" value={formData.authName} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                <input type="text" name="authDesignation" placeholder="Designation" value={formData.authDesignation} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                <input type="text" name="authMobile" placeholder="Mobile" value={formData.authMobile} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                <input type="text" name="authEmail" placeholder="Email" value={formData.authEmail} onChange={handleInputChange} className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
-                <input type="text" name="date" placeholder="Issue Date" value={formData.date} onChange={handleInputChange} className="col-span-2 w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:border-emerald-500" />
               </div>
             </div>
 
@@ -195,21 +310,16 @@ export default function BonafideCertificateGenerator() {
 
           {/* ================= RIGHT COLUMN: LIVE PREVIEW ================= */}
           <div className="lg:col-span-7 flex justify-center bg-slate-200 rounded-3xl p-4 md:p-8 overflow-x-auto shadow-inner">
-            
             <div className="flex-shrink-0" style={{ width: '794px', transform: 'scale(0.85)', transformOrigin: 'top center' }}>
-              <div 
-                ref={previewRef} 
-                className="bg-white w-[794px] h-[1123px] relative flex flex-col shadow-2xl mx-auto overflow-hidden font-serif"
-              >
+              <div ref={previewRef} className="bg-white w-[794px] h-[1123px] relative flex flex-col shadow-2xl mx-auto overflow-hidden font-serif">
                 
-                {/* WATERMARK */}
                 {logoUrl && (
                   <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none z-0">
                     <img src={logoUrl} alt="Watermark" className="w-96 h-96 object-contain grayscale" />
                   </div>
                 )}
 
-                {/* --- HEADER (Official Letter Pad) --- */}
+                {/* --- HEADER --- */}
                 <div className="w-full px-12 pt-12 pb-6 border-b-4 border-slate-800 z-10 bg-white/90">
                   <div className="flex items-center gap-6">
                     {logoUrl ? (
@@ -220,9 +330,7 @@ export default function BonafideCertificateGenerator() {
                       </div>
                     )}
                     <div className="flex-1 text-center pr-12">
-                      <h1 className="font-black text-3xl uppercase tracking-wider text-emerald-900">
-                        {formData.orgName}
-                      </h1>
+                      <h1 className="font-black text-3xl uppercase tracking-wider text-emerald-900">{formData.orgName}</h1>
                       <p className="text-slate-800 font-semibold text-sm mt-2">{formData.orgAddress}</p>
                       <p className="text-slate-700 font-medium text-sm mt-1">{formData.orgContact}</p>
                     </div>
@@ -231,57 +339,30 @@ export default function BonafideCertificateGenerator() {
 
                 {/* --- BODY --- */}
                 <div className="flex-1 px-16 py-10 z-10 flex flex-col text-slate-900">
-                  
-                  {/* Date */}
-                  <div className="text-right text-base font-bold mb-10">
+                  <div className="text-right text-base font-bold mb-8">
                     Date: <span className="underline underline-offset-4 decoration-slate-400 font-medium">{formData.date}</span>
                   </div>
 
-                  {/* DYNAMIC HEADING */}
-                  <div className="text-center mb-12">
+                  <div className="text-center mb-10">
                     <h2 className="text-2xl font-black uppercase tracking-widest border-b-[3px] border-slate-800 inline-block pb-2">
-                      {formData.heading}
+                      {formData.heading.replace(' Bonafide', '')} BONAFIDE CERTIFICATE
                     </h2>
                   </div>
 
-                  {/* Main Paragraph */}
-                  <div className="text-lg text-justify leading-loose font-medium mb-10">
-                    This is to certify that Mr/Ms <span className="font-bold border-b border-dashed border-slate-500 px-2">{formData.studentName}</span>, 
-                    bearing Registration No. <span className="font-bold border-b border-dashed border-slate-500 px-2">{formData.regNo}</span> is a 
-                    Bonafide student of this institute, studying in the <span className="font-bold border-b border-dashed border-slate-500 px-2">{formData.semesterYear}</span> 
-                    <span className="font-bold border-b border-dashed border-slate-500 px-2">{formData.courseName}</span> course during Academic Year 
-                    <span className="font-bold border-b border-dashed border-slate-500 px-2">{formData.academicYear}</span>.
+                  {/* 🔥 SMART PARAGRAPH */}
+                  {renderDynamicContent()}
+
+                  {/* Master Records Data */}
+                  <div className="text-lg font-bold mb-4">Master Records verified by Organization:</div>
+                  <div className="pl-6 space-y-3 text-lg font-medium">
+                    <div className="grid grid-cols-[300px_auto]"><span>Date of Birth / Est.</span><span className="font-bold">: {formData.dob}</span></div>
+                    <div className="grid grid-cols-[300px_auto]"><span>C/o (Father/Partner)</span><span className="font-bold">: {formData.careOfName}</span></div>
+                    <div className="grid grid-cols-[300px_auto]"><span>Admission/Joining Date</span><span className="font-bold">: {formData.admissionJoiningDate}</span></div>
+                    <div className="grid grid-cols-[300px_auto]"><span>Registered Address</span><span className="font-bold">: {formData.address}</span></div>
+                    <div className="grid grid-cols-[300px_auto]"><span>Validity / Completion</span><span className="font-bold">: {formData.completionValidity}</span></div>
                   </div>
 
-                  {/* Student Records List */}
-                  <div className="text-lg font-medium mb-4">
-                    The student details as entered in our institute record are:
-                  </div>
-                  
-                  <div className="pl-8 space-y-4 text-lg font-medium">
-                    <div className="grid grid-cols-[300px_auto]">
-                      <span>Date of Birth</span>
-                      <span className="font-bold">: {formData.dob}</span>
-                    </div>
-                    <div className="grid grid-cols-[300px_auto]">
-                      <span>Father's Name</span>
-                      <span className="font-bold">: {formData.fatherName}</span>
-                    </div>
-                    <div className="grid grid-cols-[300px_auto]">
-                      <span>Mother's Name</span>
-                      <span className="font-bold">: {formData.motherName}</span>
-                    </div>
-                    <div className="grid grid-cols-[300px_auto]">
-                      <span>Date of Admission</span>
-                      <span className="font-bold">: {formData.admissionDate}</span>
-                    </div>
-                    <div className="grid grid-cols-[300px_auto]">
-                      <span>Expected Year of Course Completion</span>
-                      <span className="font-bold">: {formData.completionYear}</span>
-                    </div>
-                  </div>
-
-                  {/* --- FOOTER / SIGNATURES --- */}
+                  {/* --- FOOTER --- */}
                   <div className="mt-auto pt-16 flex justify-between items-end">
                     <div className="text-center w-40">
                       <div className="w-28 h-28 border-2 border-dashed border-slate-300 rounded-full mx-auto flex items-center justify-center text-sm text-slate-400 font-sans mb-2">
@@ -291,11 +372,9 @@ export default function BonafideCertificateGenerator() {
                     
                     <div className="text-left w-72">
                       <div className="border-b-2 border-slate-800 mb-3 w-48"></div>
-                      <p className="font-bold text-slate-900 text-base mb-1">Authorized Signature with Stamp</p>
+                      <p className="font-bold text-slate-900 text-base mb-1">Authorized Signature</p>
                       <p className="text-slate-800 font-medium">Name: <span className="font-bold">{formData.authName}</span></p>
                       <p className="text-slate-800 font-medium">Designation: <span className="font-bold">{formData.authDesignation}</span></p>
-                      <p className="text-slate-800 font-medium">Mobile: {formData.authMobile}</p>
-                      <p className="text-slate-800 font-medium">Email: {formData.authEmail}</p>
                     </div>
                   </div>
 
