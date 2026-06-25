@@ -31,19 +31,23 @@ export default function AssignmentCoverPageMaker() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // 🔥 FIX: Convert Image to Base64 directly so html-to-image never fails
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setLogoUrl(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  // 🔥 MODERN PDF DOWNLOADER (Using html-to-image)
+  // 🔥 MODERN PDF DOWNLOADER
   const downloadPDF = async () => {
     if (!previewRef.current) return;
     setIsDownloadingPdf(true);
     try {
-      // toPng easily handles modern Tailwind lab() colors
       const dataUrl = await toPng(previewRef.current, { cacheBust: true, pixelRatio: 2 });
       
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -60,7 +64,7 @@ export default function AssignmentCoverPageMaker() {
     }
   };
 
-  // 🔥 MODERN JPG DOWNLOADER (Using html-to-image)
+  // 🔥 MODERN JPG DOWNLOADER
   const downloadImage = async () => {
     if (!previewRef.current) return;
     setIsDownloadingJpg(true);
@@ -189,8 +193,9 @@ export default function AssignmentCoverPageMaker() {
                       </h1>
                       <p className="text-xl font-semibold text-slate-700 uppercase">{formData.collegeAddress}</p>
                       
+                      {/* 🔥 FIX: crossOrigin hata diya kyunki ab image base64 format mein hai */}
                       {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" className="w-40 h-40 object-contain mt-8" crossOrigin="anonymous" />
+                        <img src={logoUrl} alt="Logo" className="w-40 h-40 object-contain mt-8" />
                       ) : (
                         <div className="w-40 h-40 border-2 border-dashed border-slate-300 flex items-center justify-center rounded-full mt-8 opacity-50 bg-white">
                           <School className="w-16 h-16 text-slate-400" />
