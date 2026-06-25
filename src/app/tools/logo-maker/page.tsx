@@ -1,41 +1,65 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Download, Zap, Star, Truck, PartyPopper, Briefcase, Camera, Globe, Building, LayoutTemplate, Type, Layers } from 'lucide-react';
+import { 
+  Download, Zap, Star, Truck, PartyPopper, Briefcase, Camera, Globe, 
+  Building, LayoutTemplate, Layers, Palette, Circle, Square, 
+  Monitor, SlidersHorizontal, Image as ImageIcon, Flame, Droplet, Leaf, Hexagon
+} from 'lucide-react';
 import { toPng } from 'html-to-image';
 
-const ICONS = [PartyPopper, Truck, Building, Briefcase, Zap, Star, Camera, Globe];
+const ICONS = [Building, Truck, PartyPopper, Briefcase, Globe, Camera, Zap, Star, Flame, Droplet, Leaf, Hexagon];
+
 const FONTS = [
-  { name: 'Sans (Modern)', class: 'font-sans' },
-  { name: 'Serif (Classic)', class: 'font-serif' },
-  { name: 'Mono (Tech)', class: 'font-mono' }
+  { name: 'Modern Sans', class: 'font-sans' },
+  { name: 'Elegant Serif', class: 'font-serif' },
+  { name: 'Tech Mono', class: 'font-mono' }
 ];
-const COLORS = [
-  { id: 'slate', hex: 'text-slate-900', bg: 'bg-slate-900' },
-  { id: 'indigo', hex: 'text-indigo-600', bg: 'bg-indigo-600' },
-  { id: 'rose', hex: 'text-rose-600', bg: 'bg-rose-600' },
-  { id: 'emerald', hex: 'text-emerald-600', bg: 'bg-emerald-600' },
-  { id: 'amber', hex: 'text-amber-500', bg: 'bg-amber-500' },
+
+const SHAPES = [
+  { id: 'none', name: 'Transparent', icon: ImageIcon, radius: '0px' },
+  { id: 'circle', name: 'Circle', icon: Circle, radius: '50%' },
+  { id: 'rounded', name: 'Rounded', icon: Monitor, radius: '24px' },
+  { id: 'square', name: 'Square', icon: Square, radius: '0px' },
 ];
 
 export default function LogoMaker() {
   const previewRef = useRef<HTMLDivElement>(null);
-  const [brandName, setBrandName] = useState('MANAGEMENT BABA');
-  const [tagline, setTagline] = useState('Premium Event Services');
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // --- BRAND STATE ---
+  const [brandName, setBrandName] = useState('DHAMAKA');
+  const [tagline, setTagline] = useState('BUSINESS LOGISTICS');
+  
+  // --- DESIGN STATE ---
   const [selectedIcon, setSelectedIcon] = useState(0);
   const [font, setFont] = useState(FONTS[0].class);
-  const [color, setColor] = useState(COLORS[0].hex);
   const [layout, setLayout] = useState<'vertical' | 'horizontal'>('vertical');
-  const [isDownloading, setIsDownloading] = useState(false);
+  
+  // --- SHAPE & SIZE STATE ---
+  const [shape, setShape] = useState(SHAPES[0]);
+  const [iconSize, setIconSize] = useState(100);
+  const [padding, setPadding] = useState(64);
+  
+  // --- FULL COLOR CONTROL (HEX) ---
+  const [iconColor, setIconColor] = useState('#4f46e5');
+  const [textColor, setTextColor] = useState('#0f172a');
+  const [taglineColor, setTaglineColor] = useState('#64748b');
+  const [bgColor, setBgColor] = useState('#ffffff');
 
   const downloadLogo = async () => {
     if (!previewRef.current) return;
     setIsDownloading(true);
     try {
-      // High-res export for professional use
-      const dataUrl = await toPng(previewRef.current, { pixelRatio: 4, backgroundColor: '#ffffff' });
+      // Export with transparent background if shape is 'none'
+      const dataUrl = await toPng(previewRef.current, { 
+        pixelRatio: 4, // 4x resolution for super crisp industry-level export
+        backgroundColor: shape.id === 'none' ? 'rgba(0,0,0,0)' : bgColor,
+        style: { transform: 'scale(1)', margin: '0' } // Ensure no UI scale bugs
+      });
+      
       const link = document.createElement('a');
-      link.download = `${brandName.replace(/\s+/g, '_')}_Logo.png`;
+      link.download = `${brandName.replace(/\s+/g, '_')}_Pro_Logo.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -47,130 +71,168 @@ export default function LogoMaker() {
   const Icon = ICONS[selectedIcon];
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* CONFIGURATION SIDEBAR */}
-        <div className="lg:col-span-5 bg-white p-8 rounded-3xl shadow-xl border border-slate-200 h-fit sticky top-10">
-          <div className="flex items-center gap-2 mb-8">
-            <LayoutTemplate className="text-indigo-600" />
-            <h2 className="text-xl font-black uppercase tracking-widest text-slate-800">Logo Engine</h2>
+        {/* --- PRO CONTROLS SIDEBAR --- */}
+        <div className="lg:col-span-5 bg-white p-6 rounded-3xl shadow-xl border border-slate-200 h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar">
+          <div className="flex items-center justify-between mb-8 pb-4 border-b">
+            <div>
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight">Logo Pro Engine</h2>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Industry Level Studio</p>
+            </div>
+            <Layers className="text-indigo-600 w-8 h-8" />
           </div>
           
-          <div className="space-y-6">
-            {/* Text Inputs */}
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Brand Details</label>
-              <input 
-                value={brandName} 
-                onChange={(e) => setBrandName(e.target.value)}
-                className="w-full border-2 border-slate-200 focus:border-indigo-500 p-3 rounded-xl mb-3 font-bold outline-none transition-all"
-                placeholder="Enter Brand Name"
-              />
-              <input 
-                value={tagline} 
-                onChange={(e) => setTagline(e.target.value)}
-                className="w-full border-2 border-slate-200 focus:border-indigo-500 p-3 rounded-xl text-sm outline-none transition-all"
-                placeholder="Tagline (Optional)"
-              />
-            </div>
-
-            {/* Layout Toggle */}
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Layout Style</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => setLayout('vertical')} 
-                  className={`p-3 rounded-xl text-sm font-bold border-2 transition-all ${layout === 'vertical' ? 'border-indigo-600 text-indigo-600 bg-indigo-50' : 'border-slate-100 text-slate-500 hover:border-slate-200'}`}
-                >
-                  Vertical (Stacked)
-                </button>
-                <button 
-                  onClick={() => setLayout('horizontal')} 
-                  className={`p-3 rounded-xl text-sm font-bold border-2 transition-all ${layout === 'horizontal' ? 'border-indigo-600 text-indigo-600 bg-indigo-50' : 'border-slate-100 text-slate-500 hover:border-slate-200'}`}
-                >
-                  Horizontal (Inline)
-                </button>
+          <div className="space-y-8">
+            
+            {/* 1. BRAND TEXT */}
+            <section>
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3"><LayoutTemplate size={16}/> Brand Text</label>
+              <div className="space-y-3">
+                <input value={brandName} onChange={(e) => setBrandName(e.target.value)} className="w-full border-2 border-slate-200 focus:border-indigo-500 p-3 rounded-xl font-bold outline-none" placeholder="Brand Name" />
+                <input value={tagline} onChange={(e) => setTagline(e.target.value)} className="w-full border-2 border-slate-200 focus:border-indigo-500 p-3 rounded-xl text-sm outline-none" placeholder="Tagline (Optional)" />
               </div>
-            </div>
+            </section>
 
-            {/* Icon Selection */}
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Brand Icon</label>
-              <div className="grid grid-cols-4 gap-2">
+            {/* 2. ICON LIBRARY */}
+            <section>
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3"><Layers size={16}/> Icon Symbol</label>
+              <div className="grid grid-cols-6 gap-2">
                 {ICONS.map((I, i) => (
-                  <button 
-                    key={i} onClick={() => setSelectedIcon(i)} 
-                    className={`p-4 rounded-xl flex items-center justify-center border-2 transition-all ${selectedIcon === i ? 'border-indigo-600 bg-indigo-50 text-indigo-600' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200 hover:text-slate-600'}`}
-                  >
-                    <I size={24} strokeWidth={2.5}/>
+                  <button key={i} onClick={() => setSelectedIcon(i)} className={`aspect-square rounded-xl flex items-center justify-center border-2 transition-all ${selectedIcon === i ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-sm' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-300 hover:text-slate-700'}`}>
+                    <I size={24} strokeWidth={2}/>
                   </button>
                 ))}
               </div>
-            </div>
+            </section>
 
-            {/* Typography */}
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Typography</label>
-              <div className="flex flex-wrap gap-2">
-                {FONTS.map(f => (
-                  <button 
-                    key={f.name} onClick={() => setFont(f.class)} 
-                    className={`px-4 py-2 text-sm border-2 rounded-xl transition-all ${f.class} ${font === f.class ? 'border-indigo-600 bg-indigo-50 text-indigo-600 font-bold' : 'border-slate-100 text-slate-600 hover:border-slate-200'}`}
-                  >
-                    {f.name}
-                  </button>
-                ))}
+            {/* 3. SHAPE & LAYOUT */}
+            <section className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3"><Monitor size={16}/> Background Shape</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {SHAPES.map(s => (
+                    <button key={s.id} onClick={() => setShape(s)} className={`p-2 flex flex-col items-center gap-1 rounded-xl text-xs font-bold border-2 transition-all ${shape.id === s.id ? 'border-indigo-600 text-indigo-600 bg-indigo-50' : 'border-slate-100 text-slate-500 hover:bg-slate-50'}`}>
+                      <s.icon size={18}/> {s.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3"><SlidersHorizontal size={16}/> Layout Style</label>
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => setLayout('vertical')} className={`p-3 rounded-xl text-xs font-bold border-2 transition-all ${layout === 'vertical' ? 'border-indigo-600 text-indigo-600 bg-indigo-50' : 'border-slate-100 text-slate-500'}`}>Stacked (Vertical)</button>
+                  <button onClick={() => setLayout('horizontal')} className={`p-3 rounded-xl text-xs font-bold border-2 transition-all ${layout === 'horizontal' ? 'border-indigo-600 text-indigo-600 bg-indigo-50' : 'border-slate-100 text-slate-500'}`}>Inline (Horizontal)</button>
+                </div>
+              </div>
+            </section>
 
-            {/* Colors */}
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Brand Color</label>
-              <div className="flex gap-3">
-                {COLORS.map(c => (
-                  <button 
-                    key={c.id} onClick={() => setColor(c.hex)} 
-                    className={`w-10 h-10 rounded-full transition-all border-4 ${c.bg} ${color === c.hex ? 'border-slate-300 scale-110 shadow-md' : 'border-transparent opacity-80 hover:opacity-100'}`}
-                  />
-                ))}
+            {/* 4. PRO COLOR PICKERS */}
+            <section>
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3"><Palette size={16}/> Custom Colors</label>
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Icon Color</span>
+                  <input type="color" value={iconColor} onChange={(e) => setIconColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Brand Name</span>
+                  <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Tagline</span>
+                  <input type="color" value={taglineColor} onChange={(e) => setTaglineColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                </div>
+                {shape.id !== 'none' && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-600">Background</span>
+                    <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                  </div>
+                )}
               </div>
-            </div>
+            </section>
+
+            {/* 5. TYPOGRAPHY & SCALING */}
+            <section className="space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Typography</label>
+                <div className="flex gap-2">
+                  {FONTS.map(f => (
+                    <button key={f.name} onClick={() => setFont(f.class)} className={`flex-1 py-2 text-xs border-2 rounded-xl transition-all ${f.class} ${font === f.class ? 'border-indigo-600 bg-indigo-50 text-indigo-600 font-bold' : 'border-slate-100 text-slate-600 hover:border-slate-200'}`}>
+                      {f.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
+                <div>
+                  <div className="flex justify-between text-xs font-bold text-slate-600 mb-2"><span>Icon Size</span><span>{iconSize}px</span></div>
+                  <input type="range" min="40" max="200" value={iconSize} onChange={(e) => setIconSize(Number(e.target.value))} className="w-full accent-indigo-600" />
+                </div>
+                {shape.id !== 'none' && (
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-600 mb-2"><span>Container Padding</span><span>{padding}px</span></div>
+                    <input type="range" min="20" max="120" value={padding} onChange={(e) => setPadding(Number(e.target.value))} className="w-full accent-indigo-600" />
+                  </div>
+                )}
+              </div>
+            </section>
+
           </div>
 
-          <button onClick={downloadLogo} disabled={isDownloading} className="w-full mt-8 bg-indigo-600 hover:bg-indigo-700 transition-colors text-white py-4 rounded-xl font-black flex justify-center items-center gap-2 shadow-lg shadow-indigo-200">
-            {isDownloading ? <span className="animate-pulse">RENDERING...</span> : <><Download size={20}/> EXPORT HIGH-RES PNG</>}
+          <button onClick={downloadLogo} disabled={isDownloading} className="w-full mt-8 bg-slate-900 hover:bg-black transition-colors text-white py-4 rounded-xl font-black flex justify-center items-center gap-2 shadow-lg">
+            {isDownloading ? <span className="animate-pulse">EXPORTING HD...</span> : <><Download size={20}/> EXPORT HD LOGO</>}
           </button>
         </div>
 
-        {/* LIVE CANVAS AREA */}
-        <div className="lg:col-span-7 flex flex-col justify-center items-center bg-slate-200/50 rounded-3xl p-4 md:p-10 border-2 border-dashed border-slate-300 min-h-[600px] relative overflow-hidden">
+        {/* --- LIVE CANVAS AREA --- */}
+        <div className="lg:col-span-7 flex flex-col justify-center items-center bg-[url('https://transparenttextures.com/patterns/cubes.png')] bg-slate-200/50 rounded-3xl p-4 md:p-10 border border-slate-200 min-h-[600px] relative overflow-hidden">
           
-          <div className="absolute top-6 left-6 flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest">
-            <Layers size={16}/> Live Canvas
+          <div className="absolute top-6 left-6 flex items-center gap-2 text-slate-500 font-bold text-xs uppercase tracking-widest bg-white/80 px-3 py-1 rounded-full backdrop-blur-sm">
+            <Monitor size={14}/> Live Canvas
           </div>
 
-          {/* The Actual Exportable Logo Container */}
-          <div 
-            ref={previewRef} 
-            className={`bg-white p-16 flex items-center justify-center transition-all duration-300 ease-in-out ${layout === 'vertical' ? 'flex-col gap-6 w-[500px] h-[500px] rounded-3xl shadow-2xl' : 'flex-row gap-8 w-[700px] h-[300px] rounded-[3rem] shadow-2xl'}`}
-          >
-            {/* Logo Icon */}
-            <div className={`${color} transition-colors duration-300`}>
-              <Icon size={layout === 'vertical' ? 120 : 96} strokeWidth={2.5} />
-            </div>
+          {/* CHECKERBOARD BACKGROUND FOR TRANSPARENCY PREVIEW */}
+          <div className="relative shadow-2xl transition-all duration-300" style={{
+            borderRadius: shape.radius,
+            backgroundImage: shape.id === 'none' ? 'repeating-conic-gradient(#e2e8f0 0% 25%, #f8fafc 0% 50%)' : 'none',
+            backgroundSize: '20px 20px'
+          }}>
             
-            {/* Text Container */}
-            <div className={`flex flex-col justify-center ${layout === 'vertical' ? 'text-center' : 'text-left'}`}>
-              <h1 className={`${font} ${color} ${layout === 'vertical' ? 'text-5xl' : 'text-6xl'} font-black uppercase tracking-tight leading-none transition-colors duration-300`}>
-                {brandName || 'BRAND NAME'}
-              </h1>
-              {tagline && (
-                <p className={`${font} text-slate-500 font-semibold tracking-[0.3em] uppercase mt-3 ${layout === 'vertical' ? 'text-sm' : 'text-base'}`}>
-                  {tagline}
-                </p>
-              )}
+            {/* THE ACTUAL EXPORTABLE NODE */}
+            <div 
+              ref={previewRef} 
+              className={`flex items-center justify-center transition-all duration-300 overflow-hidden ${layout === 'vertical' ? 'flex-col gap-4 text-center' : 'flex-row gap-8 text-left'}`}
+              style={{
+                backgroundColor: shape.id === 'none' ? 'transparent' : bgColor,
+                borderRadius: shape.radius,
+                padding: shape.id === 'none' ? '20px' : `${padding}px`,
+                // Adding a minimum dimension to make it look substantial
+                minWidth: layout === 'horizontal' ? '500px' : 'auto',
+                minHeight: layout === 'vertical' ? 'auto' : 'auto',
+                aspectRatio: shape.id === 'circle' || shape.id === 'square' ? '1/1' : 'auto'
+              }}
+            >
+              {/* LOGO ICON */}
+              <div style={{ color: iconColor }} className="flex-shrink-0 transition-colors duration-300">
+                <Icon size={iconSize} strokeWidth={2.5} />
+              </div>
+              
+              {/* LOGO TEXT */}
+              <div className="flex flex-col justify-center">
+                <h1 className={`${font} font-black uppercase tracking-tight leading-none transition-colors duration-300 whitespace-nowrap`} style={{ color: textColor, fontSize: layout === 'vertical' ? `${iconSize * 0.4}px` : `${iconSize * 0.6}px` }}>
+                  {brandName || 'BRAND'}
+                </h1>
+                {tagline && (
+                  <p className={`${font} font-bold uppercase mt-2 whitespace-nowrap`} style={{ color: taglineColor, fontSize: layout === 'vertical' ? `${iconSize * 0.12}px` : `${iconSize * 0.16}px`, letterSpacing: '0.3em' }}>
+                    {tagline}
+                  </p>
+                )}
+              </div>
             </div>
+
           </div>
         </div>
       </div>
