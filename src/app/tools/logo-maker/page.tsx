@@ -4,11 +4,27 @@ import React, { useState, useRef } from 'react';
 import { 
   Download, Zap, Star, Truck, PartyPopper, Briefcase, Camera, Globe, 
   Building, LayoutTemplate, Layers, Palette, Circle, Square, 
-  Monitor, SlidersHorizontal, Image as ImageIcon, Flame, Droplet, Leaf, Hexagon
+  Monitor, SlidersHorizontal, Image as ImageIcon, Flame, Droplet, Leaf, Hexagon,
+  UploadCloud, Box, Shield, Anchor, Crown, Gem, ChartBar, PieChart, TrendingUp, 
+  Wallet, Landmark, Laptop, Smartphone, Cpu, Database, Code, Wifi, Cloud, Rocket, 
+  Package, MapPin, Navigation, Compass, Coffee, Utensils, Music, Ticket, Sun, Moon, 
+  Umbrella, Mic, Headphones, Heart, Smile, Activity, Aperture, Archive, AtSign, 
+  Award, Bell, Book, Bookmark, Calendar, Clipboard, Crosshair, Flag, Gift, Key, 
+  Link, Paperclip, PenTool, Printer, Scissors, ShoppingBag, ShoppingCart, Tag, 
+  Target, Terminal, Wrench, User, Video
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
-const ICONS = [Building, Truck, PartyPopper, Briefcase, Globe, Camera, Zap, Star, Flame, Droplet, Leaf, Hexagon];
+// 75+ Premium Icons for diverse industries
+const ICONS = [
+  Building, Truck, PartyPopper, Briefcase, Globe, Camera, Zap, Star, Flame, Droplet, Leaf, Hexagon,
+  Box, Shield, Anchor, Crown, Gem, ChartBar, PieChart, TrendingUp, Wallet, Landmark,
+  Laptop, Smartphone, Cpu, Database, Code, Wifi, Cloud, Rocket, Package, MapPin, Navigation, Compass,
+  Coffee, Utensils, Music, Ticket, Sun, Moon, Umbrella, Mic, Headphones, Heart, Smile,
+  Activity, Aperture, Archive, AtSign, Award, Bell, Book, Bookmark, Calendar, Clipboard,
+  Crosshair, Flag, Gift, Key, Link, Paperclip, PenTool, Printer, Scissors,
+  ShoppingBag, ShoppingCart, Tag, Target, Terminal, Wrench, User, Video
+];
 
 const FONTS = [
   { name: 'Modern Sans', class: 'font-sans' },
@@ -33,6 +49,7 @@ export default function LogoMaker() {
   
   // --- DESIGN STATE ---
   const [selectedIcon, setSelectedIcon] = useState(0);
+  const [customImage, setCustomImage] = useState<string | null>(null);
   const [font, setFont] = useState(FONTS[0].class);
   const [layout, setLayout] = useState<'vertical' | 'horizontal'>('vertical');
   
@@ -47,15 +64,26 @@ export default function LogoMaker() {
   const [taglineColor, setTaglineColor] = useState('#64748b');
   const [bgColor, setBgColor] = useState('#ffffff');
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const url = URL.createObjectURL(e.target.files[0]);
+      setCustomImage(url);
+    }
+  };
+
+  const handleIconSelect = (index: number) => {
+    setSelectedIcon(index);
+    setCustomImage(null); // Clear custom image if user selects a library icon
+  };
+
   const downloadLogo = async () => {
     if (!previewRef.current) return;
     setIsDownloading(true);
     try {
-      // Export with transparent background if shape is 'none'
       const dataUrl = await toPng(previewRef.current, { 
-        pixelRatio: 4, // 4x resolution for super crisp industry-level export
+        pixelRatio: 4, 
         backgroundColor: shape.id === 'none' ? 'rgba(0,0,0,0)' : bgColor,
-        style: { transform: 'scale(1)', margin: '0' } // Ensure no UI scale bugs
+        style: { transform: 'scale(1)', margin: '0' } 
       });
       
       const link = document.createElement('a');
@@ -95,12 +123,31 @@ export default function LogoMaker() {
               </div>
             </section>
 
-            {/* 2. ICON LIBRARY */}
+            {/* 2. ICON LIBRARY & UPLOAD */}
             <section>
-              <label className="flex items-center gap-2 text-sm font-bold text-slate-800 mb-3"><Layers size={16}/> Icon Symbol</label>
-              <div className="grid grid-cols-6 gap-2">
+              <div className="flex items-center justify-between mb-3">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-800"><Layers size={16}/> Icon Symbol</label>
+                <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">{ICONS.length}+ Icons</span>
+              </div>
+              
+              {/* UPLOAD CUSTOM ICON */}
+              <div className="mb-4">
+                <label className={`w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed font-bold rounded-xl cursor-pointer transition-all ${customImage ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-300 bg-slate-50 text-slate-500 hover:border-indigo-400 hover:text-indigo-500'}`}>
+                  <UploadCloud size={18} />
+                  {customImage ? 'Custom Icon Active (Click to Change)' : 'Upload Custom Icon (SVG/PNG)'}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+                {customImage && (
+                  <button onClick={() => setCustomImage(null)} className="text-xs text-red-500 font-bold mt-2 text-center w-full hover:underline">
+                    ✕ Remove Custom Icon & Use Library
+                  </button>
+                )}
+              </div>
+
+              {/* SCROLLABLE ICON GRID */}
+              <div className={`grid grid-cols-6 gap-2 max-h-56 overflow-y-auto p-2 border border-slate-100 rounded-xl bg-slate-50 shadow-inner ${customImage ? 'opacity-50 pointer-events-none' : ''}`}>
                 {ICONS.map((I, i) => (
-                  <button key={i} onClick={() => setSelectedIcon(i)} className={`aspect-square rounded-xl flex items-center justify-center border-2 transition-all ${selectedIcon === i ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-sm' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-300 hover:text-slate-700'}`}>
+                  <button key={i} onClick={() => handleIconSelect(i)} className={`aspect-square rounded-xl flex items-center justify-center border-2 transition-all ${selectedIcon === i ? 'border-indigo-600 bg-white text-indigo-600 shadow-sm' : 'border-transparent bg-white text-slate-400 hover:border-slate-200 hover:text-slate-700'}`}>
                     <I size={24} strokeWidth={2}/>
                   </button>
                 ))}
@@ -134,7 +181,7 @@ export default function LogoMaker() {
               <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-600">Icon Color</span>
-                  <input type="color" value={iconColor} onChange={(e) => setIconColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+                  <input type="color" value={iconColor} onChange={(e) => setIconColor(e.target.value)} disabled={!!customImage} className={`w-8 h-8 rounded cursor-pointer border-0 p-0 ${customImage ? 'opacity-30' : ''}`} title={customImage ? 'Color disabled for custom images' : ''} />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-600">Brand Name</span>
@@ -168,13 +215,13 @@ export default function LogoMaker() {
               
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
                 <div>
-                  <div className="flex justify-between text-xs font-bold text-slate-600 mb-2"><span>Icon Size</span><span>{iconSize}px</span></div>
-                  <input type="range" min="40" max="200" value={iconSize} onChange={(e) => setIconSize(Number(e.target.value))} className="w-full accent-indigo-600" />
+                  <div className="flex justify-between text-xs font-bold text-slate-600 mb-2"><span>Icon / Logo Size</span><span>{iconSize}px</span></div>
+                  <input type="range" min="40" max="250" value={iconSize} onChange={(e) => setIconSize(Number(e.target.value))} className="w-full accent-indigo-600" />
                 </div>
                 {shape.id !== 'none' && (
                   <div>
                     <div className="flex justify-between text-xs font-bold text-slate-600 mb-2"><span>Container Padding</span><span>{padding}px</span></div>
-                    <input type="range" min="20" max="120" value={padding} onChange={(e) => setPadding(Number(e.target.value))} className="w-full accent-indigo-600" />
+                    <input type="range" min="20" max="150" value={padding} onChange={(e) => setPadding(Number(e.target.value))} className="w-full accent-indigo-600" />
                   </div>
                 )}
               </div>
@@ -194,14 +241,13 @@ export default function LogoMaker() {
             <Monitor size={14}/> Live Canvas
           </div>
 
-          {/* CHECKERBOARD BACKGROUND FOR TRANSPARENCY PREVIEW */}
           <div className="relative shadow-2xl transition-all duration-300" style={{
             borderRadius: shape.radius,
             backgroundImage: shape.id === 'none' ? 'repeating-conic-gradient(#e2e8f0 0% 25%, #f8fafc 0% 50%)' : 'none',
             backgroundSize: '20px 20px'
           }}>
             
-            {/* THE ACTUAL EXPORTABLE NODE */}
+            {/* THE EXPORTABLE NODE */}
             <div 
               ref={previewRef} 
               className={`flex items-center justify-center transition-all duration-300 overflow-hidden ${layout === 'vertical' ? 'flex-col gap-4 text-center' : 'flex-row gap-8 text-left'}`}
@@ -209,15 +255,24 @@ export default function LogoMaker() {
                 backgroundColor: shape.id === 'none' ? 'transparent' : bgColor,
                 borderRadius: shape.radius,
                 padding: shape.id === 'none' ? '20px' : `${padding}px`,
-                // Adding a minimum dimension to make it look substantial
                 minWidth: layout === 'horizontal' ? '500px' : 'auto',
                 minHeight: layout === 'vertical' ? 'auto' : 'auto',
                 aspectRatio: shape.id === 'circle' || shape.id === 'square' ? '1/1' : 'auto'
               }}
             >
-              {/* LOGO ICON */}
-              <div style={{ color: iconColor }} className="flex-shrink-0 transition-colors duration-300">
-                <Icon size={iconSize} strokeWidth={2.5} />
+              {/* DYNAMIC ICON / IMAGE RENDERER */}
+              <div className="flex-shrink-0 transition-all duration-300 flex items-center justify-center">
+                {customImage ? (
+                  <img 
+                    src={customImage} 
+                    alt="Custom Logo" 
+                    style={{ width: iconSize, height: iconSize, objectFit: 'contain' }} 
+                  />
+                ) : (
+                  <div style={{ color: iconColor }}>
+                    <Icon size={iconSize} strokeWidth={2.5} />
+                  </div>
+                )}
               </div>
               
               {/* LOGO TEXT */}
