@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Download, FileText, Image as ImageIcon, School, User, BookOpen } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { Download, FileText, Image as ImageIcon, School, User, BookOpen, Loader2 } from 'lucide-react';
+import { toPng, toJpeg } from 'html-to-image';
 import jsPDF from 'jspdf';
 
 export default function AssignmentCoverPageMaker() {
   const previewRef = useRef<HTMLDivElement>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isDownloadingJpg, setIsDownloadingJpg] = useState(false);
 
   // Form States
   const [formData, setFormData] = useState({
@@ -36,26 +38,45 @@ export default function AssignmentCoverPageMaker() {
     }
   };
 
-  // Download PDF Function
+  // 🔥 MODERN PDF DOWNLOADER (Using html-to-image)
   const downloadPDF = async () => {
     if (!previewRef.current) return;
-    const canvas = await html2canvas(previewRef.current, { scale: 2 });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`Assignment-Cover-${formData.studentName}.pdf`);
+    setIsDownloadingPdf(true);
+    try {
+      // toPng easily handles modern Tailwind lab() colors
+      const dataUrl = await toPng(previewRef.current, { cacheBust: true, pixelRatio: 2 });
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (previewRef.current.offsetHeight * pdfWidth) / previewRef.current.offsetWidth;
+      
+      pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Assignment_Cover_${formData.studentName.replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+      console.error("PDF Generation Error:", error);
+      alert("Oops! Download failed. Please try again.");
+    } finally {
+      setIsDownloadingPdf(false);
+    }
   };
 
-  // Download Image Function
+  // 🔥 MODERN JPG DOWNLOADER (Using html-to-image)
   const downloadImage = async () => {
     if (!previewRef.current) return;
-    const canvas = await html2canvas(previewRef.current, { scale: 2 });
-    const link = document.createElement('a');
-    link.download = `Assignment-Cover-${formData.studentName}.jpg`;
-    link.href = canvas.toDataURL('image/jpeg', 0.9);
-    link.click();
+    setIsDownloadingJpg(true);
+    try {
+      const dataUrl = await toJpeg(previewRef.current, { cacheBust: true, pixelRatio: 2, quality: 0.95 });
+      
+      const link = document.createElement('a');
+      link.download = `Assignment_Cover_${formData.studentName.replace(/\s+/g, '_')}.jpg`;
+      link.href = dataUrl;
+      link.click();
+    } catch (error) {
+      console.error("JPG Generation Error:", error);
+      alert("Oops! Download failed. Please try again.");
+    } finally {
+      setIsDownloadingJpg(false);
+    }
   };
 
   return (
@@ -67,146 +88,153 @@ export default function AssignmentCoverPageMaker() {
             <FileText className="w-10 h-10 text-blue-600" />
             Assignment Cover Page Maker
           </h1>
-          <p className="text-slate-500 mt-2 font-medium">Create professional cover pages for your college/school assignments in seconds.</p>
+          <p className="text-slate-500 mt-2 font-medium">Create professional A4 cover pages for college/school in seconds.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* ================= LEFT COLUMN: FORM ================= */}
-          <div className="lg:col-span-5 bg-white rounded-3xl shadow-xl border border-slate-200 p-6 space-y-6">
+          <div className="lg:col-span-5 bg-white rounded-3xl shadow-xl border border-slate-200 p-6 space-y-6 flex flex-col">
             <h3 className="font-bold text-xl text-slate-800 border-b pb-4 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-blue-600" /> Enter Details
             </h3>
 
-            {/* University Details */}
-            <div className="space-y-4">
+            <div className="space-y-4 flex-grow">
+              {/* University Details */}
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">College/University Name</label>
-                <input type="text" name="collegeName" value={formData.collegeName} onChange={handleInputChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 focus:border-blue-600 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">College Address</label>
-                <input type="text" name="collegeAddress" value={formData.collegeAddress} onChange={handleInputChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 focus:border-blue-600 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Upload College Logo</label>
-                <input type="file" accept="image/*" onChange={handleLogoUpload} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-              </div>
-            </div>
-
-            {/* Assignment Details */}
-            <div className="space-y-4 pt-4 border-t">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Assignment Title / Topic</label>
-                <input type="text" name="assignmentTitle" value={formData.assignmentTitle} onChange={handleInputChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 focus:border-blue-600 focus:outline-none" />
+                <input type="text" name="collegeName" value={formData.collegeName} onChange={handleInputChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 focus:border-blue-600 focus:outline-none transition-colors" />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Subject Name</label>
-                  <input type="text" name="subjectName" value={formData.subjectName} onChange={handleInputChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 focus:border-blue-600 focus:outline-none" />
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Upload College Logo (Optional)</label>
+                  <input type="file" accept="image/*" onChange={handleLogoUpload} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Subject Code</label>
-                  <input type="text" name="subjectCode" value={formData.subjectCode} onChange={handleInputChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 focus:border-blue-600 focus:outline-none" />
+              </div>
+
+              {/* Assignment Details */}
+              <div className="pt-4 border-t border-slate-100">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Assignment Topic / Title</label>
+                <input type="text" name="assignmentTitle" value={formData.assignmentTitle} onChange={handleInputChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 mb-4 focus:border-blue-600 focus:outline-none transition-colors" />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Subject Name</label>
+                    <input type="text" name="subjectName" value={formData.subjectName} onChange={handleInputChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 focus:border-blue-600 focus:outline-none transition-colors" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Subject Code</label>
+                    <input type="text" name="subjectCode" value={formData.subjectCode} onChange={handleInputChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 focus:border-blue-600 focus:outline-none transition-colors" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Student & Teacher Details */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <h4 className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-1"><User className="w-3 h-3"/> Submitted To</h4>
+                  <input type="text" name="submittedToName" placeholder="Teacher Name" value={formData.submittedToName} onChange={handleInputChange} className="w-full text-sm border-2 border-slate-200 rounded-lg px-3 py-2 mb-2 focus:border-blue-600 focus:outline-none" />
+                  <input type="text" name="submittedToDesignation" placeholder="Designation" value={formData.submittedToDesignation} onChange={handleInputChange} className="w-full text-sm border-2 border-slate-200 rounded-lg px-3 py-2 focus:border-blue-600 focus:outline-none" />
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <h4 className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-1"><User className="w-3 h-3"/> Submitted By</h4>
+                  <input type="text" name="studentName" placeholder="Your Name" value={formData.studentName} onChange={handleInputChange} className="w-full text-sm border-2 border-slate-200 rounded-lg px-3 py-2 mb-2 focus:border-blue-600 focus:outline-none" />
+                  <input type="text" name="rollNo" placeholder="Roll No" value={formData.rollNo} onChange={handleInputChange} className="w-full text-sm border-2 border-slate-200 rounded-lg px-3 py-2 mb-2 focus:border-blue-600 focus:outline-none" />
+                  <input type="text" name="course" placeholder="Course/Class" value={formData.course} onChange={handleInputChange} className="w-full text-sm border-2 border-slate-200 rounded-lg px-3 py-2 focus:border-blue-600 focus:outline-none" />
                 </div>
               </div>
             </div>
 
-            {/* Student & Teacher Details */}
-            <div className="space-y-4 pt-4 border-t">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <h4 className="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1"><User className="w-3 h-3"/> Submitted To</h4>
-                  <input type="text" name="submittedToName" placeholder="Teacher Name" value={formData.submittedToName} onChange={handleInputChange} className="w-full text-sm border-2 border-slate-200 rounded-lg px-2 py-1 mb-2 focus:border-blue-600 focus:outline-none" />
-                  <input type="text" name="submittedToDesignation" placeholder="Designation" value={formData.submittedToDesignation} onChange={handleInputChange} className="w-full text-sm border-2 border-slate-200 rounded-lg px-2 py-1 focus:border-blue-600 focus:outline-none" />
-                </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <h4 className="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1"><User className="w-3 h-3"/> Submitted By</h4>
-                  <input type="text" name="studentName" placeholder="Your Name" value={formData.studentName} onChange={handleInputChange} className="w-full text-sm border-2 border-slate-200 rounded-lg px-2 py-1 mb-2 focus:border-blue-600 focus:outline-none" />
-                  <input type="text" name="rollNo" placeholder="Roll No" value={formData.rollNo} onChange={handleInputChange} className="w-full text-sm border-2 border-slate-200 rounded-lg px-2 py-1 mb-2 focus:border-blue-600 focus:outline-none" />
-                  <input type="text" name="course" placeholder="Course/Class" value={formData.course} onChange={handleInputChange} className="w-full text-sm border-2 border-slate-200 rounded-lg px-2 py-1 focus:border-blue-600 focus:outline-none" />
-                </div>
-              </div>
-            </div>
-
-            {/* Download Buttons */}
-            <div className="pt-6 grid grid-cols-2 gap-4">
-              <button onClick={downloadImage} className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg transition-transform hover:-translate-y-1 flex justify-center items-center gap-2">
-                <ImageIcon className="w-5 h-5" /> Save as JPG
+            {/* DOWNLOAD BUTTONS */}
+            <div className="pt-4 grid grid-cols-2 gap-4 border-t border-slate-200 mt-auto">
+              <button 
+                onClick={downloadImage} 
+                disabled={isDownloadingJpg || isDownloadingPdf}
+                className="w-full bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-bold py-4 rounded-xl shadow-lg transition-transform hover:-translate-y-1 flex flex-col justify-center items-center gap-1"
+              >
+                {isDownloadingJpg ? <Loader2 className="w-6 h-6 animate-spin" /> : <ImageIcon className="w-6 h-6" />}
+                <span>A4 HD JPG</span>
+                <span className="text-[10px] opacity-70 font-normal">Trending for WhatsApp</span>
               </button>
-              <button onClick={downloadPDF} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition-transform hover:-translate-y-1 flex justify-center items-center gap-2">
-                <Download className="w-5 h-5" /> Download PDF
+              
+              <button 
+                onClick={downloadPDF} 
+                disabled={isDownloadingJpg || isDownloadingPdf}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-4 rounded-xl shadow-lg transition-transform hover:-translate-y-1 flex flex-col justify-center items-center gap-1"
+              >
+                {isDownloadingPdf ? <Loader2 className="w-6 h-6 animate-spin" /> : <Download className="w-6 h-6" />}
+                <span>A4 PDF</span>
+                <span className="text-[10px] opacity-70 font-normal">Best for Print</span>
               </button>
             </div>
           </div>
 
           {/* ================= RIGHT COLUMN: LIVE PREVIEW ================= */}
-          <div className="lg:col-span-7 flex justify-center bg-slate-200 rounded-3xl p-4 md:p-8 overflow-hidden shadow-inner">
+          <div className="lg:col-span-7 flex justify-center bg-slate-200 rounded-3xl p-4 md:p-8 overflow-x-auto shadow-inner">
             
             {/* A4 Size Canvas Container */}
-            <div className="w-full max-w-[700px] overflow-auto flex justify-center">
+            <div className="flex-shrink-0" style={{ width: '794px', transform: 'scale(0.85)', transformOrigin: 'top center' }}>
               <div 
                 ref={previewRef} 
-                className="bg-white w-[210mm] min-h-[297mm] p-10 relative flex flex-col items-center justify-between shadow-2xl"
-                style={{ aspectRatio: '1 / 1.414' }} // Standard A4 Aspect Ratio
+                className="bg-white w-[794px] h-[1123px] p-12 relative flex flex-col items-center justify-between shadow-2xl mx-auto"
               >
                 {/* Border Layout */}
-                <div className="absolute top-4 bottom-4 left-4 right-4 border-4 border-slate-800 p-2">
-                  <div className="w-full h-full border-2 border-slate-800 p-8 flex flex-col items-center justify-between text-center">
+                <div className="absolute top-6 bottom-6 left-6 right-6 border-[3px] border-slate-900 p-2">
+                  <div className="w-full h-full border border-slate-900 p-10 flex flex-col items-center justify-between text-center bg-white">
                     
                     {/* Header */}
                     <div className="w-full flex flex-col items-center space-y-4">
-                      <h1 className="text-3xl font-black font-serif text-slate-900 uppercase tracking-widest leading-tight">
+                      <h1 className="text-4xl font-black font-serif text-slate-900 uppercase tracking-widest leading-tight">
                         {formData.collegeName || 'COLLEGE NAME'}
                       </h1>
-                      <p className="text-md font-semibold text-slate-700 uppercase">{formData.collegeAddress}</p>
+                      <p className="text-xl font-semibold text-slate-700 uppercase">{formData.collegeAddress}</p>
                       
                       {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" className="w-32 h-32 object-contain mt-6" />
+                        <img src={logoUrl} alt="Logo" className="w-40 h-40 object-contain mt-8" crossOrigin="anonymous" />
                       ) : (
-                        <div className="w-32 h-32 border-2 border-dashed border-slate-300 flex items-center justify-center rounded-full mt-6 opacity-50">
-                          <School className="w-12 h-12 text-slate-400" />
+                        <div className="w-40 h-40 border-2 border-dashed border-slate-300 flex items-center justify-center rounded-full mt-8 opacity-50 bg-white">
+                          <School className="w-16 h-16 text-slate-400" />
                         </div>
                       )}
                     </div>
 
                     {/* Title */}
-                    <div className="w-full my-10 space-y-4">
-                      <h2 className="text-xl font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 inline-block pb-2">
+                    <div className="w-full my-12 space-y-6">
+                      <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-[0.3em] border-b-2 border-slate-800 inline-block pb-3">
                         Assignment On
                       </h2>
-                      <h3 className="text-2xl font-black text-slate-900 uppercase mt-4">
+                      <h3 className="text-3xl font-black text-slate-900 uppercase mt-6 leading-relaxed">
                         "{formData.assignmentTitle || 'ASSIGNMENT TITLE'}"
                       </h3>
-                      <div className="text-lg font-bold text-slate-700 mt-6">
+                      <div className="text-xl font-bold text-slate-700 mt-8">
                         Subject: {formData.subjectName} ({formData.subjectCode})
                       </div>
                     </div>
 
                     {/* Submission Details */}
-                    <div className="w-full grid grid-cols-2 gap-10 mt-10 text-left">
+                    <div className="w-full grid grid-cols-2 gap-12 mt-auto mb-16 text-left">
                       <div>
-                        <h4 className="text-lg font-bold text-slate-800 uppercase border-b border-slate-400 inline-block mb-3">Submitted To:</h4>
-                        <p className="text-xl font-bold text-slate-900">{formData.submittedToName}</p>
-                        <p className="text-md font-medium text-slate-700">{formData.submittedToDesignation}</p>
+                        <h4 className="text-xl font-bold text-slate-800 uppercase border-b-2 border-slate-400 inline-block mb-4">Submitted To:</h4>
+                        <p className="text-2xl font-black text-slate-900">{formData.submittedToName}</p>
+                        <p className="text-lg font-medium text-slate-700 mt-1">{formData.submittedToDesignation}</p>
                       </div>
                       <div className="text-right">
-                        <h4 className="text-lg font-bold text-slate-800 uppercase border-b border-slate-400 inline-block mb-3">Submitted By:</h4>
-                        <p className="text-xl font-bold text-slate-900">{formData.studentName}</p>
-                        <p className="text-md font-medium text-slate-700">Roll No: {formData.rollNo}</p>
-                        <p className="text-md font-medium text-slate-700">{formData.course}</p>
+                        <h4 className="text-xl font-bold text-slate-800 uppercase border-b-2 border-slate-400 inline-block mb-4">Submitted By:</h4>
+                        <p className="text-2xl font-black text-slate-900">{formData.studentName}</p>
+                        <p className="text-lg font-medium text-slate-700 mt-1">Roll No: {formData.rollNo}</p>
+                        <p className="text-lg font-medium text-slate-700">{formData.course}</p>
                       </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="w-full mt-auto pt-10 flex justify-between items-end border-t-2 border-slate-800">
+                    <div className="w-full pt-8 flex justify-between items-end border-t-2 border-slate-900">
                       <div className="text-left">
-                        <p className="text-md font-bold text-slate-800">Date of Submission:</p>
-                        <p className="text-lg font-semibold text-slate-900">{formData.date}</p>
+                        <p className="text-lg font-bold text-slate-800">Date of Submission:</p>
+                        <p className="text-xl font-semibold text-slate-900 mt-1">{formData.date}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-md font-bold text-slate-800 mb-6">Signature</p>
-                        <div className="w-40 border-b-2 border-slate-800"></div>
+                        <p className="text-lg font-bold text-slate-800 mb-8">Signature</p>
+                        <div className="w-48 border-b-2 border-slate-900"></div>
                       </div>
                     </div>
 
