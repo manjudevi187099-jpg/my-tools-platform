@@ -6,9 +6,16 @@ import { useParams } from 'next/navigation';
 
 // 🌟 Config aur Supabase Imports
 import { toolsRegistry, ToolMetadata } from '../../../../config/siteConfig';
-import { supabase } from '../../../lib/supabase'; // Apna supabase path check kar lein
+import { supabase } from '../../../lib/supabase';
 
+// 🔥 MASTER TOOL COMPONENTS REGISTRY
+// ⚠️ DHYAN DEIN: Jo tool aapne abhi tak nahi banaya hai, uske aage // laga dein
 const ToolComponents: Record<string, React.ElementType> = {
+  
+  // ==========================================
+  // 📁 CATEGORY 1: PURANE TOOLS (src/tools/ folder wale)
+  // Path: ../../../tools/
+  // ==========================================
   "pdf-merger": dynamic(() => import('../../../tools/pdf-merger'), { ssr: false }),
   "image-to-pdf": dynamic(() => import('../../../tools/image-to-pdf'), { ssr: false }),
   "split-pdf": dynamic(() => import('../../../tools/split-pdf'), { ssr: false }),
@@ -41,8 +48,42 @@ const ToolComponents: Record<string, React.ElementType> = {
   "p2p-share": dynamic(() => import('../../../tools/p2p-share'), { ssr: false }),
   "timer": dynamic(() => import('../../../tools/timer'), { ssr: false }),
   "walkie-talkie": dynamic(() => import('../../../tools/walkie-talkie'), { ssr: false }),
+
+
+  // ==========================================
+  // 📁 CATEGORY 2: NAYE TOOLS (src/app/tools/ folder wale)
+  // Path: ../
+  // ==========================================
   "pro-suit-changer": dynamic(() => import('../pro-suit-changer/page'), { ssr: false }),
   "remove-bg": dynamic(() => import('../remove-bg/page'), { ssr: false }),
+  
+  // ⚠️ INME SE JO FILE ABHI NAHI BANI HAI, UNKE AAGE // LAGA DEIN ⚠️
+  "pdf-to-word": dynamic(() => import('../pdf-to-word/page'), { ssr: false }),
+  "pdf-to-excel": dynamic(() => import('../pdf-to-excel/page'), { ssr: false }),
+  "photo-studio": dynamic(() => import('../photo-studio/page'), { ssr: false }),
+  "photo-enhancer": dynamic(() => import('../photo-enhancer/page'), { ssr: false }),
+  "logo-maker": dynamic(() => import('../logo-maker/page'), { ssr: false }),
+  
+  // 🔴 YAHAN UN 5 FOLDERS KE NAAM FIX KIYE GAYE HAIN 🔴
+  "event-invite": dynamic(() => import('../invitation-maker/page'), { ssr: false }),
+  "assignment-cover": dynamic(() => import('../assignment-cover-page-maker/page'), { ssr: false }),
+  "id-card": dynamic(() => import('../id-card-generator/page'), { ssr: false }),
+  "bonafide-cert": dynamic(() => import('../bonafide-certificate-generator/page'), { ssr: false }),
+  "image-masker": dynamic(() => import('../masking-tool/page'), { ssr: false }),
+  
+  "handwriting-pdf": dynamic(() => import('../handwriting-pdf-generator/page'), { ssr: false }),
+  "tc-generator": dynamic(() => import('../tc-generator/page'), { ssr: false }),
+  "marksheet-designer": dynamic(() => import('../marksheet-designer/page'), { ssr: false }),
+  "admit-card": dynamic(() => import('../admit-card-designer/page'), { ssr: false }),
+  "affidavit-gen": dynamic(() => import('../affidavit-generator/page'), { ssr: false }),
+  "receipt-maker": dynamic(() => import('../receipt-generator/page'), { ssr: false }),
+  "cover-letter": dynamic(() => import('../cover-letter-generator/page'), { ssr: false }),
+  "quotation-maker": dynamic(() => import('../quotation-maker/page'), { ssr: false }),
+  "letterhead-maker": dynamic(() => import('../letterhead-maker/page'), { ssr: false }),
+  "visiting-card": dynamic(() => import('../visiting-card-maker/page'), { ssr: false }),
+  "business-profile": dynamic(() => import('../business-profile-generator/page'), { ssr: false }),
+  "salary-slip": dynamic(() => import('../salary-slip/page'), { ssr: false }),
+  "email-signature": dynamic(() => import('../email-signature/page'), { ssr: false })
 };
 
 export default function ToolPage() {
@@ -58,7 +99,7 @@ export default function ToolPage() {
       if (!slug) return;
       
       try {
-        // 1. Purana logic: Total views me +1 karna
+        // 1. Total views me +1 karna
         const { data } = await supabase
           .from('tool_analytics')
           .select('total_views')
@@ -132,7 +173,10 @@ export default function ToolPage() {
     <main className="min-h-screen bg-slate-50 pb-12">
       {/* TOOL HEADER */}
       <div className="bg-white border-b py-10 px-4 text-center shadow-sm">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">{toolMeta.name}</h1>
+        <div className="flex justify-center items-center gap-3 mb-3">
+          <span className="text-4xl">{toolMeta.icon}</span>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">{toolMeta.name}</h1>
+        </div>
         <p className="text-slate-500 mt-3 max-w-2xl mx-auto text-sm md:text-base">
           {toolMeta.description}
         </p>

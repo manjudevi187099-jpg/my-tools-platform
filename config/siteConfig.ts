@@ -4,18 +4,20 @@ export interface ToolMetadata {
   category: "pdf" | "dev" | "utility" | "design" | "business";
   keywords: string[];
   isActive: boolean;
-  icon: string; // 🔥 NAYA: Icon property add ki
+  icon: string;
 }
 
 export const toolsRegistry: Record<string, ToolMetadata> = {
+  // ==========================================
   // --- PDF TOOLS ---
+  // ==========================================
   "pdf-merger": {
     name: "Professional PDF Merger",
     description: "Merge multiple PDF files into a single, high-quality document securely.",
     category: "pdf",
     keywords: ["pdf merger", "combine pdf", "join pdf tools"],
     isActive: true,
-    icon: "🔗", // 🔥 NAYA
+    icon: "🔗",
   },
   "split-pdf": {
     name: "Split PDF Pro",
@@ -23,7 +25,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["split pdf", "extract pages", "cut pdf"],
     isActive: true,
-    icon: "✂️", // 🔥 NAYA
+    icon: "✂️",
   },
   "compress-pdf": {
     name: "PDF Compressor Engine",
@@ -31,7 +33,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["compress pdf", "reduce pdf size", "shrink pdf"],
     isActive: true,
-    icon: "🗜️", // 🔥 NAYA
+    icon: "🗜️",
   },
   "unlock-pdf": {
     name: "Unlock PDF",
@@ -39,7 +41,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["unlock pdf", "remove password", "decrypt pdf"],
     isActive: true,
-    icon: "🔓", // 🔥 NAYA
+    icon: "🔓",
   },
   "protect-pdf": {
     name: "Protect PDF",
@@ -47,7 +49,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["protect pdf", "encrypt pdf", "add password pdf"],
     isActive: true,
-    icon: "🔒", // 🔥 NAYA
+    icon: "🔒",
   },
   "image-to-pdf": {
     name: "Image to PDF",
@@ -55,7 +57,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["image to pdf", "jpg to pdf", "png to pdf", "convert images"],
     isActive: true,
-    icon: "🖼️", // 🔥 NAYA
+    icon: "🖼️",
   },
   "watermark-pdf": {
     name: "Add PDF Watermark",
@@ -63,7 +65,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["watermark pdf", "add text watermark", "secure pdf"],
     isActive: true,
-    icon: "©️", // 🔥 NAYA
+    icon: "©️",
   },
   "invert-pdf": {
     name: "Invert PDF Colors",
@@ -71,7 +73,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["invert pdf", "white background", "pdf color fix"],
     isActive: true,
-    icon: "☯️", // 🔥 NAYA
+    icon: "☯️",
   },
   "remove-watermark": {
     name: "Remove PDF Watermark",
@@ -79,7 +81,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["remove watermark", "delete watermark"],
     isActive: true,
-    icon: "🧹", // 🔥 NAYA
+    icon: "🧹",
   }, 
   "pdf-stamper": {
     name: "PDF Stamper",
@@ -87,7 +89,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["pdf stamper", "add stamp", "verified stamp", "custom pdf stamp"],
     isActive: true,
-    icon: "💮", // 🔥 NAYA
+    icon: "💮",
   },
   "pdf-editor": {
     name: "Advanced PDF Editor",
@@ -95,7 +97,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["pdf editor", "whiteout pdf", "add text to pdf", "edit pdf online"],
     isActive: true,
-    icon: "✍️", // 🔥 NAYA
+    icon: "✍️",
   },
   "pdf-to-word": {
     name: "PDF to Word Converter",
@@ -103,7 +105,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["pdf to word", "pdf to doc", "convert pdf to word"],
     isActive: true,
-    icon: "📝", // 🔥 NAYA
+    icon: "📝",
   },
   "pdf-to-excel": {
     name: "PDF to Excel",
@@ -111,17 +113,19 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "pdf",
     keywords: ["pdf to excel", "convert pdf to excel", "pdf to xlsx"],
     isActive: true,
-    icon: "📊", // 🔥 NAYA
+    icon: "📊",
   },
 
+  // ==========================================
   // --- UTILITY / IMAGE TOOLS ---
+  // ==========================================
   "add-name-date": {
     name: "Add Name & Date",
     description: "Apni photo par naam aur date add karein taaki wo form filling ke liye ready rahe.",
     category: "utility",
     keywords: ["add name on photo", "photo editor", "date on photo", "form photo"],
     isActive: true,
-    icon: "📅", // 🔥 NAYA
+    icon: "📅",
   },
   "photo-signature-joiner": {
     name: "Photo Signature Joiner",
@@ -129,7 +133,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["join photo signature", "merge image", "exam form photo"],
     isActive: true,
-    icon: "🖇️", // 🔥 NAYA
+    icon: "🖇️",
   },
   "english-to-hindi-typing": {
     name: "English to Hindi Typing",
@@ -137,7 +141,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["english to hindi typing", "hindi transliteration", "hindi typing online"],
     isActive: true,
-    icon: "🔠", // 🔥 NAYA
+    icon: "🔠",
   },
   "age-calculator": {
     name: "Age Calculator",
@@ -145,7 +149,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["age calculator", "calculate age", "dob calculator", "form age"],
     isActive: true,
-    icon: "🎂", // 🔥 NAYA
+    icon: "🎂",
   },
   "signature-on-photo": {
     name: "Signature On Photo",
@@ -153,7 +157,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["signature on photo", "overlay signature", "watermark signature", "self attest"],
     isActive: true,
-    icon: "🖋️", // 🔥 NAYA
+    icon: "🖋️",
   },
   "image-resizer": {
     name: "Photo & Signature Resizer",
@@ -161,7 +165,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["image resizer", "photo resizer", "signature resizer", "resize to cm", "resize pixels"],
     isActive: true,
-    icon: "📐", // 🔥 NAYA
+    icon: "📐",
   },
   "smart-card-maker": {
     name: "Smart Card A4 PSD Maker",
@@ -169,7 +173,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["id card maker", "aadhaar print", "pan card print", "a4 smart card", "cr80 print format"],
     isActive: true,
-    icon: "🪪", // 🔥 NAYA
+    icon: "🪪",
   },
   "omr-sheet-maker": {
     name: "A4 OMR Sheet Generator",
@@ -177,7 +181,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["omr maker", "omr sheet generator", "mock test sheet", "print omr a4", "bubble sheet"],
     isActive: true,
-    icon: "✅", // 🔥 NAYA
+    icon: "✅",
   },
   "typing-speed-test": {
     name: "Typing Speed Test Engine",
@@ -185,7 +189,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["typing test", "wpm checker", "typing speed calculator", "ssc typing test", "english typing"],
     isActive: true,
-    icon: "⌨️", // 🔥 NAYA
+    icon: "⌨️",
   },
   "resume-builder": {
     name: "Smart Resume / CV Builder",
@@ -193,7 +197,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["resume maker", "cv builder", "pdf resume", "job resume generator", "ats friendly cv"],
     isActive: true,
-    icon: "📄", // 🔥 NAYA
+    icon: "📄",
   },
   "biodata-maker": {
     name: "Marriage Biodata Maker",
@@ -201,7 +205,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["biodata maker", "marriage profile", "shaadi biodata", "matrimonial profile generator"],
     isActive: true,
-    icon: "💍", // 🔥 NAYA
+    icon: "💍",
   },
   "muslim-biodata-maker": {
     name: "Muslim Biodata Maker",
@@ -209,7 +213,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["muslim biodata", "islamic marriage profile", "shaadi biodata", "matrimonial profile generator"],
     isActive: true,
-    icon: "🕌", // 🔥 NAYA
+    icon: "🕌",
   },
   "qr-generator": {
     name: "Mega QR Studio",
@@ -217,7 +221,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["qr generator", "qr code maker", "wifi qr", "vcard qr", "mega qr studio", "barcode maker"],
     isActive: true,
-    icon: "📱", // 🔥 NAYA
+    icon: "📱",
   },
   "p2p-share": {
     name: "P2P Secure Share",
@@ -225,7 +229,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["p2p share", "file transfer", "send large files", "direct transfer", "webrtc"],
     isActive: true,
-    icon: "🚀", // 🔥 NAYA
+    icon: "🚀",
   },
   "timer": {
     name: "Stopwatch & Timer",
@@ -233,7 +237,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["timer", "stopwatch", "countdown timer", "browser timer", "alarm timer", "study timer"],
     isActive: true,
-    icon: "⏱️", // 🔥 NAYA
+    icon: "⏱️",
   },
   "walkie-talkie": {
     name: "Walkie Talkie P2P",
@@ -241,17 +245,35 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "utility",
     keywords: ["walkie talkie", "p2p voice chat", "real-time communication", "browser voice chat"],
     isActive: true,
-    icon: "📻", // 🔥 NAYA
+    icon: "📻",
+  },
+  "handwriting-pdf": {
+    name: "Handwriting PDF Generator",
+    description: "Convert your digital text into realistic handwriting style PDF documents.",
+    category: "utility",
+    keywords: ["handwriting generator", "font to handwriting", "digital assignment"],
+    isActive: true,
+    icon: "✍️",
+  },
+  "image-masker": {
+    name: "Masking Tool",
+    description: "Redact sensitive information from documents and images.",
+    category: "utility",
+    keywords: ["redaction", "masking", "hide sensitive info"],
+    isActive: true,
+    icon: "🫥",
   },
 
+  // ==========================================
   // --- DESIGN TOOLS ---
+  // ==========================================
   "passport-psd-maker": {
     name: "A4 Passport PSD Maker",
     description: "A4 paper par 6x7 (42 photos) ka passport size format banayein aur seedha .PSD file download karein.",
     category: "design",
     keywords: ["passport size photo maker", "psd generator", "a4 photo format", "studio photo grid"],
     isActive: true,
-    icon: "📸", // 🔥 NAYA
+    icon: "📸",
   },
   "certificate-maker": {
     name: "Pro Certificate Generator",
@@ -259,7 +281,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "design",
     keywords: ["certificate maker", "certificate generator", "award certificate", "course certificate", "event certificate"],
     isActive: true,
-    icon: "🎓", // 🔥 NAYA
+    icon: "🎓",
   },
   "stamp-maker": {
     name: "Digital Stamp & Seal Maker",
@@ -267,7 +289,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "design",
     keywords: ["stamp maker", "digital seal", "round stamp generator", "rubber stamp", "company seal"],
     isActive: true,
-    icon: "🏵️", // 🔥 NAYA
+    icon: "🏵️",
   },
   "photo-studio": {
     name: "Mega Photo Studio",
@@ -275,7 +297,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "design",
     keywords: ["photo studio", "crop photo", "resize image", "photo printing"],
     isActive: true,
-    icon: "🖼️", // 🔥 NAYA
+    icon: "🖼️",
   },
   "photo-enhancer": {
     name: "AI Photo Enhancer",
@@ -283,27 +305,9 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     category: "design",
     keywords: ["ai enhancer", "hd photo", "remini clone", "clear image", "restore face"],
     isActive: true,
-    icon: "✨", // 🔥 NAYA
+    icon: "✨",
   },
-
-  // --- BUSINESS TOOLS ---
-  "experience-letter-maker": {
-    name: "Experience Letter Maker",
-    description: "Generate professional Experience & Relieving Letters with company letterhead formatting and PDF export.",
-    category: "business",
-    keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
-    isActive: true,
-    icon: "📜", // 🔥 NAYA
-  },
-  "invoice-maker": {
-    name: "Pro Invoice Maker",
-    description: "Generate professional business invoices with auto-calculated taxes, discounts, and HD PDF export.",
-    category: "business",
-    keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
-    isActive: true,
-    icon: "🧾", // 🔥 NAYA
-  },
- "pro-suit-changer": { // 🔥 YAHAN NAAM CHANGE KAR DIYA HAI
+  "pro-suit-changer": {
     name: "Pro Suit Changer",
     description: "Upload your photo and perfectly fit professional suits for passport size images!",
     category: "design",
@@ -319,4 +323,160 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     isActive: true,
     icon: "🪄",
   },
+  "logo-maker": {
+    name: "Logo Maker",
+    description: "Create simple, elegant brand logos instantly.",
+    category: "design",
+    keywords: ["logo maker", "branding", "logo generator"],
+    isActive: true,
+    icon: "🎨",
+  },
+  "event-invite": {
+    name: "Event Invitation Maker",
+    description: "Design invitations for weddings, parties, or seminars.",
+    category: "design",
+    keywords: ["invitation", "cards", "event design"],
+    isActive: true,
+    icon: "🎉",
+  },
+
+  // ==========================================
+  // --- BUSINESS & OFFICE SUITE ---
+  // ==========================================
+  "experience-letter-maker": {
+    name: "Experience Letter Maker",
+    description: "Generate professional Experience & Relieving Letters with company letterhead formatting and PDF export.",
+    category: "business",
+    keywords: ["experience letter", "relieving letter", "hr letter format", "work experience certificate"],
+    isActive: true,
+    icon: "📜",
+  },
+  "invoice-maker": {
+    name: "Pro Invoice Maker",
+    description: "Generate professional business invoices with auto-calculated taxes, discounts, and HD PDF export.",
+    category: "business",
+    keywords: ["invoice generator", "bill maker", "gst invoice", "tax invoice", "business billing"],
+    isActive: true,
+    icon: "🧾",
+  },
+  "assignment-cover": {
+    name: "Assignment Cover Page Maker",
+    description: "Create professional assignment cover pages with academic formatting.",
+    category: "business",
+    keywords: ["assignment cover", "academic report", "project cover"],
+    isActive: true,
+    icon: "📄",
+  },
+  "id-card": {
+    name: "ID Card Generator",
+    description: "Design and generate professional ID cards for schools and offices.",
+    category: "business",
+    keywords: ["id card maker", "employee id", "student id"],
+    isActive: true,
+    icon: "🪪",
+  },
+  "bonafide-cert": {
+    name: "Bonafide Certificate Generator",
+    description: "Generate official bonafide certificates with custom branding.",
+    category: "business",
+    keywords: ["bonafide certificate", "official letter", "proof of study"],
+    isActive: true,
+    icon: "🎓",
+  },
+  "tc-generator": {
+    name: "TC Generator",
+    description: "Create official Transfer Certificates for institutions.",
+    category: "business",
+    keywords: ["tc generator", "transfer certificate", "school leaving"],
+    isActive: true,
+    icon: "📜",
+  },
+  "marksheet-designer": {
+    name: "Marksheet Designer",
+    description: "Professional marksheet generator with auto-calculation engine.",
+    category: "business",
+    keywords: ["marksheet generator", "report card", "exam results"],
+    isActive: true,
+    icon: "📊",
+  },
+  "admit-card": {
+    name: "Admit Card Designer",
+    description: "Create secure admit cards with QR/Barcode and exam details.",
+    category: "business",
+    keywords: ["admit card", "hall ticket", "exam card"],
+    isActive: true,
+    icon: "🛡️",
+  },
+  "affidavit-gen": {
+    name: "Affidavit Generator",
+    description: "Generate legal affidavits for various purposes.",
+    category: "business",
+    keywords: ["affidavit", "legal document", "stamp paper"],
+    isActive: true,
+    icon: "⚖️",
+  },
+  "receipt-maker": {
+    name: "Receipt/Invoice Maker",
+    description: "Smart billing tool with auto-tax and discount calculation.",
+    category: "business",
+    keywords: ["receipt generator", "invoice maker", "billing"],
+    isActive: true,
+    icon: "🧾",
+  },
+  "cover-letter": {
+    name: "Cover Letter Generator",
+    description: "Tailored professional cover letters for job applications.",
+    category: "business",
+    keywords: ["cover letter", "job application", "resume tool"],
+    isActive: true,
+    icon: "✉️",
+  },
+  "quotation-maker": {
+    name: "Quotation Maker",
+    description: "Generate professional business estimates and proposals.",
+    category: "business",
+    keywords: ["quotation", "price estimate", "proposal"],
+    isActive: true,
+    icon: "📝",
+  },
+  "letterhead-maker": {
+    name: "Letterhead Maker",
+    description: "Professional corporate letterhead builder with 10+ templates.",
+    category: "business",
+    keywords: ["letterhead", "corporate design", "stationery"],
+    isActive: true,
+    icon: "🏢",
+  },
+  "visiting-card": {
+    name: "Visiting Card Maker",
+    description: "Create stunning business cards with 625+ design variations.",
+    category: "business",
+    keywords: ["business card", "visiting card", "branding"],
+    isActive: true,
+    icon: "💳",
+  },
+  "business-profile": {
+    name: "Business Profile Generator",
+    description: "Generate a formal corporate profile and mission pitch.",
+    category: "business",
+    keywords: ["business profile", "company pitch", "corporate identity"],
+    isActive: true,
+    icon: "💼",
+  },
+  "salary-slip": {
+    name: "Salary Slip Generator",
+    description: "Generate professional monthly salary slips for employees.",
+    category: "business",
+    keywords: ["salary slip", "payslip", "payroll"],
+    isActive: true,
+    icon: "💰",
+  },
+  "email-signature": {
+    name: "Email Signature Generator",
+    description: "Create professional email signatures with social links.",
+    category: "business",
+    keywords: ["email signature", "branding", "professional email"],
+    isActive: true,
+    icon: "✒️",
+  }
 };
