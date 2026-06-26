@@ -5,12 +5,20 @@ import Link from 'next/link';
 import { toolsRegistry } from '../../config/siteConfig';
 import { supabase } from '../lib/supabase';
 
-// 🔥 NAYA BRAND NAME
+// 🔥 BRAND NAME
 const siteInfo = {
   name: "DhamakaTools",
   tagline: "All-In-One Professional Utility Engine",
   description: "Free, secure, and blazing-fast web tools built for developers, designers, and power users.",
 };
+
+// Dummy Reviews agar DB mein koi review na ho
+const fallbackReviews = [
+  { review_text: "Amazing website.", user_name: "Rajesh K.", rating: 5 },
+  { review_text: "Best PDF Tool.", user_name: "Sarah M.", rating: 5 },
+  { review_text: "Super Fast.", user_name: "Amit S.", rating: 5 },
+  { review_text: "Love AI Tools.", user_name: "John D.", rating: 5 }
+];
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,7 +28,14 @@ export default function HomePage() {
   const [trendingTools, setTrendingTools] = useState<any[]>([]);
   const [platformViews, setPlatformViews] = useState(0); 
   const [latestBlogs, setLatestBlogs] = useState<any[]>([]);
+  const [liveReviews, setLiveReviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // 🔥 REVIEW MODAL STATES 🔥
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ name: '', text: '', rating: 5 });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,21 +71,32 @@ export default function HomePage() {
         console.error("Tools Fetch Error:", error);
       }
 
-      // 2. Fetch Blogs (Sirf 3 dikhayenge home page pe)
+      // 2. Fetch Blogs
       try {
-        const { data: blogData, error: blogError } = await supabase
+        const { data: blogData } = await supabase
           .from('blog_posts')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(3);
-
-        if (blogError) {
-          console.error("Blog Fetching Error:", blogError);
-        } else if (blogData) {
-          setLatestBlogs(blogData);
-        }
+        if (blogData) setLatestBlogs(blogData);
       } catch (error) {
         console.error("Blog Execution Error:", error);
+      }
+
+      // 3. 🔥 Fetch LIVE Approved Reviews
+      try {
+        const { data: reviewData } = await supabase
+          .from('user_reviews')
+          .select('*')
+          .eq('is_approved', true) // Sirf approved reviews aayenge
+          .order('created_at', { ascending: false })
+          .limit(4);
+        
+        if (reviewData && reviewData.length > 0) {
+          setLiveReviews(reviewData);
+        }
+      } catch (error) {
+        console.error("Reviews Fetch Error:", error);
       }
 
       setIsLoading(false);
@@ -78,6 +104,37 @@ export default function HomePage() {
 
     fetchData();
   }, []);
+
+  // 🔥 SUBMIT REVIEW FUNCTION 🔥
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingReview(true);
+    setReviewMessage({ type: '', text: '' });
+
+    try {
+      const { error } = await supabase.from('user_reviews').insert({
+        user_name: reviewForm.name,
+        review_text: reviewForm.text,
+        rating: reviewForm.rating
+      });
+
+      if (error) throw error;
+
+      setReviewMessage({ type: 'success', text: 'Thank you! Your review has been submitted and is waiting for approval.' });
+      setReviewForm({ name: '', text: '', rating: 5 }); // Form reset
+      
+      // 3 second baad modal close kar do
+      setTimeout(() => {
+        setIsReviewModalOpen(false);
+        setReviewMessage({ type: '', text: '' });
+      }, 3000);
+
+    } catch (error) {
+      setReviewMessage({ type: 'error', text: 'Something went wrong. Please try again later.' });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   const toolsList = Object.entries(toolsRegistry)
     .filter(([slug]) => activeSlugs.includes(slug))
@@ -101,13 +158,14 @@ export default function HomePage() {
     return acc;
   }, {});
 
+  const displayedReviews = liveReviews.length > 0 ? liveReviews : fallbackReviews;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
       
       {/* 🌟 HEADER 🌟 */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <img src="/logo-icon.png" alt="DhamakaTools Icon" className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-sm" />
             <div className="flex flex-col">
@@ -123,12 +181,10 @@ export default function HomePage() {
           <nav className="hidden md:flex items-center gap-8 font-bold text-slate-600">
             <Link href="/" className="hover:text-purple-600 transition-colors">Home</Link>
             
-            {/* 🔥 MEGA MENU (ALL TOOLS) 🔥 */}
             <div className="relative group py-6">
               <button className="flex items-center gap-1 hover:text-purple-600 transition-colors focus:outline-none">
                 All Tools <span className="text-xs">▼</span>
               </button>
-              {/* Dropdown Box */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
                 <div className="p-4 flex flex-col gap-2">
                   <a href="#pdf-tools" className="p-3 hover:bg-purple-50 rounded-xl text-slate-700 hover:text-purple-700 transition-colors">📄 PDF Tools</a>
@@ -142,7 +198,6 @@ export default function HomePage() {
             <a href="#trending" className="hover:text-purple-600 transition-colors">Trending</a>
             <Link href="/contact" className="hover:text-purple-600 transition-colors">Support</Link>
           </nav>
-          
         </div>
       </header>
 
@@ -151,7 +206,6 @@ export default function HomePage() {
         {/* 🌟 HERO SECTION 🌟 */}
         <section className="bg-white border-b border-slate-200 pt-24 pb-20 px-4 relative overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-full bg-gradient-to-b from-purple-50/50 to-transparent -z-10"></div>
-          
           <div className="max-w-4xl mx-auto text-center z-10">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 border border-purple-100 text-purple-700 text-sm font-bold mb-6">
               <span className="animate-pulse">✨</span> {siteInfo.tagline}
@@ -242,25 +296,36 @@ export default function HomePage() {
           )}
         </section>
 
-        {/* 🌟 TESTIMONIALS SECTION (NEW) 🌟 */}
+        {/* 🌟 TESTIMONIALS SECTION (UPDATED) 🌟 */}
         {!isLoading && !searchQuery && (
           <section className="py-20 px-4 bg-slate-100 border-t border-slate-200">
             <div className="max-w-7xl mx-auto">
-              <div className="mb-12 text-center">
-                <h2 className="text-4xl font-black text-slate-900">Loved by Thousands</h2>
-                <p className="text-slate-500 mt-3 text-lg font-medium">See what our users are saying about DhamakaTools.</p>
+              <div className="mb-12 flex flex-col md:flex-row items-center justify-between text-center md:text-left gap-6">
+                <div>
+                  <h2 className="text-4xl font-black text-slate-900">Loved by Thousands</h2>
+                  <p className="text-slate-500 mt-2 text-lg font-medium">See what our users are saying about DhamakaTools.</p>
+                </div>
+                {/* 🔥 LEAVE A REVIEW BUTTON 🔥 */}
+                <button 
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="bg-slate-900 hover:bg-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                >
+                  ⭐ Leave a Review
+                </button>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                  { text: "Amazing website.", author: "Rajesh K." },
-                  { text: "Best PDF Tool.", author: "Sarah M." },
-                  { text: "Super Fast.", author: "Amit S." },
-                  { text: "Love AI Tools.", author: "John D." }
-                ].map((testimonial, idx) => (
-                  <div key={idx} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                    <div className="text-yellow-400 text-xl mb-3">⭐⭐⭐⭐⭐</div>
-                    <p className="text-slate-700 font-bold text-lg leading-snug">"{testimonial.text}"</p>
-                    <p className="text-slate-400 text-sm mt-4 uppercase tracking-widest font-bold">- {testimonial.author}</p>
+                {displayedReviews.map((testimonial, idx) => (
+                  <div key={idx} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                      <div className="text-yellow-400 text-xl mb-3 flex gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <span key={i} className={i < testimonial.rating ? "opacity-100" : "opacity-30"}>⭐</span>
+                        ))}
+                      </div>
+                      <p className="text-slate-700 font-bold text-lg leading-snug">"{testimonial.review_text}"</p>
+                    </div>
+                    <p className="text-slate-400 text-sm mt-4 uppercase tracking-widest font-bold">- {testimonial.user_name}</p>
                   </div>
                 ))}
               </div>
@@ -300,7 +365,6 @@ export default function HomePage() {
               )}
             </div>
             
-            {/* 🔥 VIEW ALL BLOGS BUTTON 🔥 */}
             <div className="mt-12 text-center">
               <Link href="/blog" className="inline-flex items-center gap-2 bg-purple-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-purple-700 hover:shadow-purple-500/30 transition-all hover:-translate-y-1">
                 View All Articles <span className="text-xl">→</span>
@@ -353,6 +417,80 @@ export default function HomePage() {
         </div>
       </footer>
       
+      {/* 🌟 REVIEW POPUP MODAL 🌟 */}
+      {isReviewModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl p-8 relative animate-in fade-in zoom-in duration-300">
+            {/* Close Button */}
+            <button 
+              onClick={() => setIsReviewModalOpen(false)}
+              className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-red-100 hover:text-red-600 transition-colors font-bold"
+            >
+              ✕
+            </button>
+            
+            <h3 className="text-2xl font-black text-slate-900 mb-2">Write a Review</h3>
+            <p className="text-slate-500 mb-6 font-medium">Tell us what you think about DhamakaTools.</p>
+
+            {reviewMessage.text ? (
+              <div className={`p-4 rounded-xl font-bold text-center ${reviewMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {reviewMessage.text}
+              </div>
+            ) : (
+              <form onSubmit={handleReviewSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Your Rating</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button 
+                        key={star} 
+                        type="button" 
+                        onClick={() => setReviewForm({...reviewForm, rating: star})}
+                        className={`text-3xl transition-transform hover:scale-110 ${star <= reviewForm.rating ? 'text-yellow-400' : 'text-slate-200'}`}
+                      >
+                        ⭐
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Your Name</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={reviewForm.name}
+                    onChange={(e) => setReviewForm({...reviewForm, name: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 outline-none transition-all font-medium"
+                    placeholder="e.g. Rahul Kumar"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Your Review</label>
+                  <textarea 
+                    required
+                    rows={3}
+                    value={reviewForm.text}
+                    onChange={(e) => setReviewForm({...reviewForm, text: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 outline-none transition-all font-medium resize-none"
+                    placeholder="What did you like about our tools?"
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={isSubmittingReview}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

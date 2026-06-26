@@ -1,27 +1,14 @@
-export default function AboutPage() {
+export default function ContactPage() {
   return (
-    <div className="p-20 text-center">
-      <h1 className="text-4xl font-bold">About Us</h1>
-      <p>Contact Support
-
-Need help or have a question? Our support team is here to assist you.
-
-📧 Support Email
-help@dhamakatools.com
-
-Whether you need assistance with our tools, want to report a bug, suggest a new feature, or have a general inquiry, feel free to contact us. We strive to respond to all support requests as quickly as possible.
-
-We Can Help With
-Technical issues and bug reports
-Tool-related questions
-Account and login support
-Feature requests and suggestions
-Business and partnership inquiries
-General feedback
-
-Support Email: help@dhamakatools.com
-
-Thank you for choosing DhamakaTools. We appreciate your trust and are committed to providing the best possible support. 🚀</p>
+    <div className="min-h-screen bg-slate-50 pt-32 pb-20 px-4 text-center">
+      <h1 className="text-5xl font-black text-slate-900 mb-6">Contact Support</h1>
+      <p className="text-xl text-slate-500 mb-12">We are here to help you.</p>
+      <div className="max-w-md mx-auto p-8 bg-white rounded-3xl shadow-sm border border-slate-200">
+        <p className="text-slate-600 font-medium mb-6">Email us at:</p>
+        <a href="mailto:support@dhamakatools.com" className="text-2xl font-black text-purple-600 hover:underline">
+          support@dhamakatools.com
+        </a>
+      </div>
     </div>
   );
 }
