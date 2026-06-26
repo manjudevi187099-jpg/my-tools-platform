@@ -44,7 +44,7 @@ export default function AdminDashboard() {
   const [blogTitle, setBlogTitle] = useState('');
   const [blogSlug, setBlogSlug] = useState('');
   const [blogContent, setBlogContent] = useState('');
-  const [linkedTool, setLinkedTool] = useState('');
+  const [linkedTool, setLinkedTool] = useState(''); 
   const [isSavingBlog, setIsSavingBlog] = useState(false);
   const [blogMessage, setBlogMessage] = useState('');
 
@@ -80,7 +80,8 @@ export default function AdminDashboard() {
         supabase.from('tools_status').select('*').order('name', { ascending: true }),
         supabase.from('tool_analytics').select('*'),
         supabase.from('site_settings').select('*').eq('id', 1).single(),
-        supabase.from('tool_ratings').select('*').order('created_at', { ascending: false }),
+        // 🔥 UPDATE 1: 'tool_ratings' ki jagah 'user_reviews' kar diya
+        supabase.from('user_reviews').select('*').order('created_at', { ascending: false }), 
         supabase.from('tool_errors').select('*').order('created_at', { ascending: false }),
         supabase.from('blog_posts').select('*').order('created_at', { ascending: false }),
         supabase.from('tool_pageviews').select('tool_slug, created_at')
@@ -140,9 +141,9 @@ export default function AdminDashboard() {
     await supabase.from('tools_status').update({ is_active: newStatus }).eq('slug', slug);
   };
 
-  // 🔥 NAYA: REVIEW MANAGEMENT FUNCTIONS 🔥
-  const updateReviewStatus = async (id: number, newStatus: string) => {
-    const { error } = await supabase.from('tool_ratings').update({ status: newStatus }).eq('id', id);
+  // 🔥 UPDATE 2: Review functions modified for 'user_reviews' and 'is_approved' boolean 🔥
+  const updateReviewStatus = async (id: number, newStatus: boolean) => {
+    const { error } = await supabase.from('user_reviews').update({ is_approved: newStatus }).eq('id', id);
     if (!error) {
       fetchRealData(); 
     } else {
@@ -152,7 +153,7 @@ export default function AdminDashboard() {
 
   const deleteReview = async (id: number) => {
     if(confirm("Khabardar! Kya sach mein is review ko delete karna hai? 🗑️")) {
-      await supabase.from('tool_ratings').delete().eq('id', id);
+      await supabase.from('user_reviews').delete().eq('id', id);
       fetchRealData();
     }
   };
@@ -192,7 +193,7 @@ export default function AdminDashboard() {
       setBlogMessage('❌ Error: ' + error.message);
     } else {
       setBlogMessage('✅ Blog Published Successfully! 🎉');
-      setBlogTitle(''); setBlogSlug(''); setBlogContent(''); setLinkedTool('');
+      setBlogTitle(''); setBlogSlug(''); setBlogContent(''); setLinkedTool(''); 
       fetchRealData(); 
       setTimeout(() => setBlogMessage(''), 4000);
     }
@@ -362,17 +363,17 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* 🔥 NAYA: REVIEW MODERATION TAB 🔥 */}
+            {/* 🔥 UPDATE 3: UPDATED REVIEW MODERATION TAB 🔥 */}
             {activeTab === 'ratings' && (
               <div className="space-y-8">
                 <div className="flex justify-between items-end">
                   <h2 className="text-3xl font-black text-slate-900">Review Moderation</h2>
                   <div className="flex gap-2">
                     <span className="bg-amber-100 text-amber-700 font-bold px-3 py-1 rounded-lg text-sm">
-                      Pending: {ratings.filter(r => r.status === 'pending').length}
+                      Pending: {ratings.filter(r => !r.is_approved).length}
                     </span>
                     <span className="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-lg text-sm">
-                      Approved: {ratings.filter(r => r.status === 'approved').length}
+                      Approved: {ratings.filter(r => r.is_approved).length}
                     </span>
                   </div>
                 </div>
@@ -385,7 +386,7 @@ export default function AdminDashboard() {
                           
                           {/* Status Badge */}
                           <div className="absolute top-4 right-4">
-                            {r.status === 'approved' ? (
+                            {r.is_approved ? (
                               <span className="bg-green-100 text-green-700 text-[10px] uppercase font-black px-2 py-1 rounded-md tracking-widest border border-green-200 flex items-center gap-1">
                                 ✅ Approved
                               </span>
@@ -397,10 +398,10 @@ export default function AdminDashboard() {
                           </div>
 
                           <div className="mb-4 pr-24">
-                            <h3 className="font-black text-slate-900 text-lg">{r.name || 'Anonymous User'}</h3>
+                            <h3 className="font-black text-slate-900 text-lg">{r.user_name || 'Anonymous User'}</h3>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-amber-500 text-sm tracking-widest">
-                                {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                                {'★'.repeat(r.rating || 5)}{'☆'.repeat(5 - (r.rating || 5))}
                               </span>
                               <span className="text-xs font-bold text-slate-400">• {new Date(r.created_at).toLocaleDateString()}</span>
                             </div>
@@ -412,12 +413,12 @@ export default function AdminDashboard() {
 
                           {/* ACTION BUTTONS (Approve / Pending / Delete) */}
                           <div className="flex gap-2 mt-auto border-t border-slate-200 pt-4">
-                            {r.status !== 'approved' ? (
-                              <button onClick={() => updateReviewStatus(r.id, 'approved')} className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm shadow-green-200">
+                            {!r.is_approved ? (
+                              <button onClick={() => updateReviewStatus(r.id, true)} className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm shadow-green-200">
                                 Approve ✅
                               </button>
                             ) : (
-                              <button onClick={() => updateReviewStatus(r.id, 'pending')} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm shadow-amber-200">
+                              <button onClick={() => updateReviewStatus(r.id, false)} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm shadow-amber-200">
                                 Move to Pending ⏳
                               </button>
                             )}
