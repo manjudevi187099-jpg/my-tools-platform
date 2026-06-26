@@ -44,7 +44,7 @@ export default function AdminDashboard() {
   const [blogTitle, setBlogTitle] = useState('');
   const [blogSlug, setBlogSlug] = useState('');
   const [blogContent, setBlogContent] = useState('');
-  const [linkedTool, setLinkedTool] = useState(''); // 🔥 NAYA: Linked Tool state add kiya
+  const [linkedTool, setLinkedTool] = useState('');
   const [isSavingBlog, setIsSavingBlog] = useState(false);
   const [blogMessage, setBlogMessage] = useState('');
 
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
         supabase.from('tool_ratings').select('*').order('created_at', { ascending: false }),
         supabase.from('tool_errors').select('*').order('created_at', { ascending: false }),
         supabase.from('blog_posts').select('*').order('created_at', { ascending: false }),
-        supabase.from('tool_pageviews').select('tool_slug, created_at') // 🔥 NAYA API CALL
+        supabase.from('tool_pageviews').select('tool_slug, created_at')
       ]);
 
       if (sData.data) setSeoData(sData.data);
@@ -102,7 +102,6 @@ export default function AdminDashboard() {
           tViews += views;
           if (views > maxViews) { maxViews = views; bestTool = tool.name; }
 
-          // 🔥 TIME-BASED CALCULATION LOGIC
           let today = 0, week = 0, month = 0;
           if (pData.data) {
             pData.data.forEach((pv: any) => {
@@ -119,11 +118,10 @@ export default function AdminDashboard() {
           return { ...tool, views, today, week, month };
         });
 
-        // Report ko highest views ke hisaab se sort karna
         const sortedReport = [...mergedTools].sort((a, b) => (b.views || 0) - (a.views || 0));
 
         setTools(mergedTools);
-        setAnalyticsReport(sortedReport); // 🔥 Save to state
+        setAnalyticsReport(sortedReport);
         setTotalViews(tViews);
         setActiveCount(aCount);
         setPopularTool({ name: bestTool !== 'N/A' ? bestTool : 'No data yet', views: maxViews > -1 ? maxViews : 0 });
@@ -140,6 +138,23 @@ export default function AdminDashboard() {
     setTools(tools.map(t => t.slug === slug ? { ...t, is_active: newStatus } : t));
     setActiveCount(prev => newStatus ? prev + 1 : prev - 1);
     await supabase.from('tools_status').update({ is_active: newStatus }).eq('slug', slug);
+  };
+
+  // 🔥 NAYA: REVIEW MANAGEMENT FUNCTIONS 🔥
+  const updateReviewStatus = async (id: number, newStatus: string) => {
+    const { error } = await supabase.from('tool_ratings').update({ status: newStatus }).eq('id', id);
+    if (!error) {
+      fetchRealData(); 
+    } else {
+      alert("Status update mein error aayi: " + error.message);
+    }
+  };
+
+  const deleteReview = async (id: number) => {
+    if(confirm("Khabardar! Kya sach mein is review ko delete karna hai? 🗑️")) {
+      await supabase.from('tool_ratings').delete().eq('id', id);
+      fetchRealData();
+    }
   };
 
   const handleSaveSEO = async (e: React.FormEvent) => {
@@ -168,7 +183,6 @@ export default function AdminDashboard() {
     setIsSavingBlog(true);
     setBlogMessage('');
     
-    // 🔥 NAYA: linked_tool backend ko bhejna
     const { error } = await supabase.from('blog_posts').insert([
       { title: blogTitle, slug: blogSlug, content: blogContent, linked_tool: linkedTool || null }
     ]);
@@ -178,7 +192,7 @@ export default function AdminDashboard() {
       setBlogMessage('❌ Error: ' + error.message);
     } else {
       setBlogMessage('✅ Blog Published Successfully! 🎉');
-      setBlogTitle(''); setBlogSlug(''); setBlogContent(''); setLinkedTool(''); // 🔥 NAYA: Reset kiya
+      setBlogTitle(''); setBlogSlug(''); setBlogContent(''); setLinkedTool('');
       fetchRealData(); 
       setTimeout(() => setBlogMessage(''), 4000);
     }
@@ -226,7 +240,7 @@ export default function AdminDashboard() {
             { id: 'dashboard', icon: '📊', label: 'Analytics Dashboard' },
             { id: 'tools', icon: '⚙️', label: 'Tools Manager' },
             { id: 'seo', icon: '🔍', label: 'SEO & Scripts' },
-            { id: 'ratings', icon: '⭐', label: 'User Ratings' },
+            { id: 'ratings', icon: '⭐', label: 'Review Moderation' },
             { id: 'errors', icon: '🐞', label: 'Error Logs' },
             { id: 'blog', icon: '📝', label: 'Blog CMS' }
           ].map((tab) => (
@@ -277,7 +291,6 @@ export default function AdminDashboard() {
                   <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden"><p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Database Status</p><h3 className="text-2xl font-black text-green-600 mt-2">Connected</h3><p className="text-slate-500 text-sm font-medium mt-2">{errors.length} System Errors</p></div>
                 </div>
 
-                {/* 🔥 DETAILED TRAFFIC REPORT TABLE 🔥 */}
                 <div className="mt-12">
                   <h3 className="text-2xl font-black text-slate-900 mb-6">Detailed Traffic Report 📈</h3>
                   <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -308,7 +321,6 @@ export default function AdminDashboard() {
                     </table>
                   </div>
                 </div>
-
               </div>
             )}
 
@@ -350,10 +362,81 @@ export default function AdminDashboard() {
               </div>
             )}
 
+            {/* 🔥 NAYA: REVIEW MODERATION TAB 🔥 */}
             {activeTab === 'ratings' && (
               <div className="space-y-8">
-                <div><h2 className="text-3xl font-black text-slate-900">User Ratings</h2></div>
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">{ratings && ratings.length > 0 ? (<div className="grid grid-cols-1 md:grid-cols-3 gap-4">{ratings.map((r: any) => (<div key={r.id} className="p-5 border border-slate-100 rounded-2xl bg-slate-50"><span className="font-bold text-slate-800">{r.tool_slug}</span> <span className="text-orange-500 font-black block mt-2 text-xl">{'⭐'.repeat(r.rating)}</span></div>))}</div>) : (<p className="text-slate-500 font-bold">No ratings yet.</p>)}</div>
+                <div className="flex justify-between items-end">
+                  <h2 className="text-3xl font-black text-slate-900">Review Moderation</h2>
+                  <div className="flex gap-2">
+                    <span className="bg-amber-100 text-amber-700 font-bold px-3 py-1 rounded-lg text-sm">
+                      Pending: {ratings.filter(r => r.status === 'pending').length}
+                    </span>
+                    <span className="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-lg text-sm">
+                      Approved: {ratings.filter(r => r.status === 'approved').length}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+                  {ratings && ratings.length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {ratings.map((r: any) => (
+                        <div key={r.id} className="p-6 border border-slate-200 rounded-2xl bg-slate-50 flex flex-col relative">
+                          
+                          {/* Status Badge */}
+                          <div className="absolute top-4 right-4">
+                            {r.status === 'approved' ? (
+                              <span className="bg-green-100 text-green-700 text-[10px] uppercase font-black px-2 py-1 rounded-md tracking-widest border border-green-200 flex items-center gap-1">
+                                ✅ Approved
+                              </span>
+                            ) : (
+                              <span className="bg-amber-100 text-amber-700 text-[10px] uppercase font-black px-2 py-1 rounded-md tracking-widest border border-amber-200 flex items-center gap-1 animate-pulse">
+                                ⏳ Pending
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mb-4 pr-24">
+                            <h3 className="font-black text-slate-900 text-lg">{r.name || 'Anonymous User'}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-amber-500 text-sm tracking-widest">
+                                {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                              </span>
+                              <span className="text-xs font-bold text-slate-400">• {new Date(r.created_at).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+
+                          <div className="bg-white p-4 rounded-xl border border-slate-100 mb-6 flex-1 shadow-inner text-sm text-slate-600 italic">
+                            "{r.review_text || 'No review message provided.'}"
+                          </div>
+
+                          {/* ACTION BUTTONS (Approve / Pending / Delete) */}
+                          <div className="flex gap-2 mt-auto border-t border-slate-200 pt-4">
+                            {r.status !== 'approved' ? (
+                              <button onClick={() => updateReviewStatus(r.id, 'approved')} className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm shadow-green-200">
+                                Approve ✅
+                              </button>
+                            ) : (
+                              <button onClick={() => updateReviewStatus(r.id, 'pending')} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm shadow-amber-200">
+                                Move to Pending ⏳
+                              </button>
+                            )}
+                            
+                            <button onClick={() => deleteReview(r.id)} className="px-4 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold rounded-lg transition-colors">
+                              Delete 🗑️
+                            </button>
+                          </div>
+
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-slate-400 font-bold">
+                      <div className="text-4xl mb-4">📭</div>
+                      No reviews found in the database.
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -398,7 +481,6 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     
-                    {/* 🔥 NAYA DROPDOWN UI ADD KIYA GAYA 🔥 */}
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-2">Link this blog to a specific tool? (Optional)</label>
                       <select value={linkedTool} onChange={(e) => setLinkedTool(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 font-medium text-slate-800">
@@ -430,7 +512,6 @@ export default function AdminDashboard() {
                           <tr>
                             <th className="p-5 font-bold">Blog Title</th>
                             <th className="p-5 font-bold">Live URL</th>
-                            {/* 🔥 NAYA TABLE HEADER 🔥 */}
                             <th className="p-5 font-bold">Linked Tool</th>
                             <th className="p-5 font-bold text-right">Action</th>
                           </tr>
@@ -444,7 +525,6 @@ export default function AdminDashboard() {
                                   /blog/{blog.slug} ↗
                                 </a>
                               </td>
-                              {/* 🔥 NAYA TABLE CELL 🔥 */}
                               <td className="p-5">
                                 {blog.linked_tool ? (
                                   <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">{blog.linked_tool}</span>
