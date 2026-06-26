@@ -21,9 +21,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   
   return {
-    title: settings?.site_name || "Dhamaka Tools - Professional Utility Engine",
+    // Agar DB mein PdfNexa likha hai toh wo override na kare, isliye direct naam diya:
+    title: "DhamakaTools - Professional Utility Engine",
     description: settings?.seo_description || "Free, secure, and blazing-fast web tools built for developers, designers, and power users.",
     keywords: settings?.keywords || "pdf tools, online utility, format converter",
+    // 🔥 VERCEL LOGO HATANE KE LIYE YAHAN ICON ADD KIYA HAI 🔥
+    icons: {
+      icon: '/logo-icon.png', // Aapke public folder mein jo logo hai
+    }
   };
 }
 

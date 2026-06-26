@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { toolsRegistry } from '../../config/siteConfig';
 import { supabase } from '../lib/supabase';
 
-// 🔥 NAYA BRAND NAME YAHAN UPDATE KIYA HAI 🔥
+// 🔥 NAYA BRAND NAME
 const siteInfo = {
   name: "DhamakaTools",
   tagline: "All-In-One Professional Utility Engine",
@@ -26,7 +26,7 @@ export default function HomePage() {
     const fetchData = async () => {
       setIsLoading(true);
 
-      // 1. 🔥 Fetch Tools & Analytics
+      // 1. Fetch Tools & Analytics
       try {
         const { data: statusData } = await supabase.from('tools_status').select('slug').eq('is_active', true);
         const { data: analyticsData } = await supabase.from('tool_analytics').select('tool_slug, total_views');
@@ -56,7 +56,7 @@ export default function HomePage() {
         console.error("Tools Fetch Error:", error);
       }
 
-      // 2. 🔥 Fetch Blogs
+      // 2. Fetch Blogs (Sirf 3 dikhayenge home page pe)
       try {
         const { data: blogData, error: blogError } = await supabase
           .from('blog_posts')
@@ -86,7 +86,7 @@ export default function HomePage() {
       title: tool.name,
       description: tool.description,
       category: (tool.category || 'utility').toUpperCase(),
-      icon: tool.icon || '🛠️' // Fallback icon
+      icon: tool.icon || '🛠️'
     }));
 
   const filteredTools = toolsList.filter((tool) =>
@@ -109,7 +109,6 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            {/* 🔥 BADA LOGO ICON AUR NAAM YAHAN LAGA HAI 🔥 */}
             <img src="/logo-icon.png" alt="DhamakaTools Icon" className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-sm" />
             <div className="flex flex-col">
               <span className="text-2xl md:text-3xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-none tracking-tight">
@@ -122,15 +121,27 @@ export default function HomePage() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 font-bold text-slate-600">
-            <Link href="/" className="text-purple-600">Home</Link>
-            <a href="#tools" className="hover:text-purple-600 transition-colors">Tools Library</a>
+            <Link href="/" className="hover:text-purple-600 transition-colors">Home</Link>
+            
+            {/* 🔥 MEGA MENU (ALL TOOLS) 🔥 */}
+            <div className="relative group py-6">
+              <button className="flex items-center gap-1 hover:text-purple-600 transition-colors focus:outline-none">
+                All Tools <span className="text-xs">▼</span>
+              </button>
+              {/* Dropdown Box */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
+                <div className="p-4 flex flex-col gap-2">
+                  <a href="#pdf-tools" className="p-3 hover:bg-purple-50 rounded-xl text-slate-700 hover:text-purple-700 transition-colors">📄 PDF Tools</a>
+                  <a href="#image-tools" className="p-3 hover:bg-purple-50 rounded-xl text-slate-700 hover:text-purple-700 transition-colors">🎨 Image & Design</a>
+                  <a href="#business-tools" className="p-3 hover:bg-purple-50 rounded-xl text-slate-700 hover:text-purple-700 transition-colors">💼 Business Tools</a>
+                  <a href="#utility-tools" className="p-3 hover:bg-purple-50 rounded-xl text-slate-700 hover:text-purple-700 transition-colors">🛠️ Daily Utilities</a>
+                </div>
+              </div>
+            </div>
+
             <a href="#trending" className="hover:text-purple-600 transition-colors">Trending</a>
             <Link href="/contact" className="hover:text-purple-600 transition-colors">Support</Link>
           </nav>
-
-          {/* 🔥 ADMIN BUTTON HATA DIYA GAYA HAI 🔥 */}
-          <div className="flex items-center gap-4">
-          </div>
           
         </div>
       </header>
@@ -166,51 +177,35 @@ export default function HomePage() {
                 className="w-full pl-14 pr-4 py-5 rounded-3xl border-2 border-slate-200 bg-white focus:border-purple-500 transition-all text-lg font-bold shadow-lg shadow-slate-200/50 outline-none hover:shadow-xl"
               />
             </div>
-
-            <div className="flex flex-wrap justify-center gap-4 mt-8">
-              <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 px-5 py-2.5 rounded-full font-black text-sm shadow-sm">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span> 
-                {platformViews.toLocaleString()}+ Tools Processed
-              </div>
-              <div className="flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 px-5 py-2.5 rounded-full font-black text-sm shadow-sm">
-                🛡️ 100% Free & Secure
-              </div>
-              <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 text-orange-700 px-5 py-2.5 rounded-full font-black text-sm shadow-sm">
-                ⚡ No Sign-up Required
-              </div>
-            </div>
           </div>
         </section>
 
         {/* 🌟 TOOLS SECTION 🌟 */}
         <section id="tools" className="py-20 px-4 max-w-7xl mx-auto">
           {isLoading ? (
-            <div className="text-center py-20 flex flex-col items-center justify-center space-y-4">
-               <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-               <p className="text-slate-500 font-bold">Syncing live tools... ⏳</p>
+            <div className="text-center py-20">
+               <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
+               <p className="text-slate-500 font-bold mt-4">Syncing live tools... ⏳</p>
             </div>
           ) : (
             <>
               {/* TRENDING TOOLS */}
               {!searchQuery && trendingTools.length > 0 && (
                 <div id="trending" className="mb-20 scroll-mt-24">
-                  <div className="mb-8 border-b border-slate-200 pb-4 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
-                        <span className="p-2 bg-orange-100 text-orange-600 rounded-xl">🔥</span> Trending Now
-                      </h2>
-                    </div>
+                  <div className="mb-8 border-b border-slate-200 pb-4">
+                    <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
+                      <span className="p-2 bg-orange-100 text-orange-600 rounded-xl">🔥</span> Trending Now
+                    </h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {trendingTools.map((tool) => (
-                      <Link key={tool.slug} href={`/tools/${tool.slug}`} className="group flex items-start gap-4 p-6 bg-gradient-to-br from-white to-orange-50/20 border-2 border-orange-100 rounded-3xl hover:border-orange-500 hover:shadow-xl hover:shadow-orange-500/10 transition-all duration-300 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-black px-4 py-1.5 rounded-bl-2xl z-10 shadow-sm">{tool.views} Uses</div>
+                      <Link key={tool.slug} href={`/tools/${tool.slug}`} className="group flex items-start gap-4 p-6 bg-gradient-to-br from-white to-orange-50/20 border-2 border-orange-100 rounded-3xl hover:border-orange-500 hover:shadow-xl transition-all relative overflow-hidden">
                         <div className="text-4xl bg-white p-4 rounded-2xl shadow-sm border border-orange-100 group-hover:scale-110 transition-transform">
-                          {tool.icon || (tool.category === 'pdf' ? '📄' : tool.category === 'design' ? '🎨' : tool.category === 'business' ? '💼' : '🛠️')}
+                          {tool.icon || '🛠️'}
                         </div>
                         <div className="flex-1 pt-1 z-10">
-                          <h3 className="font-black text-slate-800 text-xl leading-tight group-hover:text-orange-600 transition-colors">{tool.name}</h3>
-                          <p className="text-sm text-slate-500 mt-2 line-clamp-2 leading-relaxed font-medium">{tool.description}</p>
+                          <h3 className="font-black text-slate-800 text-xl leading-tight group-hover:text-orange-600">{tool.name}</h3>
+                          <p className="text-sm text-slate-500 mt-2 line-clamp-2">{tool.description}</p>
                         </div>
                       </Link>
                     ))}
@@ -221,7 +216,7 @@ export default function HomePage() {
               {/* ALL CATEGORIES */}
               <div className="space-y-20">
                 {Object.entries(groupedTools).map(([category, tools]) => (
-                  <div key={category} className="scroll-mt-24">
+                  <div key={category} id={`${category.toLowerCase()}-tools`} className="scroll-mt-24">
                     <div className="mb-8 border-b border-slate-200 pb-4">
                       <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
                         <span className="p-2 bg-slate-100 text-slate-600 rounded-xl">⚡</span> {category} Utilities
@@ -229,18 +224,13 @@ export default function HomePage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                       {tools.map((tool) => (
-                         <Link key={tool.slug} href={`/tools/${tool.slug}`} className="group flex items-start gap-4 p-6 bg-white border border-slate-200 rounded-3xl hover:border-purple-600 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
-                            
-                            {/* 🔥 NAYA ICON DISPLAY 🔥 */}
-                            <div className="w-16 h-16 bg-purple-50 group-hover:bg-purple-600 rounded-2xl flex items-center justify-center text-3xl mb-5 transition-colors duration-300">
-                              <span className="group-hover:scale-110 transition-transform duration-300">
-                                {tool.icon}
-                              </span>
+                         <Link key={tool.slug} href={`/tools/${tool.slug}`} className="group flex items-start gap-4 p-6 bg-white border border-slate-200 rounded-3xl hover:border-purple-600 hover:shadow-xl transition-all">
+                            <div className="w-16 h-16 bg-purple-50 group-hover:bg-purple-600 rounded-2xl flex items-center justify-center text-3xl mb-5 transition-colors">
+                              <span className="group-hover:scale-110 transition-transform">{tool.icon}</span>
                             </div>
-
                             <div className="flex-1 pt-1">
-                              <h3 className="font-black text-slate-800 text-lg leading-tight group-hover:text-purple-700 transition-colors">{tool.title}</h3>
-                              <p className="text-sm text-slate-500 mt-2 line-clamp-2 font-medium">{tool.description}</p>
+                              <h3 className="font-black text-slate-800 text-lg group-hover:text-purple-700">{tool.title}</h3>
+                              <p className="text-sm text-slate-500 mt-2 line-clamp-2">{tool.description}</p>
                             </div>
                          </Link>
                       ))}
@@ -251,6 +241,32 @@ export default function HomePage() {
             </>
           )}
         </section>
+
+        {/* 🌟 TESTIMONIALS SECTION (NEW) 🌟 */}
+        {!isLoading && !searchQuery && (
+          <section className="py-20 px-4 bg-slate-100 border-t border-slate-200">
+            <div className="max-w-7xl mx-auto">
+              <div className="mb-12 text-center">
+                <h2 className="text-4xl font-black text-slate-900">Loved by Thousands</h2>
+                <p className="text-slate-500 mt-3 text-lg font-medium">See what our users are saying about DhamakaTools.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { text: "Amazing website.", author: "Rajesh K." },
+                  { text: "Best PDF Tool.", author: "Sarah M." },
+                  { text: "Super Fast.", author: "Amit S." },
+                  { text: "Love AI Tools.", author: "John D." }
+                ].map((testimonial, idx) => (
+                  <div key={idx} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                    <div className="text-yellow-400 text-xl mb-3">⭐⭐⭐⭐⭐</div>
+                    <p className="text-slate-700 font-bold text-lg leading-snug">"{testimonial.text}"</p>
+                    <p className="text-slate-400 text-sm mt-4 uppercase tracking-widest font-bold">- {testimonial.author}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* 🚀 BLOG SECTION */}
         {!isLoading && !searchQuery && (
@@ -264,10 +280,10 @@ export default function HomePage() {
               {latestBlogs && latestBlogs.length > 0 ? (
                 latestBlogs.map((blog) => (
                   <Link key={blog.id} href={`/blog/${blog.slug}`} className="block group">
-                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-purple-400 hover:bg-white transition-all duration-300 h-full flex flex-col justify-between">
+                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-purple-400 hover:bg-white transition-all h-full flex flex-col justify-between">
                       <div>
                         <div className="bg-purple-100 text-purple-700 font-bold text-xs px-3 py-1 rounded-full uppercase inline-block mb-4 shadow-sm">Article</div>
-                        <h3 className="text-xl font-black text-slate-800 group-hover:text-purple-600 transition-colors leading-snug">
+                        <h3 className="text-xl font-black text-slate-800 group-hover:text-purple-600 leading-snug">
                           {blog.title}
                         </h3>
                       </div>
@@ -279,9 +295,16 @@ export default function HomePage() {
                 ))
               ) : (
                 <div className="col-span-3 text-center py-10">
-                  <p className="text-slate-500 font-bold text-lg bg-slate-100 inline-block px-6 py-3 rounded-2xl">📝 Coming soon! We are writing awesome content.</p>
+                  <p className="text-slate-500 font-bold text-lg">📝 Coming soon!</p>
                 </div>
               )}
+            </div>
+            
+            {/* 🔥 VIEW ALL BLOGS BUTTON 🔥 */}
+            <div className="mt-12 text-center">
+              <Link href="/blog" className="inline-flex items-center gap-2 bg-purple-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-purple-700 hover:shadow-purple-500/30 transition-all hover:-translate-y-1">
+                View All Articles <span className="text-xl">→</span>
+              </Link>
             </div>
           </section>
         )}
@@ -293,16 +316,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 border-b border-slate-800 pb-16">
           <div className="space-y-6">
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity inline-block">
-              {/* 🔥 FOOTER MEIN BHI LOGO LAGA DIYA HAI 🔥 */}
               <img src="/logo-icon.png" alt="DhamakaTools" className="w-8 h-8 object-contain inline-block mr-2" />
               <h1 className="text-2xl font-black text-white inline-block align-middle">{siteInfo.name}</h1>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed">{siteInfo.tagline}. We build high-performance, browser-based tools that respect your privacy and save your time.</p>
-            <div className="flex items-center gap-2">
-              <span className="bg-green-500/20 text-green-400 border border-green-500/30 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> All Systems Operational
-              </span>
-            </div>
           </div>
           <div>
             <h4 className="text-white font-black uppercase tracking-wider mb-6">Popular Tools</h4>
@@ -310,16 +327,14 @@ export default function HomePage() {
               <li><Link href="/tools/pdf-to-word" className="hover:text-purple-400 transition-colors flex items-center gap-2">📄 PDF to Word Converter</Link></li>
               <li><Link href="/tools/pdf-to-excel" className="hover:text-purple-400 transition-colors flex items-center gap-2">📊 PDF to Excel Spreadsheet</Link></li>
               <li><Link href="/tools/photo-studio" className="hover:text-purple-400 transition-colors flex items-center gap-2">🎨 Mega Photo Studio</Link></li>
-              <li><Link href="/tools/resume-builder" className="hover:text-purple-400 transition-colors flex items-center gap-2">💼 Smart Resume Builder</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-white font-black uppercase tracking-wider mb-6">Explore</h4>
             <ul className="space-y-3 text-sm font-medium">
-              <li><a href="#tools" className="hover:text-purple-400 transition-colors">All PDF Tools</a></li>
-              <li><a href="#tools" className="hover:text-purple-400 transition-colors">Image & Design Editors</a></li>
-              <li><a href="#tools" className="hover:text-purple-400 transition-colors">Business Generators</a></li>
-              <li><a href="#tools" className="hover:text-purple-400 transition-colors">Daily Utilities</a></li>
+              <li><a href="#pdf-tools" className="hover:text-purple-400 transition-colors">All PDF Tools</a></li>
+              <li><a href="#image-tools" className="hover:text-purple-400 transition-colors">Image & Design Editors</a></li>
+              <li><a href="#business-tools" className="hover:text-purple-400 transition-colors">Business Generators</a></li>
             </ul>
           </div>
           <div>
