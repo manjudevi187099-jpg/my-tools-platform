@@ -83,7 +83,14 @@ const ToolComponents: Record<string, React.ElementType> = {
   "visiting-card": dynamic(() => import('../visiting-card-maker/page'), { ssr: false }),
   "business-profile": dynamic(() => import('../business-profile-generator/page'), { ssr: false }),
   "salary-slip": dynamic(() => import('../salary-slip/page'), { ssr: false }),
-  "email-signature": dynamic(() => import('../email-signature/page'), { ssr: false })
+  "email-signature": dynamic(() => import('../email-signature/page'), { ssr: false }), // 🔥 BUG FIX: Yahan comma miss ho gaya tha
+  
+  // 🔥 NAYE 5 TOOLS HAIN YAHAN 🔥
+  "balance-sheet": dynamic(() => import('../balance-sheet/page'), { ssr: false }),
+  "profit-loss": dynamic(() => import('../profit-loss/page'), { ssr: false }),
+  "project-report": dynamic(() => import('../project-report/page'), { ssr: false }),
+  "loan-emi-calculator": dynamic(() => import('../loan-emi-calculator/page'), { ssr: false }),
+  "investment-calculator": dynamic(() => import('../investment-calculator/page'), { ssr: false }),
 };
 
 export default function ToolPage() {

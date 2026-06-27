@@ -478,5 +478,47 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["email signature", "branding", "professional email"],
     isActive: true,
     icon: "✒️",
+  }, // 🔥 BUG FIX: Yahan comma miss ho gaya tha
+  
+  // 🔥 NAYE FINANCE & BUSINESS TOOLS 🔥
+  "balance-sheet": {
+    name: "Balance Sheet Generator",
+    description: "Create professional and accurate balance sheets for your business in minutes.",
+    category: "business",
+    keywords: ["balance sheet maker", "financial statement", "business accounting"],
+    icon: "⚖️",
+    isActive: true
+  },
+  "profit-loss": {
+    name: "Profit & Loss Statement",
+    description: "Generate detailed profit and loss (P&L) statements to track your business health.",
+    category: "business",
+    keywords: ["profit and loss", "p&l statement", "income statement"],
+    icon: "📉",
+    isActive: true
+  },
+  "project-report": {
+    name: "Project Report Maker",
+    description: "Build comprehensive project reports for bank loans and investors easily.",
+    category: "business",
+    keywords: ["project report", "bank loan report", "business plan maker"],
+    icon: "📊",
+    isActive: true
+  },
+  "loan-emi-calculator": {
+    name: "Loan EMI Calculator",
+    description: "Instantly calculate your monthly EMI for home, car, or personal loans.",
+    category: "utility",
+    keywords: ["emi calculator", "loan calculator", "home loan emi", "car loan emi"],
+    icon: "💰",
+    isActive: true
+  },
+  "investment-calculator": {
+    name: "Investment Calculator",
+    description: "Calculate your SIP, FD, and mutual fund investment returns accurately.",
+    category: "utility",
+    keywords: ["sip calculator", "investment returns", "fd calculator", "mutual fund return"],
+    icon: "📈",
+    isActive: true
   }
 };
