@@ -7,6 +7,9 @@ import Script from 'next/script';
 // 🔥 DYNAMIC HATA DIYA: Normal Import lagaya (Kyunki OneSignalSetup mein 'use client' hai)
 import OneSignalSetup from '../components/OneSignalSetup';
 
+// 🔥 NAYA: Traffic Tracker Import Kiya 🔥
+import TrafficTracker from '../components/TrafficTracker';
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -42,6 +45,9 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        
+        {/* 🔥 NAYA: Global View Tracker Add Kiya 🔥 */}
+        <TrafficTracker />
         
         {/* GOOGLE ANALYTICS */}
         <Script 
