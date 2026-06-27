@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
-  
+
   return {
     // Agar DB mein PdfNexa likha hai toh wo override na kare, isliye direct naam diya:
     title: "DhamakaTools - Professional Utility Engine",
@@ -68,6 +68,11 @@ export default async function RootLayout({
 
         {/* 🔥 NOTIFICATION BANNER 🔥 */}
         <OneSignalSetup />
+        
+        {/* 🔥 MONETAG IN-PAGE PUSH BANNER AD 🔥 */}
+        <Script id="monetag-ad" strategy="afterInteractive">
+          {`(function(s){s.dataset.zone='11207749',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script'))) `}
+        </Script>
 
         {/* HEADER SCRIPTS */}
         {settings?.header_scripts && (
