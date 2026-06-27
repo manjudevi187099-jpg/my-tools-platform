@@ -196,7 +196,7 @@ export default function HomePage() {
             </div>
 
             <a href="#trending" className="hover:text-purple-600 transition-colors">Trending</a>
-            <Link href="/contact" className="hover:text-purple-600 transition-colors">Support</Link>
+            <Link href="/contact-us" className="hover:text-purple-600 transition-colors">Support</Link>
           </nav>
         </div>
       </header>
@@ -407,7 +407,7 @@ export default function HomePage() {
               <li><Link href="/about" className="hover:text-purple-400 transition-colors">About Us</Link></li>
               <li><Link href="/privacy-policy" className="hover:text-purple-400 transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="hover:text-purple-400 transition-colors">Terms of Service</Link></li>
-              <li><Link href="/contact" className="hover:text-purple-400 transition-colors">Contact Support</Link></li>
+              <li><Link href="/contact-us" className="hover:text-purple-400 transition-colors">Contact Support</Link></li>
             </ul>
           </div>
         </div>
