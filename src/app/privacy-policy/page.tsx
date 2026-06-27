@@ -1,93 +1,59 @@
-export default function AboutPage() {
+export default function PrivacyPolicyPage() {
   return (
-    <div className="p-20 text-center">
-      <h1 className="text-4xl font-bold">About Us</h1>
-      <p>Privacy Policy
+    <div className="min-h-screen bg-slate-50 pt-32 pb-20 px-4">
+      <div className="max-w-4xl mx-auto text-center mb-12">
+        <h1 className="text-5xl font-black text-slate-900 mb-6">Privacy Policy</h1>
+        <p className="text-slate-500 font-bold uppercase tracking-widest">Last Updated: June 26, 2026</p>
+        <div className="w-20 h-1 bg-purple-500 mx-auto rounded-full mt-6 mb-8"></div>
+        <p className="text-lg text-slate-600 font-medium">Welcome to DhamakaTools ("we," "our," or "us"). Your privacy is important to us. This Privacy Policy explains how we collect, use, store, and protect your information when you use DhamakaTools.com.</p>
+      </div>
 
-Last Updated: June 26, 2026
+      <div className="max-w-4xl mx-auto bg-white p-10 rounded-[2rem] shadow-sm border border-slate-200 text-left space-y-8">
+        
+        <section>
+          <h2 className="text-xl font-bold text-slate-800 mb-3">1. Information We Collect</h2>
+          <p className="text-slate-600 mb-2">We may collect the following information:</p>
+          <ul className="list-disc pl-6 text-slate-600 space-y-1">
+            <li>Name (if provided)</li>
+            <li>Email address (for support or account registration)</li>
+            <li>Login information (if you create an account)</li>
+            <li>Device and browser information & IP address</li>
+            <li>Usage analytics & Uploaded files (only for processing through our tools)</li>
+          </ul>
+        </section>
 
-Welcome to DhamakaTools ("we," "our," or "us"). Your privacy is important to us. This Privacy Policy explains how we collect, use, store, and protect your information when you use DhamakaTools.com.
+        <section>
+          <h2 className="text-xl font-bold text-slate-800 mb-3">2. How We Use Your Information</h2>
+          <ul className="list-disc pl-6 text-slate-600 space-y-1">
+            <li>Provide and improve our online tools & process uploaded files</li>
+            <li>Respond to support requests & improve website performance</li>
+            <li>Prevent fraud, abuse, and maintain website security</li>
+            <li>Communicate important updates</li>
+          </ul>
+        </section>
 
-1. Information We Collect
+        <section>
+          <h2 className="text-xl font-bold text-slate-800 mb-3">3. File Privacy</h2>
+          <p className="text-slate-600">Your uploaded files are processed securely. Files are used only to perform the requested task. We do not access or review your files unless required for troubleshooting with your permission. Temporary files may be automatically deleted after processing. We do not sell or share your uploaded files with third parties.</p>
+        </section>
 
-We may collect the following information:
+        <section>
+          <h2 className="text-xl font-bold text-slate-800 mb-3">4. Cookies & Third-Party Services</h2>
+          <p className="text-slate-600">We use cookies to remember your preferences, improve website performance, analyze traffic, and enhance user experience. We may use trusted third-party services (Analytics, Cloud storage, Payment processors, Authentication providers). These services have their own privacy policies.</p>
+        </section>
 
-Name (if provided)
-Email address (for support or account registration)
-Login information (if you create an account)
-Device and browser information
-IP address
-Usage analytics
-Uploaded files (only for processing through our tools)
-2. How We Use Your Information
+        <section>
+          <h2 className="text-xl font-bold text-slate-800 mb-3">5. Data Security & Children's Privacy</h2>
+          <p className="text-slate-600">We implement reasonable technical and organizational measures to protect your information. However, no method of internet transmission is completely secure. DhamakaTools is not intended for children under the age of 13.</p>
+        </section>
 
-We use your information to:
+        <section>
+          <h2 className="text-xl font-bold text-slate-800 mb-3">6. Your Rights & Contact</h2>
+          <p className="text-slate-600 mb-4">Depending on your location, you may have the right to access, correct, or request deletion of your data. We may update this Privacy Policy from time to time.</p>
+          <p className="text-slate-600 font-bold">Email: help@dhamakatools.com</p>
+        </section>
 
-Provide and improve our online tools
-Process uploaded files
-Respond to support requests
-Improve website performance
-Prevent fraud and abuse
-Maintain website security
-Communicate important updates
-3. File Privacy
-
-Your uploaded files are processed securely.
-
-Files are used only to perform the requested task.
-We do not access or review your files unless required for troubleshooting with your permission.
-Temporary files may be automatically deleted after processing.
-We do not sell or share your uploaded files with third parties.
-4. Cookies
-
-We use cookies to:
-
-Remember your preferences
-Improve website performance
-Analyze website traffic
-Enhance user experience
-
-You can disable cookies through your browser settings, although some features may not work properly.
-
-5. Third-Party Services
-
-We may use trusted third-party services such as:
-
-Analytics services
-Cloud storage providers
-Payment processors (for premium services)
-Authentication providers
-
-These services have their own privacy policies.
-
-6. Data Security
-
-We implement reasonable technical and organizational measures to protect your information against unauthorized access, loss, misuse, or disclosure. However, no method of internet transmission or electronic storage is completely secure.
-
-7. Children's Privacy
-
-DhamakaTools is not intended for children under the age of 13. We do not knowingly collect personal information from children.
-
-8. Your Rights
-
-Depending on your location, you may have the right to:
-
-Access your personal data
-Correct inaccurate information
-Request deletion of your data
-Withdraw consent where applicable
-Contact us regarding privacy concerns
-9. Changes to This Privacy Policy
-
-We may update this Privacy Policy from time to time. Any changes will be posted on this page along with the updated effective date.
-
-10. Contact Us
-
-If you have any questions about this Privacy Policy or how your information is handled, please contact us:
-
-Email: help@dhamakatools.com
-
-By using DhamakaTools.com, you agree to this Privacy Policy and our practices regarding the collection and use of information.</p>
+      </div>
     </div>
   );
 }
