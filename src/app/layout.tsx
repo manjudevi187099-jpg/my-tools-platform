@@ -69,10 +69,14 @@ export default async function RootLayout({
         {/* 🔥 NOTIFICATION BANNER 🔥 */}
         <OneSignalSetup />
         
-        {/* 🔥 MONETAG IN-PAGE PUSH BANNER AD 🔥 */}
-        <Script id="monetag-ad" strategy="afterInteractive">
-          {`(function(s){s.dataset.zone='11207749',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script'))) `}
-        </Script>
+        {/* 🔥 MONETAG MULTITAG AD 🔥 */}
+        <Script 
+          src="https://quge5.com/88/tag.min.js" 
+          data-zone="254168" 
+          strategy="afterInteractive" 
+          async 
+          data-cfasync="false"
+        />
 
         {/* HEADER SCRIPTS */}
         {settings?.header_scripts && (
