@@ -4,10 +4,9 @@ import "./globals.css";
 import { getSiteSettings } from '../lib/getSettings';
 import Script from 'next/script';
 
-// 🔥 DYNAMIC HATA DIYA: Normal Import lagaya (Kyunki OneSignalSetup mein 'use client' hai)
+import AdsterraBanner from '../components/AdsterraBanner';
+import AdsterraNative from '../components/AdsterraNative';
 import OneSignalSetup from '../components/OneSignalSetup';
-
-// 🔥 NAYA: Traffic Tracker Import Kiya 🔥
 import TrafficTracker from '../components/TrafficTracker';
 
 const geistSans = Geist({
@@ -44,7 +43,6 @@ export default async function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         
-        {/* 🔥 NAYA: Global View Tracker Add Kiya 🔥 */}
         <TrafficTracker />
         
         {/* GOOGLE ANALYTICS */}
@@ -61,23 +59,32 @@ export default async function RootLayout({
           `}
         </Script>
 
-        {/* MAIN CONTENT */}
-        {children}
+        {/* 🔥 ADSTERRA: Main content ke upar 🔥 */}
+        <div className="w-full flex justify-center pt-4">
+           <AdsterraBanner />
+        </div>
 
-        {/* 🔥 NOTIFICATION BANNER 🔥 */}
+        {/* MAIN CONTENT */}
+        <main className="flex-grow">
+          {children}
+        </main>
+
+        {/* 🔥 ADSTERRA: Main content ke niche 🔥 */}
+        <div className="w-full flex justify-center pb-8">
+           <AdsterraNative />
+        </div>
+
+        {/* NOTIFICATIONS & MONETAG PUSH/POP ADS */}
         <OneSignalSetup />
         
-        {/* 🔥 1. MONETAG SAFE IN-PAGE PUSH BANNER 🔥 */}
         <Script id="monetag-in-page" strategy="afterInteractive">
           {`(function(s){s.dataset.zone='11207749',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script'))) `}
         </Script>
 
-        {/* 🔥 2. MONETAG VIGNETTE BANNER (HIGH CPM, NO REDIRECTS) 🔥 */}
         <Script id="monetag-vignette" strategy="afterInteractive">
           {`(function(s){s.dataset.zone='11210332',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script'))) `}
         </Script>
 
-        {/* 🔥 3. MONETAG PUSH NOTIFICATIONS 🔥 */}
         <Script 
           src="https://5gvci.com/act/files/tag.min.js?z=11210333" 
           strategy="afterInteractive" 
@@ -85,7 +92,6 @@ export default async function RootLayout({
           data-cfasync="false"
         />
 
-        {/* HEADER SCRIPTS */}
         {settings?.header_scripts && (
           <div 
             dangerouslySetInnerHTML={{ __html: settings.header_scripts }} 
