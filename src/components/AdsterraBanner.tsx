@@ -6,23 +6,26 @@ export default function AdsterraBanner() {
 
   useEffect(() => {
     if (!bannerRef.current) return;
+    
+    // Check if ad is already loaded
     if (bannerRef.current.firstChild) return;
 
+    // Naya 728x90 Lamba Banner Code
     const conf = document.createElement('script');
     conf.type = 'text/javascript';
     conf.innerHTML = `
       atOptions = {
-        'key' : 'a538c49ff1eb623f52c8f9c4a598f4ea',
+        'key' : '6ec81ae399a34ea135fed9ac7e26f20f',
         'format' : 'iframe',
-        'height' : 250,
-        'width' : 300,
+        'height' : 90,
+        'width' : 728,
         'params' : {}
       };
     `;
 
     const script = document.createElement('script');
     script.type = 'text/javascript';
-    script.src = 'https://www.highperformanceformat.com/a538c49ff1eb623f52c8f9c4a598f4ea/invoke.js';
+    script.src = 'https://www.highperformanceformat.com/6ec81ae399a34ea135fed9ac7e26f20f/invoke.js';
 
     bannerRef.current.appendChild(conf);
     bannerRef.current.appendChild(script);
@@ -30,6 +33,7 @@ export default function AdsterraBanner() {
 
   return (
     <div className="flex justify-center items-center my-6 w-full overflow-hidden">
+      {/* Is div ke andar aapka lamba fixed banner load hoga */}
       <div ref={bannerRef}></div>
     </div>
   );
