@@ -24,13 +24,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
 
   return {
-    // Agar DB mein PdfNexa likha hai toh wo override na kare, isliye direct naam diya:
     title: "DhamakaTools - Professional Utility Engine",
     description: settings?.seo_description || "Free, secure, and blazing-fast web tools built for developers, designers, and power users.",
     keywords: settings?.keywords || "pdf tools, online utility, format converter",
-    // 🔥 VERCEL LOGO HATANE KE LIYE YAHAN ICON ADD KIYA HAI 🔥
     icons: {
-      icon: '/logo-icon.png', // Aapke public folder mein jo logo hai
+      icon: '/logo-icon.png', 
     }
   };
 }
@@ -69,10 +67,19 @@ export default async function RootLayout({
         {/* 🔥 NOTIFICATION BANNER 🔥 */}
         <OneSignalSetup />
         
-        {/* 🔥 MONETAG MULTITAG AD 🔥 */}
+        {/* 🔥 1. MONETAG SAFE IN-PAGE PUSH BANNER 🔥 */}
+        <Script id="monetag-in-page" strategy="afterInteractive">
+          {`(function(s){s.dataset.zone='11207749',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script'))) `}
+        </Script>
+
+        {/* 🔥 2. MONETAG VIGNETTE BANNER (HIGH CPM, NO REDIRECTS) 🔥 */}
+        <Script id="monetag-vignette" strategy="afterInteractive">
+          {`(function(s){s.dataset.zone='11210332',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script'))) `}
+        </Script>
+
+        {/* 🔥 3. MONETAG PUSH NOTIFICATIONS 🔥 */}
         <Script 
-          src="https://quge5.com/88/tag.min.js" 
-          data-zone="254168" 
+          src="https://5gvci.com/act/files/tag.min.js?z=11210333" 
           strategy="afterInteractive" 
           async 
           data-cfasync="false"
