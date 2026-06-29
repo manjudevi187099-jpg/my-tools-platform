@@ -4,8 +4,6 @@ import "./globals.css";
 import { getSiteSettings } from '../lib/getSettings';
 import Script from 'next/script';
 
-import AdsterraBanner from '../components/AdsterraBanner';
-import AdsterraNative from '../components/AdsterraNative';
 import OneSignalSetup from '../components/OneSignalSetup';
 import TrafficTracker from '../components/TrafficTracker';
 
@@ -59,39 +57,15 @@ export default async function RootLayout({
           `}
         </Script>
 
-        {/* 🔥 ADSTERRA: Main content ke upar 🔥 */}
-        <div className="w-full flex justify-center pt-4">
-           <AdsterraBanner />
-        </div>
-
         {/* MAIN CONTENT */}
         <main className="flex-grow">
           {children}
         </main>
 
-        {/* 🔥 ADSTERRA: Main content ke niche 🔥 */}
-        <div className="w-full flex justify-center pb-8">
-           <AdsterraNative />
-        </div>
-
-        {/* NOTIFICATIONS & MONETAG PUSH/POP ADS */}
+        {/* NOTIFICATIONS BANNER */}
         <OneSignalSetup />
         
-        <Script id="monetag-in-page" strategy="afterInteractive">
-          {`(function(s){s.dataset.zone='11207749',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script'))) `}
-        </Script>
-
-        <Script id="monetag-vignette" strategy="afterInteractive">
-          {`(function(s){s.dataset.zone='11210332',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script'))) `}
-        </Script>
-
-        <Script 
-          src="https://5gvci.com/act/files/tag.min.js?z=11210333" 
-          strategy="afterInteractive" 
-          async 
-          data-cfasync="false"
-        />
-
+        {/* HEADER SCRIPTS */}
         {settings?.header_scripts && (
           <div 
             dangerouslySetInnerHTML={{ __html: settings.header_scripts }} 
