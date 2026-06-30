@@ -4,10 +4,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // 🌟 NAYA AUR SABSE SAHI FIX: Next.js ko natively bolna ki canvas ko ignore kare
-  experimental: {
-    serverExternalPackages: ['canvas', 'pdfjs-dist'],
-  },
+  // 🌟 FIX: Isko 'experimental' se bahar nikal kar seedha bahar (top-level) rakh diya hai
+  serverExternalPackages: ['canvas', 'pdfjs-dist'],
 
   webpack: (config: any, { isServer }: any) => {
     if (!isServer) {
@@ -20,7 +18,6 @@ const nextConfig = {
       };
     }
     
-    // Webpack ke liye canvas ignore (Purana backup)
     if (!config.resolve.alias) {
       config.resolve.alias = {};
     }
@@ -32,7 +29,6 @@ const nextConfig = {
   turbopack: {
     resolveAlias: {
       'onnxruntime-web/webgpu': 'onnxruntime-web',
-      // 🔥 YAHAN SE HUMNE 'canvas: false' HATA DIYA HAI TAAKI ERROR NA AAYE
     },
   },
 };
