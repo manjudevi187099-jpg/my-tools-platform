@@ -1,8 +1,10 @@
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  webpack: (config: any, { isServer }: any) => {
+  // 🔥 FIX: config aur isServer ko wapas ': any' de diya
+  webpack: (config: any, { isServer }: any) => { 
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -12,12 +14,21 @@ const nextConfig = {
         os: false,
       };
     }
+    
+    // NAYA UPDATE: Webpack ko canvas ignore karne ka order
+    if (!config.resolve.alias) {
+      config.resolve.alias = {};
+    }
+    config.resolve.alias.canvas = false;
+    
     return config;
   },
-  // 🌟 FIX: Turbopack ko missing webgpu module ignore karne ka instruction
+  
+  // FIX: Purana webgpu aur Naya canvas dono ko ignore karne ka instruction
   turbopack: {
     resolveAlias: {
       'onnxruntime-web/webgpu': 'onnxruntime-web',
+      'canvas': false, 
     },
   },
 };
