@@ -3,8 +3,13 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // 🔥 FIX: config aur isServer ko wapas ': any' de diya
-  webpack: (config: any, { isServer }: any) => { 
+  
+  // 🌟 NAYA AUR SABSE SAHI FIX: Next.js ko natively bolna ki canvas ko ignore kare
+  experimental: {
+    serverExternalPackages: ['canvas', 'pdfjs-dist'],
+  },
+
+  webpack: (config: any, { isServer }: any) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -15,7 +20,7 @@ const nextConfig = {
       };
     }
     
-    // NAYA UPDATE: Webpack ko canvas ignore karne ka order
+    // Webpack ke liye canvas ignore (Purana backup)
     if (!config.resolve.alias) {
       config.resolve.alias = {};
     }
@@ -24,11 +29,10 @@ const nextConfig = {
     return config;
   },
   
-  // FIX: Purana webgpu aur Naya canvas dono ko ignore karne ka instruction
   turbopack: {
     resolveAlias: {
       'onnxruntime-web/webgpu': 'onnxruntime-web',
-      'canvas': false, 
+      // 🔥 YAHAN SE HUMNE 'canvas: false' HATA DIYA HAI TAAKI ERROR NA AAYE
     },
   },
 };
