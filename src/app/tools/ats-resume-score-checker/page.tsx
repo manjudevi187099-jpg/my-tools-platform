@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import Head from 'next/head';
 
-// ❌ HUMNE YAHAN SE pdfjs-dist KA IMPORT HATA DIYA HAI TAAKI VERCEL ERROR NA DE
-
 export default function ATSResumeChecker() {
   const [jobDescription, setJobDescription] = useState('');
   const [resumeText, setResumeText] = useState('');
@@ -16,7 +14,7 @@ export default function ATSResumeChecker() {
     missingKeywords: string[];
   } | null>(null);
 
-  // Common stop words
+  // Common stop words jo humein match nahi karne
   const stopWords = ['and', 'the', 'to', 'of', 'in', 'for', 'with', 'on', 'this', 'that', 'is', 'a', 'an', 'as', 'be', 'are'];
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,8 +32,6 @@ export default function ATSResumeChecker() {
     reader.onload = async (event) => {
       const typedarray = new Uint8Array(event.target?.result as ArrayBuffer);
       try {
-        // ✅ FIX: Yahan dynamically import kiya hai, sirf jab user file daalega
-        try {
         // @ts-ignore
         const pdfjsLib = await import('pdfjs-dist/build/pdf');
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -84,6 +80,7 @@ export default function ATSResumeChecker() {
       const matched = jdKeywords.filter(kw => resumeKeywords.includes(kw));
       const missing = jdKeywords.filter(kw => !resumeKeywords.includes(kw));
 
+      // Score calculation
       const scorePercentage = Math.round((matched.length / jdKeywords.length) * 100) || 0;
 
       setResult({
@@ -93,7 +90,7 @@ export default function ATSResumeChecker() {
       });
 
       setIsAnalyzing(false);
-    }, 1500);
+    }, 1500); // Thoda loading effect ke liye 1.5 second ka delay
   };
 
   return (
@@ -157,6 +154,7 @@ export default function ATSResumeChecker() {
             </div>
           </div>
 
+          {/* Analyze Button */}
           <div className="mt-8">
             <button
               onClick={analyzeResume}
@@ -170,6 +168,7 @@ export default function ATSResumeChecker() {
           </div>
         </div>
 
+        {/* Results Section */}
         {result && (
           <div className="bg-white shadow-xl rounded-2xl p-6 sm:p-8 animate-fade-in-up">
             <h2 className="text-2xl font-bold text-center mb-6 text-gray-900">Analysis Result</h2>
@@ -204,6 +203,7 @@ export default function ATSResumeChecker() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
