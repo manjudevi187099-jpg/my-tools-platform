@@ -1,24 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 
 export default function StealthCalculator() {
+  // Calculator States
   const [display, setDisplay] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   
-  const [message, setMessage] = useState('');
-  const [generatedLink, setGeneratedLink] = useState('');
+  // Dashboard States
+  const [activeRoomPin, setActiveRoomPin] = useState('');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Normal Calculator Logic + Secret Vault Trigger
   const handleCalcClick = (val: string) => {
     if (val === 'C') {
       setDisplay('');
     } else if (val === '=') {
-      // 🚨 THE SECRET PIN: 8055 
-      if (display === '8055') {
+      // 🚨 ASLI JADOO: Agar kisi ne koi number daal kar = dabaya (e.g. 143=)
+      // Toh wahi number uska Room ID ban jayega!
+      if (display.length >= 3 && !isNaN(Number(display))) {
+        setActiveRoomPin(display);
         setIsUnlocked(true);
         setDisplay('');
+        fetchMessages(display); // Room khulte hi messages fetch karo
       } else {
         try {
           // eslint-disable-next-line no-eval
@@ -34,24 +41,50 @@ export default function StealthCalculator() {
 
   const calcButtons = ['7', '8', '9', '/', '4', '5', '6', '*', '1', '2', '3', '-', 'C', '0', '=', '+'];
 
-  const handleGenerateLink = async () => {
-    if (!message) { alert("Pehle message toh likho!"); return; }
+  // Fetch Messages from Supabase
+  const fetchMessages = async (pin: string) => {
+    try {
+      const res = await fetch(`/myapi/room/read?pin=${pin}`);
+      const data = await res.json();
+      if (data.messages) setMessages(data.messages);
+    } catch (error) {
+      console.error("Fetch error", error);
+    }
+  };
+
+  // Send Message to Current Room
+  const handleSendMessage = async () => {
+    if (!newMessage) return;
     setLoading(true);
     try {
-      const res = await fetch('/myapi/secret-note/create', {
+      await fetch('/myapi/room/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ room_pin: activeRoomPin, message: newMessage }),
       });
-      const data = await res.json();
-      if (data.code) {
-        setGeneratedLink(`${window.location.origin}/s-msg/${data.code}`);
-        setMessage(''); // Clear message after generating
-      }
+      setNewMessage('');
+      fetchMessages(activeRoomPin); // Refresh list
     } catch (error) {
-      alert("Error generating link!");
+      alert("Send failed!");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Self-Destruct / Clear Entire Room
+  const handleDestroyRoom = async () => {
+    const confirm = window.confirm("WARNING: Yeh chat dono taraf se hamesha ke liye delete ho jayegi. Continue?");
+    if (!confirm) return;
+    try {
+      await fetch('/myapi/room/destroy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ room_pin: activeRoomPin }),
+      });
+      setMessages([]);
+      alert("💥 Room Destroyed!");
+    } catch (error) {
+      alert("Destroy failed!");
     }
   };
 
@@ -59,9 +92,10 @@ export default function StealthCalculator() {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <Head><title>Math Calculator</title></Head>
 
-      <div className="max-w-md w-full bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-700">
+      <div className="max-w-md w-full bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-700 h-[600px] flex flex-col">
         {!isUnlocked ? (
-          <div className="p-6">
+          /* ---------------- NORMAL CALCULATOR ---------------- */
+          <div className="p-6 h-full flex flex-col justify-end">
             <div className="bg-gray-900 p-6 rounded-2xl mb-6 text-right overflow-hidden shadow-inner border border-gray-700">
               <span className="text-4xl font-mono text-green-400 tracking-widest">{display || '0'}</span>
             </div>
@@ -76,27 +110,53 @@ export default function StealthCalculator() {
                 </button>
               ))}
             </div>
+            <p className="text-center text-xs text-gray-500 mt-6 font-mono">Tip: Type any code + '=' for dashboard</p>
           </div>
         ) : (
-          <div className="p-8 bg-white h-full">
-            <div className="flex justify-between items-center mb-6 border-b pb-4">
-              <h2 className="text-xl font-black text-gray-800">🕵️‍♂️ Secret Vault</h2>
-              <button onClick={() => setIsUnlocked(false)} className="text-xs bg-red-100 text-red-600 px-3 py-2 rounded-lg font-bold">Lock</button>
+          /* ---------------- THE SECRET DASHBOARD ---------------- */
+          <div className="bg-white h-full flex flex-col relative">
+            {/* Header */}
+            <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+              <div>
+                <h2 className="text-lg font-black text-gray-800">🕵️‍♂️ Room: {activeRoomPin}</h2>
+                <p className="text-xs text-gray-500">Live Secret Dashboard</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleDestroyRoom} className="text-xs bg-red-100 text-red-600 px-3 py-2 rounded-lg font-bold hover:bg-red-200" title="Destroy Room">💥 Nuke</button>
+                <button onClick={() => setIsUnlocked(false)} className="text-xs bg-gray-200 text-gray-800 px-3 py-2 rounded-lg font-bold">Lock</button>
+              </div>
             </div>
-            <div className="space-y-4">
-              <textarea 
-                rows={4} placeholder="Type secret message..." value={message} onChange={(e) => setMessage(e.target.value)}
-                className="w-full p-4 border rounded-xl bg-gray-50 resize-none text-gray-800"
-              />
-              <button onClick={handleGenerateLink} disabled={loading} className="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl">
-                {loading ? 'Encrypting...' : 'Generate Self-Destruct Link'}
-              </button>
-              {generatedLink && (
-                <div className="mt-4 p-4 bg-green-50 rounded-xl text-center">
-                  <input type="text" readOnly value={generatedLink} className="w-full p-2 text-sm bg-white border rounded mb-2 text-center" />
-                  <button onClick={() => navigator.clipboard.writeText(generatedLink)} className="bg-gray-800 text-white px-4 py-2 rounded text-sm w-full">Copy Link</button>
+            
+            {/* Chat Inbox Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-100">
+              {messages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                  <p className="text-4xl mb-2">👻</p>
+                  <p className="text-sm font-bold">No messages here yet.</p>
                 </div>
+              ) : (
+                messages.map((msg, idx) => (
+                  <div key={idx} className="bg-white p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-200 max-w-[85%]">
+                    <p className="text-gray-800 text-sm">{msg.message}</p>
+                    <p className="text-[10px] text-gray-400 mt-1 text-right">Just now</p>
+                  </div>
+                ))
               )}
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 bg-white border-t flex gap-2">
+              <input 
+                type="text" 
+                placeholder="Type a secret message..." 
+                value={newMessage} 
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                className="flex-1 p-3 border rounded-xl bg-gray-50 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button onClick={handleSendMessage} disabled={loading} className="px-5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg">
+                {loading ? '...' : 'Send'}
+              </button>
             </div>
           </div>
         )}
