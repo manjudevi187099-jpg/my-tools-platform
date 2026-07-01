@@ -1,22 +1,26 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { FileArchive, Upload, Download, FileText, ArrowRightLeft, Sparkles, Archive } from 'lucide-react';
-import JSZip from 'jszip';
+import { FileArchive, Upload, Download, FileText, ArrowRightLeft, Sparkles, Archive, Lock, Key } from 'lucide-react';
+import * as zip from '@zip.js/zip.js';
 
 export default function MasterZipConverter() {
   const [mode, setMode] = useState<'compress' | 'extract'>('compress');
   
   // States for Compress Mode
   const [filesToZip, setFilesToZip] = useState<File[]>([]);
+  const [compressPassword, setCompressPassword] = useState('');
   
   // States for Extract Mode
   const [extractedFiles, setExtractedFiles] = useState<{ name: string; url: string; type: string }[]>([]);
+  const [extractPassword, setExtractPassword] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- MODE 1: COMPRESS (PDF/Images to ZIP) ---
+  // ==========================================
+  // MODE 1: COMPRESS (PDF/Images to ZIP with Password)
+  // ==========================================
   const handleSelectFilesToZip = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
@@ -29,17 +33,23 @@ export default function MasterZipConverter() {
     
     setIsProcessing(true);
     try {
-      const zip = new JSZip();
-      filesToZip.forEach((file) => {
-        zip.file(file.name, file);
+      // Initialize zip writer with optional password
+      const zipWriter = new zip.ZipWriter(new zip.BlobWriter("application/zip"), {
+        password: compressPassword || undefined
       });
 
-      const blob = await zip.generateAsync({ type: 'blob' });
+      // Add all files to zip
+      for (const file of filesToZip) {
+        await zipWriter.add(file.name, new zip.BlobReader(file));
+      }
+
+      // Close and generate blob
+      const blob = await zipWriter.close();
       const url = URL.createObjectURL(blob);
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'dhamaka-compressed.zip';
+      link.download = 'dhamaka-secure.zip';
       link.click();
       
       URL.revokeObjectURL(url);
@@ -51,7 +61,9 @@ export default function MasterZipConverter() {
     }
   };
 
-  // --- MODE 2: EXTRACT (ZIP to JPEGs/Files) ---
+  // ==========================================
+  // MODE 2: EXTRACT (ZIP to JPEGs/Files with Password)
+  // ==========================================
   const handleExtractZip = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !file.name.endsWith('.zip')) {
@@ -62,30 +74,39 @@ export default function MasterZipConverter() {
     setExtractedFiles([]); // Clear previous
 
     try {
-      const zip = await JSZip.loadAsync(file);
-      const extracted: { name: string; url: string; type: string }[] = [];
-
-      // Loop through each file inside the ZIP
-      const promises = Object.keys(zip.files).map(async (filename) => {
-        const zipEntry = zip.files[filename];
-        if (!zipEntry.dir) {
-          const blob = await zipEntry.async('blob');
-          const url = URL.createObjectURL(blob);
-          extracted.push({
-            name: filename,
-            url: url,
-            type: blob.type || (filename.endsWith('.jpg') || filename.endsWith('.jpeg') ? 'image/jpeg' : 'other')
-          });
-        }
+      // Initialize zip reader with optional password
+      const zipReader = new zip.ZipReader(new zip.BlobReader(file), {
+        password: extractPassword || undefined
       });
 
-      await Promise.all(promises);
+      const entries = await zipReader.getEntries();
+      const extracted: { name: string; url: string; type: string }[] = [];
+
+      for (const entry of entries) {
+        if (!entry.directory && entry.getData) {
+          // If a password is required but wrong/missing, this line will throw an error
+          const blob = await entry.getData(new zip.BlobWriter());
+          const url = URL.createObjectURL(blob);
+          extracted.push({
+            name: entry.filename,
+            url: url,
+            type: blob.type || (entry.filename.match(/\.(jpg|jpeg|png)$/i) ? 'image/jpeg' : 'other')
+          });
+        }
+      }
+
       setExtractedFiles(extracted);
-    } catch (error) {
+      await zipReader.close();
+    } catch (error: any) {
       console.error("Extraction failed:", error);
-      alert("Failed to extract ZIP. File might be corrupted.");
+      if (error.message.includes("password") || error.message.includes("Encrypted")) {
+        alert("🔒 This ZIP is password protected or the password you entered is incorrect!");
+      } else {
+        alert("Failed to extract ZIP. File might be corrupted.");
+      }
     } finally {
       setIsProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
     }
   };
 
@@ -104,7 +125,7 @@ export default function MasterZipConverter() {
           <h1 className="text-4xl font-black mb-3 flex items-center justify-center gap-3">
             <Archive className="text-indigo-400" size={40} /> Master ZIP Converter
           </h1>
-          <p className="text-slate-400 font-medium">Convert PDF to ZIP, or Extract ZIP to JPEGs instantly on your browser.</p>
+          <p className="text-slate-400 font-medium">Create Secure ZIPs with Passwords, or Extract locked ZIPs instantly.</p>
         </div>
 
         {/* --- MODE SWITCHER --- */}
@@ -150,8 +171,23 @@ export default function MasterZipConverter() {
                       </div>
                     ))}
                   </div>
+
+                  {/* PASSWORD FIELD FOR COMPRESS */}
+                  <div className="mb-6 bg-slate-900 p-4 rounded-xl border border-slate-700">
+                    <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-2 mb-2">
+                      <Lock size={14} /> Set Password (Optional)
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder="Leave blank for no password..." 
+                      value={compressPassword}
+                      onChange={(e) => setCompressPassword(e.target.value)}
+                      className="w-full bg-slate-800 p-3 rounded-lg border border-slate-600 outline-none focus:border-indigo-500 font-medium text-sm"
+                    />
+                  </div>
+
                   <button onClick={createZipFile} disabled={isProcessing} className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-black text-lg flex justify-center items-center gap-2 transition-all shadow-lg disabled:opacity-50">
-                    {isProcessing ? "PACKING..." : <><Archive size={20}/> DOWNLOAD AS .ZIP</>}
+                    {isProcessing ? "PACKING..." : <><Archive size={20}/> DOWNLOAD SECURE .ZIP</>}
                   </button>
                 </div>
               )}
@@ -161,10 +197,25 @@ export default function MasterZipConverter() {
           {/* ================= EXTRACT MODE UI ================= */}
           {mode === 'extract' && (
             <div className="animate-in fade-in zoom-in-95 duration-300">
+              
+              {/* PASSWORD FIELD FOR EXTRACT */}
+              <div className="mb-6 bg-slate-900 p-5 rounded-2xl border border-slate-700">
+                <label className="text-xs font-bold text-emerald-400 uppercase flex items-center gap-2 mb-2">
+                  <Key size={14} /> Unlock Password (If Protected)
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="Enter password before uploading if ZIP is locked..." 
+                  value={extractPassword}
+                  onChange={(e) => setExtractPassword(e.target.value)}
+                  className="w-full bg-slate-800 p-4 rounded-xl border border-slate-600 outline-none focus:border-emerald-500 font-medium"
+                />
+              </div>
+
               <div className="border-2 border-dashed border-slate-600 rounded-2xl p-10 flex flex-col items-center justify-center text-center bg-slate-800/50 hover:bg-slate-700/30 transition-colors">
                 <Archive size={48} className="text-emerald-400 mb-4" />
-                <h3 className="font-black text-xl mb-2">Extract ZIP to JPEGs</h3>
-                <p className="text-slate-400 text-sm mb-6">Upload a ZIP file to extract and view all JPEGs or files inside it.</p>
+                <h3 className="font-black text-xl mb-2">Extract Locked / Normal ZIP</h3>
+                <p className="text-slate-400 text-sm mb-6">Upload a ZIP file to extract its contents. If it's locked, enter the password above first.</p>
                 
                 <input type="file" accept=".zip" onChange={handleExtractZip} ref={fileInputRef} className="hidden" />
                 <button onClick={() => fileInputRef.current?.click()} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg">
@@ -172,7 +223,7 @@ export default function MasterZipConverter() {
                 </button>
               </div>
 
-              {isProcessing && <p className="text-center mt-6 font-bold text-emerald-400 animate-pulse">Extracting files...</p>}
+              {isProcessing && <p className="text-center mt-6 font-bold text-emerald-400 animate-pulse">Decrypting & Extracting files...</p>}
 
               {extractedFiles.length > 0 && (
                 <div className="mt-8">
@@ -181,7 +232,6 @@ export default function MasterZipConverter() {
                     {extractedFiles.map((file, idx) => (
                       <div key={idx} className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden flex flex-col group">
                         
-                        {/* Show Image Preview if it's an image, else show file icon */}
                         {file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                           <div className="h-32 bg-black flex items-center justify-center p-2 relative">
                             <img src={file.url} alt={file.name} className="max-h-full max-w-full object-contain" />
