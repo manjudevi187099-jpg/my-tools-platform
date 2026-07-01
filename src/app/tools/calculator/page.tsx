@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
-// 🔥 ZegoCloud Import
-import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
 
 export default function StealthCalculator() {
   const [display, setDisplay] = useState('');
@@ -47,7 +45,7 @@ export default function StealthCalculator() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isUnlocked && activeRoomPin && !isCalling) { // Call ke time chat fetch pause kar denge
+    if (isUnlocked && activeRoomPin && !isCalling) {
       fetchMessages(activeRoomPin); 
       interval = setInterval(() => {
         fetchMessages(activeRoomPin); 
@@ -169,20 +167,21 @@ export default function StealthCalculator() {
     alert('🔗 Direct Invite Link Copied!\nAb aap ise WhatsApp par bhej sakte hain.');
   };
 
-  // 🔥 ZEGO CLOUD CALLING LOGIC 🔥
+  // 🔥 ZEGO CLOUD DYNAMIC IMPORT LOGIC 🔥
   const startCall = async (isVideo: boolean) => {
     setIsCalling(true);
     
-    // UI update hone ka wait karenge thoda sa taaki container mount ho jaye
-    setTimeout(() => {
-      const appID = 1853479942; // Aapka App ID
-      const serverSecret = "b96aaa76b05c3c4a515f42b63fec57e6"; // Aapka Secret
+    setTimeout(async () => {
+      // 🚨 FIX: Yahan package ko dynamic import kiya hai taaki SSR par error na aaye
+      const { ZegoUIKitPrebuilt } = await import('@zegocloud/zego-uikit-prebuilt');
+
+      const appID = 1853479942; 
+      const serverSecret = "b96aaa76b05c3c4a515f42b63fec57e6"; 
       
-      // Token generate karna
       const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
         appID, 
         serverSecret, 
-        activeRoomPin, // Room ID wahi hogi jo chat PIN hai
+        activeRoomPin, 
         deviceId, 
         "Agent_" + deviceId.substring(0,4)
       );
@@ -196,9 +195,9 @@ export default function StealthCalculator() {
         },
         turnOnMicrophoneWhenJoining: true,
         turnOnCameraWhenJoining: isVideo,
-        showPreJoinView: false, // Seedha call start karo
+        showPreJoinView: false, 
         onLeaveRoom: () => {
-          setIsCalling(false); // Call katne par wapas chat par aa jao
+          setIsCalling(false); 
         }
       });
     }, 100);
@@ -249,12 +248,12 @@ export default function StealthCalculator() {
               </div>
             </div>
             
-            {/* 🔴 CALLING INTERFACE (Shows only when calling) */}
+            {/* 🔴 CALLING INTERFACE */}
             {isCalling && (
               <div className="flex-1 bg-black w-full h-full" ref={callContainerRef}></div>
             )}
 
-            {/* 🟢 CHAT INTERFACE (Hides when calling) */}
+            {/* 🟢 CHAT INTERFACE */}
             {!isCalling && (
               <>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ backgroundImage: "url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg')", backgroundSize: 'cover' }}>
@@ -286,7 +285,6 @@ export default function StealthCalculator() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input Area */}
                 <div className="p-3 bg-white border-t flex gap-2 items-center">
                   <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={handleImageUpload} />
                   <button onClick={() => fileInputRef.current?.click()} className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition">
