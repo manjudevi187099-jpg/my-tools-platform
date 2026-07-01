@@ -263,6 +263,22 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     isActive: true,
     icon: "🫥",
   },
+  "loan-emi-calculator": {
+    name: "Loan EMI Calculator",
+    description: "Instantly calculate your monthly EMI for home, car, or personal loans.",
+    category: "utility",
+    keywords: ["emi calculator", "loan calculator", "home loan emi", "car loan emi"],
+    icon: "💰",
+    isActive: true
+  },
+  "investment-calculator": {
+    name: "Investment Calculator",
+    description: "Calculate your SIP, FD, and mutual fund investment returns accurately.",
+    category: "utility",
+    keywords: ["sip calculator", "investment returns", "fd calculator", "mutual fund return"],
+    icon: "📈",
+    isActive: true
+  },
 
   // ==========================================
   // --- DESIGN TOOLS ---
@@ -478,9 +494,7 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     keywords: ["email signature", "branding", "professional email"],
     isActive: true,
     icon: "✒️",
-  }, // 🔥 BUG FIX: Yahan comma miss ho gaya tha
-  
-  // 🔥 NAYE FINANCE & BUSINESS TOOLS 🔥
+  },
   "balance-sheet": {
     name: "Balance Sheet Generator",
     description: "Create professional and accurate balance sheets for your business in minutes.",
@@ -505,20 +519,80 @@ export const toolsRegistry: Record<string, ToolMetadata> = {
     icon: "📊",
     isActive: true
   },
-  "loan-emi-calculator": {
-    name: "Loan EMI Calculator",
-    description: "Instantly calculate your monthly EMI for home, car, or personal loans.",
+
+  // ==========================================
+  // 🔥 NEW MEGA TOOLS 🔥
+  // ==========================================
+  "cgpa-to-percentage": {
+    name: "CGPA to Percentage Calculator",
+    description: "Convert your CGPA to Percentage instantly with accurate formulas for all universities.",
     category: "utility",
-    keywords: ["emi calculator", "loan calculator", "home loan emi", "car loan emi"],
-    icon: "💰",
-    isActive: true
+    keywords: ["cgpa to percentage", "cgpa calculator", "percentage converter"],
+    isActive: true,
+    icon: "💯",
   },
-  "investment-calculator": {
-    name: "Investment Calculator",
-    description: "Calculate your SIP, FD, and mutual fund investment returns accurately.",
+  "whatsapp-link-generator": {
+    name: "WhatsApp Link Generator",
+    description: "Create direct WhatsApp chat links with pre-filled messages instantly.",
     category: "utility",
-    keywords: ["sip calculator", "investment returns", "fd calculator", "mutual fund return"],
-    icon: "📈",
-    isActive: true
+    keywords: ["whatsapp link", "wa.me generator", "whatsapp chat link"],
+    isActive: true,
+    icon: "💬",
+  },
+  "webp-to-jpg-converter": {
+    name: "WebP to JPG Converter",
+    description: "Convert WebP images to standard JPG format easily without losing quality.",
+    category: "utility",
+    keywords: ["webp to jpg", "image converter", "convert webp"],
+    isActive: true,
+    icon: "🖼️",
+  },
+  "url-shortener": {
+    name: "URL Shortener",
+    description: "Shorten long, ugly links into clean, shareable URLs instantly.",
+    category: "utility",
+    keywords: ["url shortener", "link shortener", "tiny url"],
+    isActive: true,
+    icon: "🔗",
+  },
+  "secret-message": {
+    name: "Anonymous Secret Message",
+    description: "Receive anonymous messages from your friends securely and privately.",
+    category: "utility",
+    keywords: ["secret message", "anonymous chat", "ngl clone"],
+    isActive: true,
+    icon: "🕵️‍♂️",
+  },
+  "calculator": {
+    name: "Stealth Calculator",
+    description: "A fully functional calculator that hides a secure, private communication vault.",
+    category: "utility",
+    keywords: ["stealth chat", "secret vault", "fake calculator"],
+    isActive: true,
+    icon: "🧮",
+  },
+  "svg-to-jsx-png-converter": {
+    name: "SVG to JSX/PNG Converter",
+    description: "Convert SVG code into React JSX components or high-quality PNG images.",
+    category: "dev",
+    keywords: ["svg to jsx", "svg to png", "react icon converter"],
+    isActive: true,
+    icon: "⚛️",
+  },
+  "image-to-svg-converter": {
+    name: "Image to SVG Converter",
+    description: "Convert your JPG/PNG raster images into scalable vector SVG graphics.",
+    category: "design",
+    keywords: ["image to svg", "vector converter", "raster to vector"],
+    isActive: true,
+    icon: "📐",
+  },
+  "master-zip-converter": {
+    name: "Master Zip Converter",
+    description: "Easily zip multiple files together or extract files from ZIP archives.",
+    category: "utility",
+    keywords: ["zip file", "extract zip", "compress files", "zip converter"],
+    isActive: true,
+    icon: "🗂️",
   }
 };

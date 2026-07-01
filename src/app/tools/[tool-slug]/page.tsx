@@ -3,18 +3,15 @@
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-
 // 🌟 Config aur Supabase Imports
 import { toolsRegistry, ToolMetadata } from '../../../../config/siteConfig';
 import { supabase } from '../../../lib/supabase';
 
 // 🔥 MASTER TOOL COMPONENTS REGISTRY
-// ⚠️ DHYAN DEIN: Jo tool aapne abhi tak nahi banaya hai, uske aage // laga dein
 const ToolComponents: Record<string, React.ElementType> = {
   
   // ==========================================
   // 📁 CATEGORY 1: PURANE TOOLS (src/tools/ folder wale)
-  // Path: ../../../tools/
   // ==========================================
   "pdf-merger": dynamic(() => import('../../../tools/pdf-merger'), { ssr: false }),
   "image-to-pdf": dynamic(() => import('../../../tools/image-to-pdf'), { ssr: false }),
@@ -52,25 +49,22 @@ const ToolComponents: Record<string, React.ElementType> = {
 
   // ==========================================
   // 📁 CATEGORY 2: NAYE TOOLS (src/app/tools/ folder wale)
-  // Path: ../
   // ==========================================
   "pro-suit-changer": dynamic(() => import('../pro-suit-changer/page'), { ssr: false }),
   "remove-bg": dynamic(() => import('../remove-bg/page'), { ssr: false }),
   
-  // ⚠️ INME SE JO FILE ABHI NAHI BANI HAI, UNKE AAGE // LAGA DEIN ⚠️
   "pdf-to-word": dynamic(() => import('../pdf-to-word/page'), { ssr: false }),
   "pdf-to-excel": dynamic(() => import('../pdf-to-excel/page'), { ssr: false }),
   "photo-studio": dynamic(() => import('../photo-studio/page'), { ssr: false }),
   "photo-enhancer": dynamic(() => import('../photo-enhancer/page'), { ssr: false }),
   "logo-maker": dynamic(() => import('../logo-maker/page'), { ssr: false }),
   
-  // 🔴 YAHAN UN 5 FOLDERS KE NAAM FIX KIYE GAYE HAIN 🔴
   "event-invite": dynamic(() => import('../invitation-maker/page'), { ssr: false }),
   "assignment-cover": dynamic(() => import('../assignment-cover-page-maker/page'), { ssr: false }),
   "id-card": dynamic(() => import('../id-card-generator/page'), { ssr: false }),
   "bonafide-cert": dynamic(() => import('../bonafide-certificate-generator/page'), { ssr: false }),
   "image-masker": dynamic(() => import('../masking-tool/page'), { ssr: false }),
-  
+ 
   "handwriting-pdf": dynamic(() => import('../handwriting-pdf-generator/page'), { ssr: false }),
   "tc-generator": dynamic(() => import('../tc-generator/page'), { ssr: false }),
   "marksheet-designer": dynamic(() => import('../marksheet-designer/page'), { ssr: false }),
@@ -83,30 +77,37 @@ const ToolComponents: Record<string, React.ElementType> = {
   "visiting-card": dynamic(() => import('../visiting-card-maker/page'), { ssr: false }),
   "business-profile": dynamic(() => import('../business-profile-generator/page'), { ssr: false }),
   "salary-slip": dynamic(() => import('../salary-slip/page'), { ssr: false }),
-  "email-signature": dynamic(() => import('../email-signature/page'), { ssr: false }), // 🔥 BUG FIX: Yahan comma miss ho gaya tha
+  "email-signature": dynamic(() => import('../email-signature/page'), { ssr: false }),
   
-  // 🔥 NAYE 5 TOOLS HAIN YAHAN 🔥
   "balance-sheet": dynamic(() => import('../balance-sheet/page'), { ssr: false }),
   "profit-loss": dynamic(() => import('../profit-loss/page'), { ssr: false }),
   "project-report": dynamic(() => import('../project-report/page'), { ssr: false }),
   "loan-emi-calculator": dynamic(() => import('../loan-emi-calculator/page'), { ssr: false }),
   "investment-calculator": dynamic(() => import('../investment-calculator/page'), { ssr: false }),
+
+  // 🔥 NAYE 9 TOOLS ADDED YAHAN 🔥
+  "cgpa-to-percentage": dynamic(() => import('../cgpa-to-percentage/page'), { ssr: false }),
+  "whatsapp-link-generator": dynamic(() => import('../whatsapp-link-generator/page'), { ssr: false }),
+  "webp-to-jpg-converter": dynamic(() => import('../webp-to-jpg-converter/page'), { ssr: false }),
+  "url-shortener": dynamic(() => import('../url-shortener/page'), { ssr: false }),
+  "secret-message": dynamic(() => import('../secret-message/page'), { ssr: false }),
+  "calculator": dynamic(() => import('../calculator/page'), { ssr: false }),
+  "svg-to-jsx-png-converter": dynamic(() => import('../svg-to-jsx-png-converter/page'), { ssr: false }),
+  "image-to-svg-converter": dynamic(() => import('../image-to-svg-converter/page'), { ssr: false }),
+  "master-zip-converter": dynamic(() => import('../master-zip-converter/page'), { ssr: false }),
 };
 
 export default function ToolPage() {
   const params = useParams();
   const slug = (params?.['tool-slug'] as string) || (params?.slug as string);
 
-  // 🔥 NAYA STATE: Tool ka specific blog store karne ke liye
   const [toolBlog, setToolBlog] = useState<any>(null);
 
-  // 🔥 YAHAN LAGA HAI HIDDEN TRACKER AUR BLOG FETCHER 🔥
   useEffect(() => {
     const trackToolViewAndFetchBlog = async () => {
       if (!slug) return;
       
       try {
-        // 1. Total views me +1 karna
         const { data } = await supabase
           .from('tool_analytics')
           .select('total_views')
@@ -127,18 +128,16 @@ export default function ToolPage() {
             .insert({ tool_slug: slug, total_views: 1 });
         }
 
-        // 2. 'tool_pageviews' table mein time ke sath entry karna
         await supabase
           .from('tool_pageviews')
           .insert({ tool_slug: slug });
 
-        // 3. 🔥 FETCH TOOL SPECIFIC BLOG
         const { data: blogData } = await supabase
           .from('blog_posts')
           .select('*')
           .eq('linked_tool', slug)
           .single();
-          
+
         if (blogData) {
           setToolBlog(blogData);
         }
@@ -178,7 +177,6 @@ export default function ToolPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 pb-12">
-      {/* TOOL HEADER */}
       <div className="bg-white border-b py-10 px-4 text-center shadow-sm">
         <div className="flex justify-center items-center gap-3 mb-3">
           <span className="text-4xl">{toolMeta.icon}</span>
@@ -193,14 +191,13 @@ export default function ToolPage() {
         {ActiveToolComponent ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             
-            {/* 1. ASLI TOOL */}
             <ActiveToolComponent />
 
-            {/* 2. SOCIAL MEDIA LINKS (Tool ke theek niche) */}
             <div className="mt-16 max-w-5xl mx-auto border-t border-slate-200 pt-10">
               <h3 className="text-center text-slate-500 font-bold uppercase tracking-wider mb-6 text-sm">
                 Join Our Community
               </h3>
+              
               <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
                 <a href="https://whatsapp.com/channel/0029VbD1pyt3LdQTNaRDD121" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex justify-center items-center gap-2 bg-[#25D366] text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all">
                   <span className="text-xl">💬</span> Join WhatsApp
@@ -214,7 +211,6 @@ export default function ToolPage() {
               </div>
             </div>
 
-            {/* 3. HOW TO USE / BLOG SECTION (Social media ke niche) */}
             {toolBlog && (
               <div className="mt-16 max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-200">
                 <h2 className="text-3xl font-black text-slate-900 mb-2 text-center">
@@ -222,7 +218,6 @@ export default function ToolPage() {
                 </h2>
                 <div className="w-20 h-1 bg-purple-500 mx-auto rounded-full mb-10"></div>
                 
-                {/* Asli Blog Content jo aap admin se likhenge */}
                 <div 
                   className="prose prose-lg max-w-none text-slate-700 leading-relaxed marker:text-purple-500 prose-h2:text-slate-800 prose-h2:font-black prose-a:text-purple-600 prose-img:rounded-xl" 
                   dangerouslySetInnerHTML={{ __html: toolBlog.content }} 
