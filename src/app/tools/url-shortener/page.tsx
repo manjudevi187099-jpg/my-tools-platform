@@ -21,7 +21,7 @@ export default function UrlShortener() {
     if (!longUrl || !mobile) { alert('URL aur Mobile number dono daalein!'); return; }
     setLoading(true);
     try {
-      const res = await fetch('/api/shorten', {
+      const res = await fetch('/myapi/shorten', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ longUrl, mobile }),
@@ -41,7 +41,8 @@ export default function UrlShortener() {
     if (!statsMobile) { alert('Mobile number daalein!'); return; }
     setLoadingStats(true);
     try {
-      const res = await fetch(`/api/stats?mobile=${statsMobile}`);
+      // YAHAN CHANGE KIYA HAI: /api/stats se /myapi/stats kar diya hai
+      const res = await fetch(`/myapi/stats?mobile=${statsMobile}`);
       const data = await res.json();
       setStatsData(data.urls || []);
     } catch (error) {
