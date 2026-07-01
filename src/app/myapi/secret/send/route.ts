@@ -10,20 +10,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Message cannot be empty!' }, { status: 400 });
     }
 
-    // Verify if the username actually exists before sending a message
-    const { data: user } = await supabase.from('message_users').select('username').eq('username', cleanUser).single();
+    // 🔥 SAFE CHECK: Hum array length check kar rahe hain taaki Supabase internally crash na ho
+    const { data: users, error: fetchError } = await supabase
+      .from('message_users')
+      .select('username')
+      .eq('username', cleanUser);
     
-    if (!user) {
+    if (fetchError || !users || users.length === 0) {
       return NextResponse.json({ success: false, error: 'User not found! Link is invalid.' }, { status: 404 });
     }
 
     // Insert the anonymous message
-    const { error } = await supabase.from('secret_messages').insert([{ username: cleanUser, message }]);
-    if (error) throw error;
+    const { error: insertError } = await supabase
+      .from('secret_messages')
+      .insert([{ username: cleanUser, message }]);
+      
+    if (insertError) throw insertError;
 
     return NextResponse.json({ success: true, message: 'Message sent anonymously! 🤫' });
 
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    // Agar DB ka koi deep error aata hai, toh usko handle karenge
+    return NextResponse.json({ success: false, error: "Database Sync Error. Please try again!" }, { status: 500 });
   }
 }
