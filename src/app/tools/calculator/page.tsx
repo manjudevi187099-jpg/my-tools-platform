@@ -19,7 +19,6 @@ export default function StealthCalculator() {
 
   // 1. Generate unique ID for user & Check Direct Link
   useEffect(() => {
-    // Apni pehchan ke liye ek unique ID banayenge taaki apni chat right side dikhe
     let storedId = localStorage.getItem('stealth_device_id');
     if (!storedId) {
       storedId = Math.random().toString(36).substring(2, 10);
@@ -27,12 +26,11 @@ export default function StealthCalculator() {
     }
     setDeviceId(storedId);
 
-    // Direct Invite Link Check (?session=Base64PIN)
     const params = new URLSearchParams(window.location.search);
     const sessionToken = params.get('session');
     if (sessionToken) {
       try {
-        const decodedPin = atob(sessionToken); // Decode Base64
+        const decodedPin = atob(sessionToken); 
         if (decodedPin) {
           setActiveRoomPin(decodedPin);
           setIsUnlocked(true);
@@ -47,9 +45,9 @@ export default function StealthCalculator() {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isUnlocked && activeRoomPin) {
-      fetchMessages(activeRoomPin); // Turant fetch karo
+      fetchMessages(activeRoomPin); 
       interval = setInterval(() => {
-        fetchMessages(activeRoomPin); // Har 2 second mein naye messages laao
+        fetchMessages(activeRoomPin); 
       }, 2000);
     }
     return () => clearInterval(interval);
@@ -95,42 +93,53 @@ export default function StealthCalculator() {
     }
   };
 
+  // 🔥 UPDATE 1: INSTANT MESSAGE UPDATE LOGIC 🔥
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
-    setLoading(true);
+    
+    // 1. Turant UI me message add karo (Optimistic UI)
+    const textToSend = newMessage.trim();
+    const optimisticMessage = {
+      message: textToSend,
+      sender: deviceId, 
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setNewMessage(''); // Input box turant khaali
+    
+    // 2. Background me Database me bhejo
     try {
       await fetch('/myapi/room/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ room_pin: activeRoomPin, message: newMessage, sender: deviceId }),
+        body: JSON.stringify({ room_pin: activeRoomPin, message: textToSend, sender: deviceId }),
       });
-      setNewMessage('');
-      fetchMessages(activeRoomPin);
     } catch (error) {
-      alert("Send failed!");
-    } finally {
-      setLoading(false);
-    }
+      console.error("Send failed!");
+    } 
   };
 
+  // 🔥 UPDATE 2: INSTANT NUKE LOGIC 🔥
   const handleDestroyRoom = async () => {
     const confirm = window.confirm("WARNING: Yeh chat hamesha ke liye delete ho jayegi. Continue?");
     if (!confirm) return;
+    
+    setMessages([]); // UI se turant saaf karo
+    
     try {
       await fetch('/myapi/room/destroy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ room_pin: activeRoomPin }),
       });
-      setMessages([]);
     } catch (error) {
       alert("Destroy failed!");
     }
   };
 
-  // Direct Link Generator
   const copyInviteLink = () => {
-    const encodedPin = btoa(activeRoomPin); // Pin ko base64 mein chupa diya
+    const encodedPin = btoa(activeRoomPin);
     const inviteUrl = `${window.location.origin}/tools/calculator?session=${encodedPin}`;
     navigator.clipboard.writeText(inviteUrl);
     alert('🔗 Direct Invite Link Copied!\nAb aap ise WhatsApp par bhej sakte hain.');
@@ -162,7 +171,6 @@ export default function StealthCalculator() {
           </div>
         ) : (
           <div className="bg-[#f0f2f5] h-full flex flex-col relative">
-            {/* Header */}
             <div className="flex justify-between items-center p-4 border-b bg-white shadow-sm z-10">
               <div>
                 <h2 className="text-lg font-black text-gray-800">Room: {activeRoomPin}</h2>
@@ -175,7 +183,6 @@ export default function StealthCalculator() {
               </div>
             </div>
             
-            {/* Chat Inbox Area (WhatsApp Style) */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ backgroundImage: "url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg')", backgroundSize: 'cover' }}>
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center">
@@ -200,7 +207,6 @@ export default function StealthCalculator() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
             <div className="p-3 bg-white border-t flex gap-2 items-center">
               <input 
                 type="text" 
@@ -209,8 +215,9 @@ export default function StealthCalculator() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 className="flex-1 p-3 bg-gray-100 rounded-full text-gray-800 text-sm outline-none focus:ring-1 focus:ring-indigo-500"
+                autoComplete="off"
               />
-              <button onClick={handleSendMessage} disabled={loading || !newMessage.trim()} className="p-3 bg-indigo-600 text-white rounded-full shadow-lg disabled:opacity-50 transition">
+              <button onClick={handleSendMessage} disabled={!newMessage.trim()} className="p-3 bg-indigo-600 text-white rounded-full shadow-lg disabled:opacity-50 transition">
                 <svg className="w-5 h-5 transform rotate-45 -mt-1 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
               </button>
             </div>
