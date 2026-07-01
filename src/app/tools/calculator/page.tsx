@@ -45,7 +45,7 @@ export default function StealthCalculator() {
       });
       const data = await res.json();
       if (data.code) {
-        setGeneratedLink(`${window.location.origin}/msg/${data.code}`);
+        setGeneratedLink(`${window.location.origin}/s-msg/${data.code}`);
         setMessage(''); // Clear message after generating
       }
     } catch (error) {
