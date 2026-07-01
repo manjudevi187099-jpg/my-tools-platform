@@ -169,10 +169,21 @@ export default function StealthCalculator() {
 
   // 🔥 ZEGO CLOUD DYNAMIC IMPORT LOGIC 🔥
   const startCall = async (isVideo: boolean) => {
+    // 🚨 SMART JUGAAD: Dusre user ko chat mein bata do ki call aa rahi hai!
+    const callMsg = isVideo 
+      ? "🎥 Incoming Video Call... Click the Video button above to join!" 
+      : "📞 Incoming Voice Call... Click the Phone button above to join!";
+    
+    // Message database mein bhej do
+    await fetch('/myapi/room/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room_pin: activeRoomPin, message: callMsg, sender: deviceId }),
+    });
+
     setIsCalling(true);
     
     setTimeout(async () => {
-      // 🚨 FIX: Yahan package ko dynamic import kiya hai taaki SSR par error na aaye
       const { ZegoUIKitPrebuilt } = await import('@zegocloud/zego-uikit-prebuilt');
 
       const appID = 1853479942; 
