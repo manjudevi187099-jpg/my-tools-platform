@@ -1,0 +1,11 @@
+{
+  "documentId": "DOC-SALE-001",
+  "documentName": "Sale Deed / Biki Patra",
+  "languageSupport": ["Hindi", "English", "Mixed"],
+  "requiredSteps": 6,
+  "fields": [
+    "sellerName", "buyerName", "saleAmount", 
+    "mauza", "khataNo", "plotNo", "boundaryNorth"
+  ],
+  "defaultState": "बिहार"
+}
