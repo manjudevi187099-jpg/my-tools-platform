@@ -6,7 +6,6 @@ import SmartUploadModal from '../../../components/tools/legal-draft-builder/Smar
 import DeedPreview from '../../../components/tools/legal-draft-builder/DeedPreview';
 
 // 🏆 INDUSTRY LEVEL FIX: InputField ko main function ke BAHAR nikal diya gaya hai.
-// Isse React har keystroke par input ko re-render nahi karega aur focus out nahi hoga!
 interface InputFieldProps {
   label: string;
   name: string;
@@ -36,11 +35,12 @@ export default function LegalDraftBuilder() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  // 🔥 Master State
+  // 🔥 Master State (Added jamabandiNo & ownershipHistory)
   const [formData, setFormData] = useState({
     sellerName: '', sellerFather: '', sellerAge: '', sellerAadhaar: '', sellerPan: '', sellerMobile: '', sellerAddress: '',
     buyerName: '', buyerFather: '', buyerAge: '', buyerAadhaar: '', buyerPan: '', buyerMobile: '', buyerAddress: '',
     state: 'बिहार', district: '', circle: '', policeStation: '', village: '', wardNo: '', mauza: '', khataNo: '', plotNo: '', area: '', landType: '', boundaryNorth: '', boundarySouth: '', boundaryEast: '', boundaryWest: '',
+    jamabandiNo: '', ownershipHistory: 'खरीदगी केवाला', // <-- NAYE FIELDS YAHAN HAIN
     saleAmount: '', advanceAmount: '', remainingAmount: '', paymentMode: 'Cash', possessionDate: '', registrationDate: '',
     witness1Name: '', witness1Address: '', witness2Name: '', witness2Address: '',
     stampValue: '1000', deedWriterName: '', registrationOffice: '', specialConditions: ''
@@ -165,9 +165,24 @@ export default function LegalDraftBuilder() {
                   <InputField label="Ward No." name="wardNo" value={formData.wardNo} onChange={handleInputChange} />
                   <InputField label="Khata No." name="khataNo" value={formData.khataNo} onChange={handleInputChange} />
                   <InputField label="Khesra/Plot No." name="plotNo" value={formData.plotNo} onChange={handleInputChange} />
+                  <InputField label="Jamabandi No. (जमाबन्दी नं०)" name="jamabandiNo" value={formData.jamabandiNo} onChange={handleInputChange} />
                   <InputField label="Rakba / Area" name="area" placeholder="e.g., 4.70 डिसमिल" value={formData.area} onChange={handleInputChange} />
                   <InputField label="Land Type" name="landType" placeholder="e.g., आवासीय रिक्त" value={formData.landType} onChange={handleInputChange} />
                 </div>
+                
+                {/* 🔥 NAYA FIELD: OWNERSHIP HISTORY */}
+                <div className="flex flex-col gap-1 mb-4 mt-2">
+                  <label className="text-sm font-bold text-gray-700">Ownership History (संपत्ति का इतिहास)</label>
+                  <textarea 
+                    name="ownershipHistory" 
+                    value={formData.ownershipHistory} 
+                    onChange={handleInputChange} 
+                    rows={2} 
+                    placeholder="e.g., खरीदगी केवाला / खतियानी / पुश्तैनी"
+                    className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
+                  />
+                </div>
+
                 <h3 className="font-bold text-gray-700 mt-6 mb-3">Boundary (चौहद्दी)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField label="North (उत्तर)" name="boundaryNorth" value={formData.boundaryNorth} onChange={handleInputChange} />
