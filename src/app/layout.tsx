@@ -6,6 +6,7 @@ import Script from 'next/script';
 
 import OneSignalSetup from '../components/OneSignalSetup';
 import TrafficTracker from '../components/TrafficTracker';
+import ChatWidget from '../components/ChatWidget';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -72,6 +73,10 @@ export default async function RootLayout({
             style={{ display: 'none' }}
           />
         )}
+
+        {/* Yeh widget ab har page ke right corner me latakta rahega! */}
+        <ChatWidget /> 
+        
       </body>
     </html>
   );
