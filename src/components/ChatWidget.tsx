@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, Loader2 } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+// Nayi Tools List yahan import ho gayi hai:
+import { dhamakaToolsDirectory } from '../data/toolsList'; 
 
 type Message = { role: 'user' | 'ai'; text: string };
 
@@ -41,9 +43,21 @@ export default function ChatWidget() {
       if (!apiKey) throw new Error("API Key Missing");
 
       const genAI = new GoogleGenerativeAI(apiKey);
+      
+      // YAHAN NAYA SYSTEM PROMPT AUR TOOLS LIST UPDATE KI GAYI HAI
       const model = genAI.getGenerativeModel({ 
         model: "gemini-2.5-flash",
-        systemInstruction: "You are the official customer support AI for DhamakaTools (dhamakatools.com). DhamakaTools is a completely FREE online platform that provides premium utility tools like Image to SVG Converter, and Master ZIP Compressor/Extractor. Answer concisely and politely. NEVER say DhamakaTools is an e-commerce or shopping site."
+        systemInstruction: `You are the official advanced customer support AI for DhamakaTools (dhamakatools.com). DhamakaTools is a completely FREE online platform with 71 premium utility tools.
+
+YOUR MISSION:
+Understand the user's problem, suggest the absolute best tool for them from the directory, and ALWAYS provide the exact URL link.
+
+${dhamakaToolsDirectory}
+
+RULES:
+- Be highly energetic, professional, and helpful.
+- ALWAYS give the direct link to the tool you suggest.
+- Act like you just know the website inside out.`
       });
 
       const chatContext = messages.map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${m.text}`).join('\n');
