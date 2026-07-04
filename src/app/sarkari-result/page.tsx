@@ -7,6 +7,9 @@ export const metadata = {
 };
 
 export default function SarkariResultPage() {
+  // TypeScript error bypass for the classic marquee tag
+  const Marquee = 'marquee' as any;
+
   return (
     <div className="bg-gray-100 min-h-screen font-sans flex flex-col">
       
@@ -45,10 +48,9 @@ export default function SarkariResultPage() {
           <div className="bg-red-600 text-white font-bold px-4 py-2 shrink-0">
             LATEST
           </div>
-          {/* Note: <marquee> tag purana hai par in websites par sabse best kaam karta hai bina heavy JS ke */}
-          <marquee className="text-red-700 font-bold py-2 text-sm md:text-base font-serif tracking-wide">
+          <Marquee className="text-red-700 font-bold py-2 text-sm md:text-base font-serif tracking-wide">
             Bihar Police SI Online Form 2026 | Railway RRB Technician Recruitment 2026 | Bihar DElEd Result Declared - Check Now! | JPSC Civil Services Pre Result Out
-          </marquee>
+          </Marquee>
         </div>
       </div>
 
@@ -76,7 +78,7 @@ export default function SarkariResultPage() {
           </span>
         </div>
 
-        {/* 🟦 3-COLUMN GRID LAYOUT (Apna purana solid code) */}
+        {/* 🟦 3-COLUMN GRID LAYOUT */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* COLUMN 1: LATEST JOBS */}
