@@ -48,6 +48,12 @@ export default function AdminDashboard() {
   const [isSavingBlog, setIsSavingBlog] = useState(false);
   const [blogMessage, setBlogMessage] = useState('');
 
+  // 🔥 NEW: DYNAMIC LINKS STATES (Sirf yeh naya add hua hai) 🔥
+  const [linksTableTitle, setLinksTableTitle] = useState('Important Official Links');
+  const [importantLinks, setImportantLinks] = useState([
+    { label: '', text: '', url: '', isExternal: true }
+  ]);
+
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
     if (token === 'Dhamaka Tools_secure_admin') {
@@ -128,7 +134,7 @@ export default function AdminDashboard() {
         setPopularTool({ name: bestTool !== 'N/A' ? bestTool : 'No data yet', views: maxViews > -1 ? maxViews : 0 });
       }
     } catch (error) { 
-      console.error("Data Fetch Error:", error); 
+      console.error("Data Fetch Error:", error);
     } finally { 
       setLoading(false); 
     }
@@ -179,22 +185,44 @@ export default function AdminDashboard() {
     setBlogSlug(slug);
   };
 
+  // 🔥 NEW: DYNAMIC LINKS HANDLERS 🔥
+  const handleLinkChange = (index: number, field: string, value: any) => {
+    const newLinks = [...importantLinks];
+    newLinks[index] = { ...newLinks[index], [field]: value };
+    setImportantLinks(newLinks);
+  };
+  const addLinkRow = () => setImportantLinks([...importantLinks, { label: '', text: '', url: '', isExternal: true }]);
+  const removeLinkRow = (index: number) => setImportantLinks(importantLinks.filter((_, i) => i !== index));
+
+
   const handleSaveBlog = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingBlog(true);
     setBlogMessage('');
     
-    const { error } = await supabase.from('blog_posts').insert([
-      { title: blogTitle, slug: blogSlug, content: blogContent, linked_tool: linkedTool || null }
-    ]);
+    // 🔥 NEW: Sirf wahi links bhejo jinme data bhara gaya hai
+    const validLinks = importantLinks.filter(link => link.label.trim() !== '' && link.url.trim() !== '');
 
+    const { error } = await supabase.from('blog_posts').insert([
+      { 
+        title: blogTitle, 
+        slug: blogSlug, 
+        content: blogContent, 
+        linked_tool: linkedTool || null,
+        links_table_title: linksTableTitle, // Naya Column
+        important_links: validLinks         // Naya Column
+      }
+    ]);
+    
     setIsSavingBlog(false);
     if (error) {
       setBlogMessage('❌ Error: ' + error.message);
     } else {
       setBlogMessage('✅ Blog Published Successfully! 🎉');
       setBlogTitle(''); setBlogSlug(''); setBlogContent(''); setLinkedTool(''); 
-      fetchRealData(); 
+      setLinksTableTitle('Important Official Links');
+      setImportantLinks([{ label: '', text: '', url: '', isExternal: true }]);
+      fetchRealData();
       setTimeout(() => setBlogMessage(''), 4000);
     }
   };
@@ -497,6 +525,43 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-bold text-slate-700 mb-2">Blog Content (Write in text or HTML)</label>
                       <textarea required value={blogContent} onChange={(e) => setBlogContent(e.target.value)} placeholder="<h2>Introduction</h2><p>Start writing here...</p>" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 outline-none focus:border-purple-500 focus:ring-2 font-mono min-h-[300px]" />
                     </div>
+
+                    {/* 🔥 DYNAMIC LINKS SECTION 🔥 */}
+                    <div className="border-t border-slate-200 pt-6">
+                      <h3 className="text-lg font-black text-slate-800 mb-4">Important Links Table (Optional)</h3>
+                      
+                      <div className="mb-4">
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Table Title</label>
+                        <input type="text" value={linksTableTitle} onChange={(e) => setLinksTableTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 font-medium" placeholder="e.g., DHJSE 2026 Official Apply Online Links" />
+                      </div>
+
+                      {importantLinks.map((link, index) => (
+                        <div key={index} className="flex flex-wrap gap-4 items-end mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                          <div className="flex-1 min-w-[200px]">
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Left Label</label>
+                            <input type="text" value={link.label} onChange={e => handleLinkChange(index, 'label', e.target.value)} placeholder="e.g., Apply Online" className="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-purple-500" />
+                          </div>
+                          <div className="flex-1 min-w-[200px]">
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Right Text</label>
+                            <input type="text" value={link.text} onChange={e => handleLinkChange(index, 'text', e.target.value)} placeholder="e.g., Click Here To Apply" className="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-purple-500" />
+                          </div>
+                          <div className="flex-1 min-w-[200px]">
+                            <label className="block text-xs font-bold text-slate-700 mb-1">URL / Link</label>
+                            <input type="url" value={link.url} onChange={e => handleLinkChange(index, 'url', e.target.value)} placeholder="https://..." className="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-purple-500" />
+                          </div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <input type="checkbox" checked={link.isExternal} onChange={e => handleLinkChange(index, 'isExternal', e.target.checked)} className="w-4 h-4 text-purple-600 rounded" />
+                            <span className="text-xs font-bold text-slate-600">New Tab</span>
+                          </div>
+                          <button type="button" onClick={() => removeLinkRow(index)} className="text-red-500 hover:text-red-700 font-bold mb-2 ml-2">🗑️</button>
+                        </div>
+                      ))}
+                      
+                      <button type="button" onClick={addLinkRow} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm transition-colors">
+                        + Add New Link Row
+                      </button>
+                    </div>
+
                     <div className="pt-4 flex items-center gap-4 border-t border-slate-100 pt-6">
                       <button type="submit" disabled={isSavingBlog} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-xl shadow-md shadow-purple-600/20">{isSavingBlog ? 'Publishing...' : 'Publish Blog Post 🚀'}</button>
                       {blogMessage && <span className={`font-bold ${blogMessage.includes('❌') ? 'text-red-500' : 'text-green-500'} animate-in fade-in`}>{blogMessage}</span>}

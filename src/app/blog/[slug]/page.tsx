@@ -1,5 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import Link from 'next/link';
+// 🔥 BUGS FIXED: Corrected Import Path to match your components folder
+import ImportantLinksTable from '../../../components/ImportantLinksTable';
 
 export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
@@ -27,7 +29,6 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
       <header className="bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            {/* 🔥 NAYA BADA LOGO ICON YAHAN LAGA DIYA HAI 🔥 */}
             <img src="/logo-icon.png" alt="Dhamaka Tools" className="w-14 h-14 md:w-16 md:h-16 object-contain drop-shadow-sm" />
             <span className="text-xl font-black text-slate-900 tracking-tight">DhamakaTools</span>
           </Link>
@@ -51,7 +52,6 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
           
           <div className="flex items-center justify-center gap-4 text-sm font-medium text-slate-500">
             <div className="flex items-center gap-3">
-              {/* 🔥 AUTHOR KI DP MEIN LOGO FULL SIZE AUR CLEAR KAR DIYA HAI 🔥 */}
               <div className="w-12 h-12 rounded-full border border-slate-200 shadow-md overflow-hidden bg-white">
                  <img src="/logo-icon.png" alt="Author" className="w-full h-full object-cover scale-110" />
               </div>
@@ -82,6 +82,16 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
                        [&>a]:text-purple-600 [&>a]:underline"
             dangerouslySetInnerHTML={{ __html: post.content }} 
           />
+
+          {/* 🔥 DYNAMIC LINKS RENDERER ADDED HERE 🔥 */}
+          {post.important_links && post.important_links.length > 0 && (
+            <div className="mt-12">
+              <ImportantLinksTable 
+                title={post.links_table_title || "Important Official Links"} 
+                links={post.important_links} 
+              />
+            </div>
+          )}
         </article>
 
         {/* 🌟 FOOTER CALL TO ACTION (CTA) 🌟 */}
