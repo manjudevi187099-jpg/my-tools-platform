@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, Loader2 } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-// Nayi Tools List yahan import ho gayi hai:
 import { dhamakaToolsDirectory } from '../data/toolsList'; 
+import ReactMarkdown from 'react-markdown'; // <-- NAYA IMPORT
 
 type Message = { role: 'user' | 'ai'; text: string };
 
@@ -16,11 +16,6 @@ export default function ChatWidget() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Widget Load Test
-  useEffect(() => {
-    console.log("Floating Chat Widget is Active! 🚀");
-  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -38,13 +33,10 @@ export default function ChatWidget() {
     setIsLoading(true);
 
     try {
-      // API INITIALIZATION MOVED INSIDE - SAFE MODE
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
       if (!apiKey) throw new Error("API Key Missing");
 
       const genAI = new GoogleGenerativeAI(apiKey);
-      
-      // YAHAN NAYA SYSTEM PROMPT AUR TOOLS LIST UPDATE KI GAYI HAI
       const model = genAI.getGenerativeModel({ 
         model: "gemini-2.5-flash",
         systemInstruction: `You are the official advanced customer support AI for DhamakaTools (dhamakatools.com). DhamakaTools is a completely FREE online platform with 71 premium utility tools.
@@ -98,17 +90,32 @@ RULES:
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'ai' && <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-1"><Bot size={14} className="text-white"/></div>}
+                
                 <div className={`p-3 text-sm rounded-xl max-w-[85%] ${
-                  msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-700 text-white rounded-tl-none'
+                  msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-700 text-slate-200 rounded-tl-none'
                 }`}>
-                  {msg.text}
+                  {/* --- NAYA MARKDOWN RENDERER --- */}
+                  {msg.role === 'ai' ? (
+                    <ReactMarkdown 
+                      components={{
+                        a: ({node, ...props}) => <a {...props} className="text-blue-400 font-semibold underline hover:text-blue-300" target="_blank" rel="noopener noreferrer" />,
+                        p: ({node, ...props}) => <p {...props} className="mb-2 last:mb-0" />,
+                        strong: ({node, ...props}) => <strong {...props} className="text-white font-bold" />
+                      }}
+                    >
+                      {msg.text}
+                    </ReactMarkdown>
+                  ) : (
+                    msg.text
+                  )}
                 </div>
+
               </div>
             ))}
             {isLoading && (
               <div className="flex gap-2 justify-start">
                 <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-1"><Bot size={14} className="text-white"/></div>
-                <div className="p-3 text-sm rounded-xl bg-slate-700 text-white rounded-tl-none flex items-center gap-2">
+                <div className="p-3 text-sm rounded-xl bg-slate-700 text-slate-200 rounded-tl-none flex items-center gap-2">
                   <Loader2 size={14} className="animate-spin text-indigo-400" /> Typing...
                 </div>
               </div>
